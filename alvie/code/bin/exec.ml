@@ -10,19 +10,19 @@ let spec_parse_or_fail spec =
 
 let command =
   Command.basic
-    ~summary:"Learns Sancus Mealy machine using the L# algorithm and the specified attacker and enclave spec"
+    ~summary:"Runs the given raw input on the specified version of Sancus with the given SUL configuration"
     (let%map_open.Command
      dbg =
       flag
          "--debug"
          no_arg
          ~doc:"Enables debug-level logging"
-(*      and sexp_fn =
+      and sexp_fn =
       flag
       "--sexp-input"
       (required string)
       ~doc:"filename S-exp representing the raw input for the simulator"
- *)     and enclave_spec_fn =
+      and enclave_spec_fn =
       flag
          "--encl-spec"
          (required string)
@@ -77,9 +77,7 @@ let command =
         (* Basic sanity checks on the repo *)
         assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
         assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
-        (* We are now ready to
-           load the spec
-        *)
+        (* We are now ready to load the spec *)
         let enclave_spec_str = In_channel.read_all enclave_spec_fn in
         let attacker_spec_str = In_channel.read_all attacker_spec_fn in
         Logs.info (fun m -> m "Enclave spec: %s" enclave_spec_str);
@@ -134,14 +132,14 @@ let command =
           (IEnclave(CIfZ(((CInst(I_MOV(S_IMM 42)(D_R(R 5)))))((CInst I_NOP)(CInst I_NOP)))))
           (IEnclave(CInst(I_JMP(S_IMM enc_e))))
         )" in *)
-        let input_str = "(
+        (* let input_str = "(
           (IAttacker(CTimerEnable 4))
           (IAttacker(CCreateEncl(enc_s enc_e data_s data_e)))
           (IAttacker(CJmpIn enc_s))
           (IEnclave(CInst(I_CMP (S_IMM 0) (D_R(R 4)))))
           (IEnclave(CIfZ(((CInst I_DINT)(CInst I_NOP))((CInst I_NOP)(CInst I_DINT)))))
           (IEnclave(CInst(I_JMP(S_IMM enc_e))))
-        )" in
+        )" in *)
         (* let input_str = "(
           (IAttacker(CInst(I_MOV(S_IMM -1)(D_AMP_MEM TACCR0))))
           (IAttacker(CInst(I_MOV(S_IMM 532)(D_AMP_MEM tactl_val))))
@@ -168,7 +166,7 @@ let command =
           (IAttacker(CInst(I_CMP(S_IMM 2)(D_R(R 4)))))
           (IAttacker CRstNZ)
         )" in *)
-        let input_sequence = List.t_of_sexp Sancus.Input.t_of_sexp (Sexp.of_string input_str) in
+        let input_sequence = List.t_of_sexp Sancus.Input.t_of_sexp (Sexp.load_sexp sexp_fn) in
         (* initialize the interface with the processor's implementation *)
         let sul =
           Sancus.Verilog.make
