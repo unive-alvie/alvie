@@ -38,11 +38,16 @@ $ docker run --rm -it matteobusi/alvie_csf24
 ```
 Once everything is ready a prompt should be waiting for your commands.
 
-If you wish to build the Docker image, you can run the following command:
+If you wish to build the Docker image for your current platform, run:
 ```
-$ docker build --platform linux/amd64 -t alvie .
+$ docker build -t alvie .
 ```
-The argument `--platform linux/amd64` is needed to build the image on ARM machines because the mCRL2 model checker is not available for ARM yet.
+
+To build and push a multi-platform image (amd64 + arm64) to Docker Hub:
+```
+$ docker buildx create --use --name alvie-builder
+$ docker buildx build --platform linux/amd64,linux/arm64 -t matteobusi/alvie_csf24 --push .
+```
 
 # Running the found attacks
 

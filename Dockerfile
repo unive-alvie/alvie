@@ -1,68 +1,76 @@
-# Building:
-#   docker build --platform linux/amd64 -t alvie .
-# (Platform is linux/amd64 because mCRL2 is not available for arm64 yet)
+# Building (multi-platform):
+#   docker buildx build --platform linux/amd64,linux/arm64 -t matteobusi/alvie_csf24 --push .
+# Building (single platform):
+#   docker build -t alvie .
 # Running:
 #   docker run --rm -it alvie
 
 FROM ubuntu:22.04
-RUN apt update; apt install -y software-properties-common
-RUN add-apt-repository ppa:mcrl2/release-ppa
-RUN apt update; DEBIAN_FRONTEND=noninteractive apt install -y build-essential cmake iverilog tk binutils-msp430 gcc-msp430 msp430-libc msp430mcu expect-dev git autoconf python3 flex bison pkg-config libffi-dev python3-dev nano joe python3-pip mcrl2
+
+ARG TARGETARCH
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Base packages (wget and libboost-dev needed for mCRL2 source build on arm64)
+RUN apt-get update && apt-get install -y \
+    software-properties-common build-essential cmake iverilog tk \
+    binutils-msp430 gcc-msp430 msp430-libc msp430mcu expect-dev \
+    git autoconf python3 flex bison pkg-config libffi-dev python3-dev \
+    nano joe python3-pip wget libboost-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# mCRL2: PPA on amd64, source build on arm64
+RUN if [ "$TARGETARCH" = "amd64" ] || [ -z "$TARGETARCH" ]; then \
+      apt-get update && \
+      add-apt-repository -y ppa:mcrl2/release-ppa && \
+      apt-get update && \
+      apt-get install -y mcrl2 && \
+      rm -rf /var/lib/apt/lists/*; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+      wget https://www.mcrl2.org/download/release/mcrl2-202507.0.tar.gz && \
+      tar -xf mcrl2-202507.0.tar.gz && \
+      cmake -DMCRL2_ENABLE_GUI_TOOLS=OFF -S /mcrl2-202507.0 -B /mcrl2-202507.0/build && \
+      cmake --build /mcrl2-202507.0/build -j"$(nproc)" && \
+      cmake --install /mcrl2-202507.0/build && \
+      rm -rf /mcrl2-202507.0 /mcrl2-202507.0.tar.gz; \
+    else \
+      echo "Unsupported architecture: $TARGETARCH" && exit 1; \
+    fi
 
 ###### Verilator from https://verilator.org/guide/latest/install.html
-# Prerequisites:
-#sudo apt-get install git perl python3 make autoconf g++ flex bison ccache
-#sudo apt-get install libgoogle-perftools-dev numactl perl-doc
-#sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
-#sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
-#sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+RUN git clone https://github.com/verilator/verilator /verilator && \
+    cd /verilator && \
+    git checkout v5.002 && \
+    autoconf && \
+    ./configure && \
+    make -j "$(nproc)" && \
+    make install && \
+    rm -rf /verilator
 
-# RUN apt install -y git
-RUN git clone https://github.com/verilator/verilator   # Only first time
+#### OCaml
+RUN add-apt-repository -y ppa:avsm/ppa && \
+    apt-get update && apt-get install -y opam && \
+    rm -rf /var/lib/apt/lists/*
 
-# Every time you need to build:
-# unsetenv VERILATOR_ROOT  # For csh; ignore error if on bash
-RUN unset VERILATOR_ROOT  # For bash
-WORKDIR "/verilator"
-RUN git pull         # Make sure git repository is up-to-date
-RUN git tag          # See what versions exist
-#git checkout master      # Use development branch (e.g. recent bug fixes)
-#git checkout stable      # Use most recent stable release
-RUN git checkout v5.002  # Switch to specified release version
-
-RUN autoconf         # Create ./configure script
-RUN ./configure      # Configure and create Makefile
-RUN make -j `nproc`  # Build Verilator itself (if error, try just 'make')
-RUN make install
-
-WORKDIR "/"
-
-#### ocaml
-RUN add-apt-repository ppa:avsm/ppa; apt update; apt install -y opam
-# RUN apt install -y ocaml-dune
-
-RUN adduser alvie
-
-COPY . /home/alvie/
-RUN chown -R alvie:alvie /home/alvie
+RUN adduser --disabled-password --gecos "" alvie
 
 USER alvie
 RUN pip3 install Verilog_VCD
 
-RUN opam init --disable-sandboxing; eval $(opam env); opam switch create 4.13.1
-RUN eval $(opam env); opam install dune
-RUN eval $(opam env)
+RUN opam init --disable-sandboxing -y && \
+    eval "$(opam env)" && \
+    opam switch create 4.13.1 -y && \
+    eval "$(opam env)" && \
+    opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck && \
+    opam env >> /home/alvie/.bashrc
 
-WORKDIR "/home/alvie/alvie/code"
+# COPY after opam setup for better layer caching
+USER root
+COPY . /home/alvie/
+RUN chown -R alvie:alvie /home/alvie
 
-# RUN opam install . --deps-only
-RUN opam install -y py core alcotest angstrom core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
-RUN opam env >> /home/alvie/.bashrc
+USER alvie
+WORKDIR /home/alvie/alvie/code
+RUN eval "$(opam env)" && dune build
 
-RUN eval $(opam env); dune build
-
-RUN cd /home/alvie; git clone https://github.com/martonbognar/sancus-core-gap
-
-#WORKDIR "/home/alvie"
-
-#USER root
+WORKDIR /home/alvie
+RUN git clone https://github.com/martonbognar/sancus-core-gap
