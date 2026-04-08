@@ -47,8 +47,7 @@ RUN git clone https://github.com/verilator/verilator /verilator && \
     rm -rf /verilator
 
 #### OCaml
-RUN add-apt-repository -y ppa:avsm/ppa && \
-    apt-get update && apt-get install -y opam && \
+RUN apt-get update && apt-get install -y opam && \
     rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --gecos "" alvie
