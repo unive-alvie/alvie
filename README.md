@@ -29,31 +29,112 @@ The project is structured as follows:
 
 * The enclave specification is kept equal to that in the paper except for the secret comparison instruction, which is performed between `?` (`s` in the paper) and `r4` (`#0` in the paper). This is equivalent for our purposes.
 
-# Loading the docker image from the Docker Hub
+# Installation & Setup
 
-Simply run `cd` to the folder where this README is, the run the following commands (requires docker):
-```
-$ docker pull matteobusi/alvie_csf24
-$ docker run --rm -it matteobusi/alvie_csf24
-```
-Once everything is ready a prompt should be waiting for your commands.
+## Option 1: Docker (Recommended)
 
-If you wish to build the Docker image for your current platform, run:
-```
-$ docker build -t alvie .
+Docker is the easiest and most reliable way to run ALVIE. Pre-built images are available for both `amd64` and `arm64` architectures.
+
+### Quick Start: Pull from Docker Hub
+
+```bash
+docker pull matteobusi/alvie
+docker run --rm -it matteobusi/alvie
 ```
 
-To build and push a multi-platform image (amd64 + arm64) to Docker Hub:
+Once the container is ready, you can run any ALVIE command:
+
+```bash
+cd /home/alvie
+./learn_one.sh d54f031 b6    # Learn B6 model
+./check_one.sh b6            # Check B6 model
 ```
-$ docker buildx create --use --name alvie-builder
-$ docker buildx build --platform linux/amd64,linux/arm64 -t matteobusi/alvie_csf24 --push .
+
+### Build Docker Image Locally
+
+To build the Docker image for your current platform:
+
+```bash
+docker build -t alvie .
+docker run --rm -it alvie
+```
+
+For multi-platform builds (requires buildx):
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -t alvie:latest .
+```
+
+## Option 2: Manual Setup (Ubuntu 22.04 / 24.04)
+
+For Ubuntu users, you can run ALVIE directly on your system by installing all dependencies manually.
+
+### Ubuntu 22.04 LTS
+
+All packages are available in the default repositories:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential cmake git python3 python3-pip \
+    binutils-msp430 gcc-msp430 msp430-libc msp430mcu \
+    iverilog tk expect-dev autoconf flex bison pkg-config \
+    libffi-dev python3-dev wget libboost-dev opam
+
+# Install mCRL2
+sudo add-apt-repository -y ppa:mcrl2/release-ppa
+sudo apt-get update
+sudo apt-get install -y mcrl2
+
+# Build and install Verilator v5.002
+git clone https://github.com/verilator/verilator /tmp/verilator
+cd /tmp/verilator
+git checkout v5.002
+autoconf && ./configure && make -j $(nproc) && sudo make install
+cd - && rm -rf /tmp/verilator
+
+# Setup OCaml
+opam init --disable-sandboxing -y
+eval "$(opam env)"
+opam switch create 4.13.1 -y
+eval "$(opam env)"
+opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
+
+# Build ALVIE
+cd alvie/code && dune build && cd ../..
+
+# Clone Sancus core
+git clone https://github.com/martonbognar/sancus-core-gap
+```
+
+### Ubuntu 24.04 LTS
+
+Ubuntu 24.04 doesn't have the MSP430 toolchain in the default repositories. Add the Ubuntu 22.04 (Jammy) repository first:
+
+```bash
+# Add Jammy repository
+echo "deb http://archive.ubuntu.com/ubuntu jammy universe" | sudo tee /etc/apt/sources.list.d/jammy-universe.sources.list
+
+# Then follow the same steps as Ubuntu 22.04 above
+sudo apt-get update
+sudo apt-get install -y \
+    build-essential cmake git python3 python3-pip \
+    binutils-msp430 gcc-msp430 msp430-libc msp430mcu \
+    iverilog tk expect-dev autoconf flex bison pkg-config \
+    libffi-dev python3-dev wget libboost-dev opam
+# ... rest of setup (mCRL2, Verilator, OCaml, ALVIE build)
+```
+
+**Note:** You can remove the Jammy repository later if desired:
+```bash
+sudo rm /etc/apt/sources.list.d/jammy-universe.sources.list
+sudo apt-get update
 ```
 
 # Running the found attacks
 
 Once the container is ready, you can run the following command to check that the attacks reported in the paper are synthesized correctly and actually break the security of the relevant Sancus versions (the full test requires a few minutes):
 ```
-$ dune exec tt_attack
+$ cd alvie/code; dune exec tt_attack
 ```
 
 # Reproducing our experiments
@@ -87,7 +168,7 @@ This task is longer that the one above and takes between one hour and a couple o
 Assume that you want to run experiments for `attack-name` which was fixed in `patch-commit` in the `sancus-core-gap` repo by Bognar et al. (see table below for names and commits).
 Simply, `cd` to the folder where this `README` is and then run
 ```
-rm -Rf results/*attack-name*.dot counterexamples/*attack-name*.dot
+rm -Rf results/*attack-name*.dot counterexamples/*attack-name*/*.dot
 ```
 to delete the existing models and witness graphs, then launch the learning with
 ```
@@ -116,7 +197,7 @@ You can find it in the `counterexamples` directory.
 
 In our experience one of the fastest single experiment to run is **B6**, i.e.,
 ```
-$ rm -Rf results/*-b6-*.dot counterexamples/*-b6-*.dot
+$ rm -Rf results/*-b6-*.dot counterexamples/b6/*.dot
 $ ./learn_one.sh d54f031 b6
 $ ./check_one.sh b6
 ```
@@ -131,7 +212,7 @@ $ ./learn_one_nospecial.sh attack-name
 If you have many cores running all the experiments takes roughly as much as it takes to run a single one.
 Simply, `cd` to the folder where this `README` is, delete existing models and witness graphs using:
 ```
-rm -Rf results/*.dot counterexamples/*.dot
+rm -Rf results/*.dot counterexamples/*/*.dot
 ```
 and then run:
 ```

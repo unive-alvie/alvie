@@ -80,3 +80,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 .DS_Store
+
+# CI/CD documentation (local setup guide)
+CI_CD_SETUP.md
