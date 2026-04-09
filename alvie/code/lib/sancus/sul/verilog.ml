@@ -307,7 +307,7 @@ let output_of_signals
     reg_val = (word_of_bin reg_val % 8); (* We limit the register to 3 bits to avoid useless looping *)
     (* pmem_val = word_of_bin pmem_val; *)
     umem_val = word_of_bin umem_val;
-    timerA_counter = word_of_bin timerA_val;
+    timerA_counter = (word_of_bin timerA_val % 8); (* We limit timerA to 3 bits to avoid useless looping (same rationale as reg_val) *)
     mode = cpu_mode_e
   } in
   (*Logs.debug (fun m -> m "%s, %s, %s" (show_mode cpu_mode_s) (show_mode cpu_mode_e) (show_e_state compute_e_state)) *)
