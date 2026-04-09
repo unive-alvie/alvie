@@ -62,14 +62,28 @@ RUN opam init --disable-sandboxing -y && \
     opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck && \
     opam env >> /home/alvie/.bashrc
 
-# COPY after opam setup for better layer caching
+# Copy OCaml source code early (before other files)
+# This ensures changes to source code trigger rebuild, but other file changes don't
 USER root
-COPY . /home/alvie/
+COPY alvie/ /home/alvie/alvie/
 RUN chown -R alvie:alvie /home/alvie
 
+# Build ALVIE with OCaml
 USER alvie
 WORKDIR /home/alvie/alvie/code
 RUN eval "$(opam env)" && dune build
 
+# Clone sancus-core-gap (not copied to avoid cache invalidation)
 WORKDIR /home/alvie
 RUN git clone https://github.com/martonbognar/sancus-core-gap
+
+# Copy remaining files (documentation, scripts, config, results) last
+# Changes to these files won't invalidate earlier layers
+USER root
+COPY *.sh /home/alvie/
+COPY *.md /home/alvie/
+COPY spec-lib/ /home/alvie/spec-lib/
+COPY counterexamples/ /home/alvie/counterexamples/
+COPY results/ /home/alvie/results/
+COPY LICENSE /home/alvie/
+RUN chown -R alvie:alvie /home/alvie
