@@ -79,11 +79,10 @@ RUN git clone https://github.com/martonbognar/sancus-core-gap
 
 # Copy remaining files (documentation, scripts, config, results) last
 # Changes to these files won't invalidate earlier layers
-USER root
 COPY *.sh /home/alvie/
 COPY *.md /home/alvie/
 COPY spec-lib/ /home/alvie/spec-lib/
 COPY counterexamples/ /home/alvie/counterexamples/
 COPY results/ /home/alvie/results/
 COPY LICENSE /home/alvie/
-RUN chown -R alvie:alvie /home/alvie
+
