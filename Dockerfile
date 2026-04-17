@@ -86,4 +86,7 @@ COPY counterexamples/ /home/alvie/counterexamples/
 COPY results/ /home/alvie/results/
 COPY LICENSE /home/alvie/
 
+USER root
 RUN chown -R alvie:alvie /home/alvie
+
+USER alvie
