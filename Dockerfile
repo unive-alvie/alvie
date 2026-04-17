@@ -86,3 +86,4 @@ COPY counterexamples/ /home/alvie/counterexamples/
 COPY results/ /home/alvie/results/
 COPY LICENSE /home/alvie/
 
+RUN chown -R alvie:alvie /home/alvie
