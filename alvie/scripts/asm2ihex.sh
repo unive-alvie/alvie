@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [[ "$OSTYPE" == darwin* ]]; then
+    shopt -s expand_aliases
+    alias sed='gsed'
+fi
+
 #------------------------------------------------------------------------------
 # Copyright (C) 2001 Authors
 #
@@ -46,12 +52,6 @@ if [ -z "$MSPGCC_PFX" ]; then
 	MSPGCC_PFX=msp430-elf
     fi
 fi
-
-# If on MacOS, used gsed
-# if [[ "$OSTYPE" == "darwin"* ]]; then
-#     alias sed="gsed"
-# fi
-
 
 ###############################################################################
 #               Check if definition & assembler files exist                   #

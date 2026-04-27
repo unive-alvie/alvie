@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ "$OSTYPE" == darwin* ]]; then
+    shopt -s expand_aliases
+    alias sed='gsed'
+fi
+
 ###############################################################################
 #                            Arguments, fixed                                  #
 ###############################################################################
@@ -54,4 +59,3 @@ $scriptsdir/asm2ihex.sh $tmpdir/pmem $tmpdir/pmem.s43 $linkfile $headfile $pmems
 # # Generate Program memory file
 echo "Convert IHEX file to Verilog MEMH format..."
 $scriptsdir/ihex2mem.tcl -ihex $tmpdir/pmem.ihex -out $tmpdir/$basename.mem -mem_size $pmemsize
-

@@ -1,4 +1,10 @@
 #!/bin/bash
+
+if [[ "$OSTYPE" == darwin* ]]; then
+    shopt -s expand_aliases
+    alias sed='gsed'
+fi
+
 tmpdir="$1"
 basename="$2"
 
