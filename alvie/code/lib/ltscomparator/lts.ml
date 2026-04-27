@@ -22,7 +22,7 @@ module LTS
   (* Ugly hack, sorry *)
   let _ = S.pp
 
-  let get_silent_obs (lts : t) = LTSMap.fold lts.transition ~f:(fun ~key:(_, obs) ~data:_ acc -> if O.is_silent obs then obs::acc else acc) ~init:[]
+  let get_silent_obs (lts : t) = Map.fold lts.transition ~f:(fun ~key:(_, obs) ~data:_ acc -> if O.is_silent obs then obs::acc else acc) ~init:[]
 
   module G = Graph.Persistent.Digraph.ConcreteLabeled (S) (O)
 
@@ -47,22 +47,22 @@ module LTS
   end
 
   let to_dot ({ initial; states; transition } : t) : B.t =
-    let g = LTSSSet.fold (LTSSSet.add states initial) ~init:G.empty ~f:G.add_vertex in
+    let g = Set.fold (Set.add states initial) ~init:G.empty ~f:G.add_vertex in
     let g' =
-      LTSMap.fold transition ~init:g ~f:(fun ~key:(s, o) ~data:s'_set g_acc ->
-        LTSSSet.fold s'_set ~init:g_acc ~f:(fun g_acc_acc s' -> G.add_edge_e g_acc_acc (s, o, s'))) in
+      Map.fold transition ~init:g ~f:(fun ~key:(s, o) ~data:s'_set g_acc ->
+        Set.fold s'_set ~init:g_acc ~f:(fun g_acc_acc s' -> G.add_edge_e g_acc_acc (s, o, s'))) in
       g'
 
   let get_states (m : t) (trace : O.t list) : LTSSSet.t =
     List.fold trace
       ~init:(LTSSSet.singleton m.initial)
       ~f:(fun acc_s obs ->
-          LTSSSet.fold acc_s
+          Set.fold acc_s
           ~init:LTSSSet.empty
           ~f:(fun acc el ->
-            match LTSMap.find m.transition (el, obs) with
+            match Map.find m.transition (el, obs) with
             | None -> acc
-            | Some succ -> LTSSSet.union acc succ
+            | Some succ -> Set.union acc succ
           )
       )
 end

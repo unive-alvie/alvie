@@ -26,18 +26,18 @@ let spec_parse_or_fail spec =
   | Result.Error e -> failwith e
 
 let filter_model (m : IOInteropInternal.IIOMealy.t) =
-  let _filtered_transition = IOInteropInternal.IIOMealy.TransitionMap.filteri
+  let _filtered_transition = Map.filteri
     m.transition
     ~f:(fun ~key ~data ->
           match key, data with
           | (_, Input.INoInput), _ | _, (([Output_internal.OIllegal], _, _), _) -> false
           | _ -> true
     ) in
-  let _filtered_states = IOInteropInternal.IIOMealy.SSet.filter
+  let _filtered_states = Set.filter
     m.states
     ~f:(fun s ->
       (* Returns true if the state appears in at least one transition *)
-      IOInteropInternal.IIOMealy.TransitionMap.existsi
+      Map.existsi
       _filtered_transition
       ~f:(fun ~key:(s', _) ~data:(_, s'') -> s' = s || s'' = s)
     ) in
@@ -211,8 +211,8 @@ let command =
             () in
         (* (3) prepare the oracle *)
         let attacker_atoms =
-          List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Attacker.AtomSet.to_list (Attacker.get_atoms b))) in
-        let enclave_atoms = Enclave.AtomSet.to_list (Enclave.get_atoms enclave) in
+          List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
+        let enclave_atoms = Set.to_list (Enclave.get_atoms enclave) in
         let alphabet_attacker = List.map attacker_atoms ~f:(fun ca -> Input.IAttacker ca) in
         let alphabet_enclave = List.map enclave_atoms ~f:(fun i -> Input.IEnclave i) in
         let complete_input_alphabet = Input.INoInput :: alphabet_attacker @ alphabet_enclave in

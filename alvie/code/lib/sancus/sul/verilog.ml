@@ -342,12 +342,12 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
   let timerA_map = Vcd.get_signal dump "TOP.tb_openMSP430.timerA_0.tar[15:0]" in
   (* let pmem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem240[15:0]" in *)
   let umem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem250[15:0]" in
-  (* Logs.debug (fun m -> m "reg_map : [%s]\n" (List.to_string (Int.Map.to_alist r4_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
-  Logs.debug (fun m -> m "gie_map : [%s]\n" (List.to_string (Int.Map.to_alist gie_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
-  Logs.debug (fun m -> m "timerA_map : [%s]\n" (List.to_string (Int.Map.to_alist timerA_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  (* Logs.debug (fun m -> m "pmem_map : [%s]\n" (List.to_string (Int.Map.to_alist pmem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  (* Logs.debug (fun m -> m "umem_map : [%s]\n" (List.to_string (Int.Map.to_alist umem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  let time_and_pc_map = Int.Map.fold ~init:Int.Map.empty
+  (* Logs.debug (fun m -> m "reg_map : [%s]\n" (List.to_string (Map.to_alist r4_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
+  Logs.debug (fun m -> m "gie_map : [%s]\n" (List.to_string (Map.to_alist gie_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
+  Logs.debug (fun m -> m "timerA_map : [%s]\n" (List.to_string (Map.to_alist timerA_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
+  (* Logs.debug (fun m -> m "pmem_map : [%s]\n" (List.to_string (Map.to_alist pmem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
+  (* Logs.debug (fun m -> m "umem_map : [%s]\n" (List.to_string (Map.to_alist umem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
+  let time_and_pc_map = Map.fold ~init:Int.Map.empty
     pc_map.tv
     ~f:(fun ~key:time ~data:raw_data acc_tpm ->
       (* Logs.debug (fun m -> m "Verilog.analyse_dump: time: %d; raw_data: %s; pc: %x; irq: %s; inst_num: %d" time raw_data (Int.of_string ("0b" ^ raw_data)) (Vcd.Signal.at_time irq_map time) (Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map time))); *)
@@ -357,27 +357,27 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
         (* FIXME: find a better way to do this *)
         Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map time) >= cfg.last_inst_number &&
         (* time >= cfg.last_time && *)
-        not (Int.Map.exists acc_tpm ~f:(fun data' -> String.equal raw_data data'))
+        not (Map.exists acc_tpm ~f:(fun data' -> String.equal raw_data data'))
       then
-          Int.Map.add_exn acc_tpm ~key:time ~data:raw_data
+          Map.add_exn acc_tpm ~key:time ~data:raw_data
       else
         acc_tpm
     ) in
-  (* if Int.Map.length time_and_pc_map >= 1000 then (* An arbitrary limit! *)
+  (* if Map.length time_and_pc_map >= 1000 then (* An arbitrary limit! *)
     cfg.last_inst_number, [], [Output_internal.OMaybeDiverge]
   else *)
   (
   Logs.debug (fun m -> m "time_and_pc_map: %s"
-    (Int.Map.fold time_and_pc_map ~init:"" ~f:(fun ~key ~data acc -> sprintf "%s; (%d -> %X)" acc key (Int.of_string ("0b" ^ data))))
+    (Map.fold time_and_pc_map ~init:"" ~f:(fun ~key ~data acc -> sprintf "%s; (%d -> %X)" acc key (Int.of_string ("0b" ^ data))))
   );
-  let cand_inst_numbers = List.map (Int.Map.to_alist time_and_pc_map) ~f:(fun (ct, _) -> Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map ct)) in
+  let cand_inst_numbers = List.map (Map.to_alist time_and_pc_map) ~f:(fun (ct, _) -> Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map ct)) in
   (*
     If the e_state after an inst_number is 0x10 (SM_IRQ_REGS) we are handling an interrupt in PM!
     If the e_state after an inst_number is 0x02 (IRQ_0) we are handling an interrupt in UM!
     If that's the case, we keep instructions up to inst_number and inst_number+1 and discard all the rest
   *)
   (* inst_cfg returns the pair (timin, inst_number) for the given inst_number *)
-  let inst_cfg inst_number = Int.Map.min_elt (Int.Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
+  let inst_cfg inst_number = Map.min_elt (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
   let raw_pc_of_inst_num inst_number = match inst_cfg inst_number with Some (t, _) -> Vcd.Signal.at_time pc_map t | None -> failwith "Should never happen!" in
   (* seen_pcs collects actually seen pcs for left_labels calculation, i.e., we exclude IRQ pcs! *)
   let seen_pcs, inst_numbers = List.fold_until cand_inst_numbers ~init:([], []) ~f:(fun (acc_seen, acc_in) curr_inst_number ->
@@ -415,8 +415,8 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
       ~init:(cfg.last_inst_number, [])
       ~f:(fun (lin, acc) inst_number ->
         (* The below min_elt_exn should never fail, since inst_numbers is not empty here *)
-        let (ref_time_begin, _) = Int.Map.min_elt_exn (Int.Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
-        let end_config = Int.Map.min_elt (Int.Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number + 1)) in
+        let (ref_time_begin, _) = Map.min_elt_exn (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
+        let end_config = Map.min_elt (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number + 1)) in
         let compute_cpu_mode t = if String.equal (Vcd.Signal.at_time sm_executing_map t) "0" then Output_internal.UM else Output_internal.PM in
         match end_config with
         | None ->
@@ -424,13 +424,13 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
           lin, acc @ [ `Out Output_internal.OReset ]
         | Some (ref_time_end, _) ->
             (* Extract the list of all elements from e_state_map whose keys are >= ref_time_begin and < ref_time_end *)
-            let e_status = List.map (Int.Map.to_alist (Int.Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
+            let e_status = List.map (Map.to_alist (Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
             (* Extract the values of registers and memory, as the last value before ref_time_end *)
-            let reg_val = List.last_exn (List.map (Int.Map.to_alist (Int.Map.filter_keys r4_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let gie_val = List.last_exn (List.map (Int.Map.to_alist (Int.Map.filter_keys gie_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let umem_val = List.last_exn (List.map (Int.Map.to_alist (Int.Map.filter_keys umem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            (* let pmem_val = List.last_exn (List.map (Int.Map.to_alist (Int.Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
-            let timerA_val = List.last_exn (List.map (Int.Map.to_alist (Int.Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            (* let pmem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
+            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
             let k = (ref_time_end - ref_time_begin) / cfg.sim_cycle_ratio in
             let lin' = inst_number in
             Logs.debug (fun m -> m "===== cfg.last_inst_number %d, lin %d, lin' %d\n" cfg.last_inst_number lin lin');

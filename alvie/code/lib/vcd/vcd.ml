@@ -20,7 +20,7 @@ module Signal = struct
   } [@@deriving make]
 
   let at_time signal time =
-    match Int.Map.closest_key signal.tv `Less_or_equal_to time with
+    match Map.closest_key signal.tv `Less_or_equal_to time with
     | None -> failwith "Signal.at_time: time not found, maybe < 0 or > signal.endtime?"
     | Some (_, v) -> v
 end
@@ -36,7 +36,7 @@ let vcd (filename : string) =
                 n))
     vcd_dump in
   let fn_to_tv vcd_dump = List.concat (List.map (nets_and_tv_map_l vcd_dump)
-    ~f:(fun (_, m) -> let fnl, tv = extract_nets (String.Map.find_exn m "nets"), extract_tv_list (String.Map.find_exn m "tv") in List.map fnl ~f:(fun n -> (n, tv)))) in
+    ~f:(fun (_, m) -> let fnl, tv = extract_nets (Map.find_exn m "nets"), extract_tv_list (Map.find_exn m "tv") in List.map fnl ~f:(fun n -> (n, tv)))) in
   {
     full_names_to_tv = fn_to_tv ((PyModule.import "Verilog_VCD.Verilog_VCD") $. (String "parse_vcd") $ [(String filename)])
   }

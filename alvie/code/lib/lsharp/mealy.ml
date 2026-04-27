@@ -35,16 +35,16 @@ module Mealy (S : EltType) (I : EltType) (O : EltType) = struct
     { states=states; s0=s0; input_alphabet=input_alphabet; transition=transition; pred_map = PredMap.empty }
 
   let step m s i : S.t option =
-    match TransitionMap.find m.transition (s, i) with
+    match Map.find m.transition (s, i) with
       | Some (_, s') -> Some s'
       | _ -> None
 
   let output m s i : O.t option =
-    match TransitionMap.find m.transition (s, i) with
+    match Map.find m.transition (s, i) with
       | Some (o, _) -> Some o
       | _ -> None
 
-  let transition m (s, i) : (O.t * S.t) option = TransitionMap.find m.transition (s, i)
+  let transition m (s, i) : (O.t * S.t) option = Map.find m.transition (s, i)
   let rec transition_all m s ilist : (O.t * S.t) option =
     match ilist with
     | [] ->

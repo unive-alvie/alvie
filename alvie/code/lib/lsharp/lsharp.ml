@@ -39,18 +39,18 @@ struct
     let h_input_alphabet : IIOMealy.ISet.t = ot.input_alphabet in
     (* We need to build the transition function: we should "warp" the frontier back into the basis states using the given f2b *)
     let h_transition = List.fold
-      (List.cartesian_product (Int.Set.to_list basis) (IIOMealy.ISet.to_list h_input_alphabet))
+      (List.cartesian_product (Set.to_list basis) (Set.to_list h_input_alphabet))
       ~init:IIOMealy.TransitionMap.empty
       ~f:(fun tr_acc (q, i) ->
           match IIOObservationTree.transition ot (q, i) with
-          | Some (o, succ) when (Int.Set.mem basis succ) ->
+          | Some (o, succ) when (Set.mem basis succ) ->
               (* Add this transition to the hypothesis *)
-              IIOMealy.TransitionMap.add_exn tr_acc ~key:(q, i) ~data:(o, succ)
+              Map.add_exn tr_acc ~key:(q, i) ~data:(o, succ)
           | Some (o, succ) ->
-              (match F2BMap.find f2b succ with
+              (match Map.find f2b succ with
               | None -> failwith "build_hypothesis: missing a frontier state"
               | Some [b_succ] ->
-                  IIOMealy.TransitionMap.add_exn tr_acc ~key:(q, i) ~data:(o, b_succ)
+                  Map.add_exn tr_acc ~key:(q, i) ~data:(o, b_succ)
               | _ -> failwith "build_hypothesis: multiple candidates from a single frontier state")
           | None -> failwith "build_hypothesis: the basis is not complete, this is a bug :("
         ) in
@@ -116,12 +116,12 @@ struct
       (ot : IIOObservationTree.t)
       ~(basis : Int.Set.t)
       ~(frontier : Int.Set.t) : f2b_map_t =
-      Int.Set.fold
+      Set.fold
         frontier
         ~init:F2BMap.empty
         ~f:(fun prev_f2b fs ->
           let fs_cand = Set.filter basis ~f:(fun b -> not (IIOObservationTree.apart ot fs b)) in
-            F2BMap.add_exn prev_f2b ~key:fs ~data:(Int.Set.to_list fs_cand)
+            Map.add_exn prev_f2b ~key:fs ~data:(Set.to_list fs_cand)
         ) in
     let shortest_cex (ot : IIOObservationTree.t) (hyp : IIOMealy.t) (rho : I.t list) : I.t list =
       (* Logs.debug (fun m -> m "shortest_cex: ot is %s" (Sexp.to_string (IIOObservationTree.sexp_of_t ot))); *)
@@ -157,13 +157,13 @@ struct
         (* Logs.debug (fun m -> m "proc_cex: invoking transition_all for sigma on ot"); *)
         let (_, r) = Option.value_exn (IIOObservationTree.transition_all ot ot.s0 sigma) in
         (* Logs.debug (fun m -> m "proc_cex: r: %d; q: %d" r q); *)
-        if Int.Set.mem basis r || Int.Set.mem frontier r then (ot, frontier)
+        if Set.mem basis r || Set.mem frontier r then (ot, frontier)
         else
         (
           let sigma_prefixes = List.mapi sigma ~f:(fun idx _ -> List.take sigma (idx+1)) in
           let rho = Option.value_exn (List.find sigma_prefixes ~f:(fun pref ->
               let (_, s_cand) = Option.value_exn (IIOObservationTree.transition_all ot ot.s0 pref) in
-              Int.Set.mem frontier s_cand
+              Set.mem frontier s_cand
               )) in
           (* Logs.debug (fun m -> m "proc_cex: rho: %s" (List.to_string ~f:I.show rho)); *)
           let h = (List.length rho + List.length sigma)/2 in
@@ -211,7 +211,7 @@ struct
           `ContinueNotApplied (ot, basis)
       | Some q ->
           (* show_rule "\x1B[1;32m①\x1B[0m"; *)
-          `RestartApplied (ot, Int.Set.add basis q)
+          `RestartApplied (ot, Set.add basis q)
     in
     (*
       Rule 2: If exists (s in basis) (i in input), ot.step s i = bot, then ask the teacher.
@@ -259,7 +259,7 @@ struct
       (* This finds a state q in frontier s.t. exists r, r'. r <> r' /\ not (q # r) /\ not (q # r'), if any *)
       let frontier = gen_frontier ot basis in
       let f2b = gen_f2b ot ~basis ~frontier in
-      let qrr'_list = List.filter_map (F2BMap.to_alist f2b) ~f:(fun (q, r_list) -> match r_list with |
+      let qrr'_list = List.filter_map (Map.to_alist f2b) ~f:(fun (q, r_list) -> match r_list with |
       r::r'::_ -> Some (q, r, r') | _ -> None) in
       if List.is_empty qrr'_list then
         (

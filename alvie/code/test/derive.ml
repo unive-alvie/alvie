@@ -65,14 +65,14 @@ let command () =
       let out_sexp = "(OSilent OJmpIn(OTime 1)(OTime 1)(OTime 1)(OTime 2)(OTime 4)(OTime 2)(OTime 4)(OTime 4)(OTime 1)(OTime 4)(OTime 2)(OTime 1))" in
       let il = List.t_of_sexp Input.t_of_sexp (Sexp.of_string in_sexp) in
       let ol = List.t_of_sexp Output_internal.t_of_sexp (Sexp.of_string out_sexp) in
-        let st = Time.now () in
+        let st = Time_float.now () in
           let i = match Inputgen.generate_next spec_dfa il ol with `Next i -> i | _ -> failwith "Should never happen!" in
-          let et = Time.now () in
-          Logs.debug (fun p -> p "Inputgen.generate_next: %s" (Time.Span.to_string (Time.diff et st)));
-        let st = Time.now () in
+          let et = Time_float.now () in
+          Logs.debug (fun p -> p "Inputgen.generate_next: %s" (Time_float.Span.to_string (Time_float.diff et st)));
+        let st = Time_float.now () in
           ignore (Inputgen.matchable spec_dfa i il ol);
-          let et = Time.now () in
-          Logs.debug (fun p -> p "Inputgen.matchable: %s" (Time.Span.to_string (Time.diff et st)))
+          let et = Time_float.now () in
+          Logs.debug (fun p -> p "Inputgen.matchable: %s" (Time_float.Span.to_string (Time_float.diff et st)))
 
 
 let () = ignore (command ())

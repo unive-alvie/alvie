@@ -25,9 +25,9 @@ let load_and_convert fn : IIOMealyExt.t =
       | Output_internal.OJmpOut p -> decomposed @ [OutputExt.OTime (OutputExt.prj_payload p); OutputExt.OJmpOut]
       | _ -> decomposed @ [OutputExt.of_output o]) in
     (* We to split each OTime_Handle and OJmpOut_Handle into different obs! *)
-    let ext_states, ext_tr, _ = IOInterop.IIOMealy.TransitionMap.fold
+    let ext_states, ext_tr, _ = Map.fold
       mint.transition
-      ~init:(mint.states, IIOMealyExt.TransitionMap.empty, IOInterop.IIOMealy.SSet.max_elt_exn mint.states)
+      ~init:(mint.states, IIOMealyExt.TransitionMap.empty, Set.max_elt_exn mint.states)
       ~f:(
         fun ~key:(s, i) ~data:((ol, _, _), s') (acc_states, acc_tr, last_used) ->
           let decomposed = decompose ol in
@@ -35,12 +35,12 @@ let load_and_convert fn : IIOMealyExt.t =
           List.foldi decomposed ~init:(acc_states, acc_tr, last_used) ~f:(fun idx (acc_states, acc_tr, last_used) o ->
             let start_s = (if idx = 0 then s else last_used) in
             let end_s = (if idx = decomposed_len - 1 then s' else last_used+1) in
-            let acc_states' = if end_s > last_used then IOInterop.IIOMealy.SSet.add acc_states end_s else acc_states in
+            let acc_states' = if end_s > last_used then Set.add acc_states end_s else acc_states in
             let last_used' = Int.max last_used end_s in
               match o with
               | OutputExt.OHandle _  ->
-                  (acc_states', IIOMealyExt.TransitionMap.add_exn acc_tr ~key:(start_s, InputExt.IInterrupt) ~data:(o, end_s), last_used')
-              | _ -> (acc_states', IIOMealyExt.TransitionMap.add_exn acc_tr ~key:(start_s, InputExt.of_input i) ~data:(o, end_s),  last_used')
+                  (acc_states', Map.add_exn acc_tr ~key:(start_s, InputExt.IInterrupt) ~data:(o, end_s), last_used')
+              | _ -> (acc_states', Map.add_exn acc_tr ~key:(start_s, InputExt.of_input i) ~data:(o, end_s),  last_used')
           )
       ) in {
         s0 = 0;

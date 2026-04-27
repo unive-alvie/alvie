@@ -235,8 +235,8 @@ let command =
             () in
         (* (3) prepare the oracle *)
         let attacker_atoms =
-          List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Attacker.AtomSet.to_list (Attacker.get_atoms b))) in
-        let enclave_atoms = Enclave.AtomSet.to_list (Enclave.get_atoms enclave) in
+          List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
+        let enclave_atoms = Set.to_list (Enclave.get_atoms enclave) in
         let alphabet_attacker = List.map attacker_atoms ~f:(fun ca -> Input.IAttacker ca) in
         let alphabet_enclave = List.map enclave_atoms ~f:(fun i -> Input.IEnclave i) in
         let complete_input_alphabet = Input.INoInput :: alphabet_attacker @ alphabet_enclave in

@@ -61,8 +61,8 @@ module Interop (I : EltType) (O : EltType) = struct
 
 
   let dot_of_t ({ states; s0; input_alphabet=_; transition; pred_map=_; } : IIOMealy.t) : B.t =
-    let g = IIOMealy.SSet.fold (IIOMealy.SSet.add states s0) ~init:G.empty ~f:G.add_vertex in
-    let g' = IIOMealy.TransitionMap.fold transition ~init:g ~f:(fun ~key:(s, i) ~data:(o, s') g_acc ->
+    let g = Set.fold (Set.add states s0) ~init:G.empty ~f:G.add_vertex in
+    let g' = Map.fold transition ~init:g ~f:(fun ~key:(s, i) ~data:(o, s') g_acc ->
       let e : G.edge = (s, (i, o), s') in
       G.add_edge_e g_acc e) in
       g'

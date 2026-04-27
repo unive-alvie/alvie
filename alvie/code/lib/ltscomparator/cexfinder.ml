@@ -32,14 +32,14 @@ module Parse = Graph.Dot.Parse (ILTS.B) (struct
 end)
 
 let i_lts_of_mealy (m : IIOMealy.t) : i_lts_t =
-  let states = ILTS.LTSSSet.of_list (IIOMealy.SSet.to_list m.states) in
-  let transition = IIOMealy.TransitionMap.fold m.transition
+  let states = ILTS.LTSSSet.of_list (Set.to_list m.states) in
+  let transition = Map.fold m.transition
     ~init:ILTS.LTSMap.empty
     ~f:(fun ~key:(s, i) ~data:(o, s') acc_tr ->
         let change_or_add tr ~key ~data =
-          if ILTS.LTSMap.mem tr key then
-              ILTS.LTSMap.change tr key ~f:(fun old_d -> match old_d with Some old_d -> Some (ILTS.LTSSSet.add old_d data) | _ -> None)
-          else ILTS.LTSMap.add_exn tr ~key:key ~data:(ILTS.LTSSSet.singleton data)
+          if Map.mem tr key then
+              Map.change tr key ~f:(fun old_d -> match old_d with Some old_d -> Some (Set.add old_d data) | _ -> None)
+          else Map.add_exn tr ~key:key ~data:(ILTS.LTSSSet.singleton data)
         in
           change_or_add acc_tr ~key:(s, Obs.make i o) ~data:s')
   in { initial = m.s0; states; transition }
@@ -47,15 +47,15 @@ let i_lts_of_mealy (m : IIOMealy.t) : i_lts_t =
 (* Returns the string of the LTS in aldebaran format and a list of novel silent actions *)
 let i_lts_to_checkable_aldebaran ({ initial; states; transition } : i_lts_t) : string =
   let additional_tr = ref 0 in
-  let state_to_int = List.foldi (initial::(ILTS.LTSSSet.elements (ILTS.LTSSSet.remove states initial))) ~init:(fun _ -> failwith "i_lts_to_checkable_aldebaran: Unknown state") ~f:(fun i acc s -> (fun s' -> (if s' = s then i else acc s'))) in
-  let last_used = ref (ILTS.LTSSSet.length states - 1) in
-  let aut_edges = ILTS.LTSMap.fold transition
+  let state_to_int = List.foldi (initial::(Set.elements (Set.remove states initial))) ~init:(fun _ -> failwith "i_lts_to_checkable_aldebaran: Unknown state") ~f:(fun i acc s -> (fun s' -> (if s' = s then i else acc s'))) in
+  let last_used = ref (Set.length states - 1) in
+  let aut_edges = Map.fold transition
       ~init:""
       ~f:(fun ~key:(s, o) ~data:s'_set acc_s ->
-          (ILTS.LTSSSet.fold s'_set ~init:acc_s
+          (Set.fold s'_set ~init:acc_s
             ~f:(fun acc_s' s' -> acc_s' ^ sprintf "(%d, \"%s\", %d)\n" (state_to_int s) (Obs.show o) (state_to_int s')))
       ) in
-    let aut_header = sprintf "des (0, %d, %d)\n" (!additional_tr + ILTS.LTSMap.length transition) (1 + !last_used) in
+    let aut_header = sprintf "des (0, %d, %d)\n" (!additional_tr + Map.length transition) (1 + !last_used) in
     aut_header ^ aut_edges
 
 
@@ -94,10 +94,10 @@ let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : Obs.t list option =
 let remove_cex_heur (m : i_lts_t) (cex : Obs.t list) : i_lts_t =
   let cex_front, cex_last = List.drop_last_exn cex, List.last_exn cex in
   let candidate_states = ILTS.get_states m cex_front in
-  (* Logs.debug (fun p -> p "[remove_cex_heur] cand: %s" (List.to_string ~f:Int.to_string (ILTS.LTSSSet.to_list candidate_states))); *)
+  (* Logs.debug (fun p -> p "[remove_cex_heur] cand: %s" (List.to_string ~f:Int.to_string (Set.to_list candidate_states))); *)
   let upd_tr =
-    ILTS.LTSSSet.fold candidate_states ~init:m.transition ~f:(fun acc_tr s ->
-      let acc = ILTS.LTSMap.remove acc_tr (s, cex_last) in
+    Set.fold candidate_states ~init:m.transition ~f:(fun acc_tr s ->
+      let acc = Map.remove acc_tr (s, cex_last) in
         acc
     ) in
     { m with transition = upd_tr }
@@ -106,30 +106,30 @@ let remove_cex_heur (m : i_lts_t) (cex : Obs.t list) : i_lts_t =
 let integrate_cex ~up_to_silent (m : i_lts_t) (cex : Obs.t list) : i_lts_t =
   let (_, _, upd) =
     List.fold cex
-    ~init:(ILTS.LTSSSet.max_elt_exn m.states, (ILTS.LTSSSet.singleton m.initial), m)
+    ~init:(Set.max_elt_exn m.states, (ILTS.LTSSSet.singleton m.initial), m)
     ~f:(
       fun (last_used, acc_s, acc_lts) obs ->
-        let successors = ILTS.LTSSSet.fold acc_s
+        let successors = Set.fold acc_s
                           ~init:ILTS.LTSSSet.empty
                           ~f:(fun acc el ->
-                            ILTS.LTSSSet.union (match ILTS.LTSMap.find acc_lts.transition (el, obs) with
+                            Set.union (match Map.find acc_lts.transition (el, obs) with
                             | None -> acc
-                            | Some succ -> ILTS.LTSSSet.union acc succ)
+                            | Some succ -> Set.union acc succ)
                             (if up_to_silent && Obs.is_silent obs then ILTS.LTSSSet.singleton el
                             else ILTS.LTSSSet.empty)
                           ) in
-        if ILTS.LTSSSet.is_empty successors then
+        if Set.is_empty successors then
           ( (* Logs.debug (fun p -> p "[integrate_cex] Empty succ set!"); *)
             let fresh_state = last_used + 1 in
             let additional_transitions =
-                List.map (ILTS.LTSSSet.to_list acc_s) ~f:(fun el -> ((el, obs), ILTS.LTSSSet.singleton fresh_state))  in
+                List.map (Set.to_list acc_s) ~f:(fun el -> ((el, obs), ILTS.LTSSSet.singleton fresh_state))  in
                 (fresh_state,
                 (ILTS.LTSSSet.singleton fresh_state),
                 { acc_lts with
-                  states = ILTS.LTSSSet.add acc_lts.states fresh_state;
+                  states = Set.add acc_lts.states fresh_state;
                   transition = List.fold additional_transitions
                     ~init:acc_lts.transition
-                    ~f:(fun new_tr (k, v) -> (ILTS.LTSMap.add_exn new_tr ~key:k ~data:v))
+                    ~f:(fun new_tr (k, v) -> (Map.add_exn new_tr ~key:k ~data:v))
                 }) (* We need to add a fresh state and create the transition *)
           )
         else
@@ -142,41 +142,41 @@ let update_cex_graph (cex_lts : i_lts_t) (path_m1 : Obs.t list) (path_m2 : Obs.t
   let upd_m1 = integrate_cex ~up_to_silent:false cex_lts path_m1 in
   let (_, _, upd) = List.fold
     path_m2
-    ~init:(ILTS.LTSSSet.max_elt_exn upd_m1.states, (ILTS.LTSSSet.singleton upd_m1.initial), upd_m1)
+    ~init:(Set.max_elt_exn upd_m1.states, (ILTS.LTSSSet.singleton upd_m1.initial), upd_m1)
     ~f:(fun (last_used, acc_s, acc_lts) obs ->
-          let successors, alt_successors = ILTS.LTSSSet.fold
+          let successors, alt_successors = Set.fold
             acc_s
             ~init:(ILTS.LTSSSet.empty, ILTS.LTSSSet.empty)
             ~f:(fun (acc, alt_acc) el ->
               (* Collect the set of successors of el s.t. they have the same input as obs, but possibly different outputs. *)
-              let alt_states = ILTS.LTSMap.fold (ILTS.LTSMap.filter_keys acc_lts.transition ~f:(fun (s, o) -> s = el && (match o, obs with | IO (i, _, _), IO (i', _, _) -> InputExt.equal i i'))) ~init:ILTS.LTSSSet.empty ~f:(fun ~key:_ ~data alt_acc -> ILTS.LTSSSet.union alt_acc data) in
-              (match ILTS.LTSMap.find acc_lts.transition (el, obs) with
+              let alt_states = Map.fold (Map.filter_keys acc_lts.transition ~f:(fun (s, o) -> s = el && (match o, obs with | IO (i, _, _), IO (i', _, _) -> InputExt.equal i i'))) ~init:ILTS.LTSSSet.empty ~f:(fun ~key:_ ~data alt_acc -> Set.union alt_acc data) in
+              (match Map.find acc_lts.transition (el, obs) with
               | None -> acc
-              | Some succ -> ILTS.LTSSSet.union acc succ), ILTS.LTSSSet.union alt_acc alt_states
+              | Some succ -> Set.union acc succ), Set.union alt_acc alt_states
             ) in
-          if ILTS.LTSSSet.is_empty successors then
+          if Set.is_empty successors then
             ((* Logs.debug (fun p -> p "[update_cex_graph] Empty succ set on path_m2!"); *)
             (* We have two cases, either there exists an observable with the same input part and we can re-use the existing target state(s), or it does not, and we must fall back to the integrate_cex code *)
-            if ILTS.LTSSSet.is_empty alt_successors then
+            if Set.is_empty alt_successors then
               let fresh_state = last_used + 1 in
-              let additional_transitions = List.map (ILTS.LTSSSet.to_list acc_s) ~f:(fun el -> ((el, obs), ILTS.LTSSSet.singleton fresh_state)) in
+              let additional_transitions = List.map (Set.to_list acc_s) ~f:(fun el -> ((el, obs), ILTS.LTSSSet.singleton fresh_state)) in
                   (fresh_state,
                   (ILTS.LTSSSet.singleton fresh_state),
                   { acc_lts with
-                    states = ILTS.LTSSSet.add acc_lts.states fresh_state;
+                    states = Set.add acc_lts.states fresh_state;
                     transition = List.fold additional_transitions
                       ~init:acc_lts.transition
-                      ~f:(fun new_tr (k, v) -> (ILTS.LTSMap.add_exn new_tr ~key:k ~data:v))
+                      ~f:(fun new_tr (k, v) -> (Map.add_exn new_tr ~key:k ~data:v))
                   }) (* We need to add a fresh state and create the transition *)
             else
               let additional_transitions =
-                List.map (ILTS.LTSSSet.to_list acc_s) ~f:(fun s -> ((s, obs), alt_successors)) in
+                List.map (Set.to_list acc_s) ~f:(fun s -> ((s, obs), alt_successors)) in
                 (last_used,
                 alt_successors,
                 { acc_lts with
                   transition = List.fold additional_transitions
                     ~init:acc_lts.transition
-                    ~f:(fun new_tr (k, v) -> (ILTS.LTSMap.add_exn new_tr ~key:k ~data:v))
+                    ~f:(fun new_tr (k, v) -> (Map.add_exn new_tr ~key:k ~data:v))
                 }) (* We need to add a fresh state and create the transition *)
               )
           else
@@ -198,7 +198,7 @@ let all_acyclic_cexs ~attributes (m : i_lts_t) (cex : Obs.t list): Obs.t list li
       | Some Obs.IO(_, o, _) -> OutputExt.equal o OReset || OutputExt.equal o ODiverge
       | _ -> false
     in
-    if is_final || ILTS.LTSSSet.mem !visited curr_state || not (ILTS.LTSMap.existsi m.transition ~f:(fun ~key:(cand_curr, _) ~data:_ -> cand_curr = curr_state)) then
+    if is_final || Set.mem !visited curr_state || not (Map.existsi m.transition ~f:(fun ~key:(cand_curr, _) ~data:_ -> cand_curr = curr_state)) then
       (
         (* Logs.debug (fun p -> p "[all_acyclic_cexs] curr_path:");
         List.iter curr_path ~f:(fun o -> Logs.debug (fun p -> p "\t\t%s" (Obs.human_show o))); *)
@@ -211,12 +211,12 @@ let all_acyclic_cexs ~attributes (m : i_lts_t) (cex : Obs.t list): Obs.t list li
       )
     else
       (
-        visited := ILTS.LTSSSet.add !visited curr_state;
-        ILTS.LTSMap.iteri m.transition ~f:(fun ~key:(cand_curr, obs) ~data:cand_next ->
+        visited := Set.add !visited curr_state;
+        Map.iteri m.transition ~f:(fun ~key:(cand_curr, obs) ~data:cand_next ->
           let IO (i, o, _) = obs in
           let obs = Obs.make ~attributes i o in
           if cand_curr = curr_state then
-            Queue.enqueue_all q (List.map ~f:(fun next -> (next, curr_path @ [obs])) (ILTS.LTSSSet.to_list cand_next))
+            Queue.enqueue_all q (List.map ~f:(fun next -> (next, curr_path @ [obs])) (Set.to_list cand_next))
           else
             ()
         )

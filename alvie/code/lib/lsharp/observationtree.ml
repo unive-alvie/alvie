@@ -15,7 +15,7 @@ module ObservationTree (S : EltType) (I : EltType) (O : EltType) = struct
     let empty_map : pred_map_t = PredMap.empty  in
       Map.fold transition ~init:empty_map ~f:(fun ~key ~data pred_map ->
         let (_, sf) = data in
-        PredMap.add_exn pred_map ~key:sf ~data:key)
+        Map.add_exn pred_map ~key:sf ~data:key)
 
   let make ~(states : sset_t) ~(s0:S.t) ~(input_alphabet:iset_t) ~(transition : transition_map_t) : t =
     { states=states; s0=s0; input_alphabet=input_alphabet; transition=transition; pred_map = build_predecessor_map transition }
@@ -24,7 +24,7 @@ module ObservationTree (S : EltType) (I : EltType) (O : EltType) = struct
     let rec _transfer_sequence (ot : t) (sfrom : S.t) (sto : S.t) (acc : I.t list) : I.t list =
       if S.equal sfrom sto then acc
       else (
-        let (s_pred, i) = (PredMap.find_exn ot.pred_map sto) in
+        let (s_pred, i) = (Map.find_exn ot.pred_map sto) in
           _transfer_sequence ot sfrom s_pred (i::acc)
       ) in
     _transfer_sequence ot sfrom sto []
@@ -33,10 +33,10 @@ module ObservationTree (S : EltType) (I : EltType) (O : EltType) = struct
 
   let update (ot : t) (s : S.t) (i : I.t) (o : O.t) (s' : S.t) : t =
     make
-      ~states:(SSet.add ot.states s')
+      ~states:(Set.add ot.states s')
       ~s0:(ot.s0)
       ~input_alphabet:(ot.input_alphabet)
-      ~transition:(let upd = TransitionMap.remove ot.transition (s, i) in TransitionMap.add_exn upd ~key:(s, i) ~data:(o, s'))
+      ~transition:(let upd = Map.remove ot.transition (s, i) in Map.add_exn upd ~key:(s, i) ~data:(o, s'))
 
   (* Returns `NotApart if s and s' are not apart in ot; Otherwise returns `Apart w, with w a witness of apartness. *)
   let apart_with_witness (ot : t) (s : S.t) (s' : S.t) =

@@ -132,10 +132,10 @@ let get_options
   let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = curr_spec_dfa.current in
   (* This is for any attacker sections, except for ISR *)
   let attack_next b =
-    let options = Attacker.AtomSet.filter
+    let options = Set.filter
       (Attacker.get_atoms b)
       ~f:(fun ca -> not (Attacker.is_empty (Attacker.derive b ca))) in
-    let options = List.map ~f:(fun i -> `Next (IAttacker i)) (Attacker.AtomSet.to_list options) in
+    let options = List.map ~f:(fun i -> `Next (IAttacker i)) (Set.to_list options) in
       options in
   (* ISR section can be re-executed, so it's special *)
   let isr_next b =
@@ -164,10 +164,10 @@ let get_options
   (* Enclave sections can be re-executed too, so deal with them similarly to ISR: *)
   let enclave_next b =
     let _enclave_next b =
-      let options = Enclave.AtomSet.filter
+      let options = Set.filter
         (Enclave.get_atoms b)
         ~f:(fun ca -> not (Enclave.is_empty (Enclave.derive b ca))) in
-      let options = List.map ~f:(fun i -> `Next (IEnclave i)) (Enclave.AtomSet.to_list options) in
+      let options = List.map ~f:(fun i -> `Next (IEnclave i)) (Set.to_list options) in
         options in
     (* We assume to be in Enclave mode here *)
     (* We look through the history if it exists a previous enclave run starting with a JmpIn *)

@@ -200,7 +200,7 @@ let rec is_empty (b : body_t) =
 
 let get_atoms_nonrec get_atoms (b : body_t) : AtomSet.t =
   match b with
-  | Choice (b, b') | Seq (b, b') -> AtomSet.union (get_atoms b) (get_atoms b')
+  | Choice (b, b') | Seq (b, b') -> Set.union (get_atoms b) (get_atoms b')
   | Star b -> get_atoms b
   | Atom ca -> AtomSet.singleton ca
   | Empty | Epsilon -> AtomSet.empty
