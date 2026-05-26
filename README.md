@@ -234,3 +234,10 @@ To view them you can either use a visualizer (e.g., `KGraphViewer` or `xdot`) or
 ```
 $ dot -Tpdf file.dot -o file.pdf
 ```
+
+## Acknowledgements
+
+This project is supported by the project
+[CCAT – Cybersecurity Competence and Training](https://ccat.fi.muni.cz/),
+funded under Grant Agreement No. 101225878 and supported by the
+European Cybersecurity Competence Centre (ECCC).
