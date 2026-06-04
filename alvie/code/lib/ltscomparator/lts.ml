@@ -9,8 +9,8 @@ module LTS
     val is_silent : t -> bool
     val edge_attributes : t -> Graphviz.DotAttributes.edge list
   end) = struct
-  module LTSMap = Map.Make (struct type t = S.t * O.t [@@deriving ord,sexp] end) [@@deriving sexp]
-  module LTSSSet = Set.Make (struct type t = S.t [@@deriving ord,sexp] end) [@@deriving sexp]
+  module LTSMap = Map.Make (struct type t = S.t * O.t [@@deriving ord,sexp] end)
+  module LTSSSet = Set.Make (struct type t = S.t [@@deriving ord,sexp] end)
 
   type lts_map_t = LTSSSet.t LTSMap.t [@@deriving sexp,eq]
   type t = {

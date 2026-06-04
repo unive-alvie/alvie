@@ -1,0 +1,34 @@
+#!/bin/bash
+# Lightweight per-step assembler+linker for FPGA backend.
+# Assumes setup_fpga.sh has already been run for this tmpdir.
+# Outputs: $tmpdir/pmem.elf  (read directly by OCaml ELF parser)
+#
+# Usage: build_pmem_fpga <tmpdir> <basename> [>/dev/null 2>/dev/null]
+
+tmpdir="$1"
+basename="$2"
+
+if [ -z "$MSPGCC_PFX" ]; then
+    if command -v msp430-gcc >/dev/null; then
+        MSPGCC_PFX=msp430
+    else
+        MSPGCC_PFX=msp430-elf
+    fi
+fi
+
+scriptsdir="$(dirname "$0")"
+srcdir="$scriptsdir/../src"
+
+cp "$tmpdir/$basename.s43" "$tmpdir/pmem.s43"
+
+$MSPGCC_PFX-as \
+    -I "$srcdir/gap-attacks" \
+    -I "$tmpdir" \
+    --defsym "__SECRET=${__SECRET:-0}" \
+    "$tmpdir/pmem.s43" \
+    -o "$tmpdir/pmem.o"
+
+$MSPGCC_PFX-ld \
+    -T "$tmpdir/pmem.x" \
+    "$tmpdir/pmem.o" \
+    -o "$tmpdir/pmem.elf"

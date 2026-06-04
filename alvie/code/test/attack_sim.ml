@@ -23,33 +23,27 @@ let sancus_master_key = "cafe"
 let orig_commit = "ef753b6"
 let last_commit = "bf89c0b"
 
-(* This runs the simulator on input_str and returns the list of outputs *)
+(* This runs the Verilog simulator on input_str and returns the list of outputs *)
 let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sancus_master_key ~commit ~secret ~input_str ~ignore_interrupts =
   Random.init 0;
   Logs.set_reporter (Logs_fmt.reporter ());
   Logs.set_level (Some Logs.Debug);
   let cwd = Sys_unix.getcwd () in
   Logs.debug (fun m -> m "Current directory: %s" cwd);
-  (* Create tmpdir if not present *)
-  (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
   let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
-  (* Basic sanity checks on the repo *)
   assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
   assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
-  (* We are now ready to load the specs *)
   let enclave_spec_str = In_channel.read_all enclave_spec_fn in
   let attacker_spec_str = In_channel.read_all attacker_spec_fn in
   Logs.debug (fun m -> m "Enclave spec: %s" enclave_spec_str);
   Logs.debug (fun m -> m "Attacker spec: %s" attacker_spec_str);
   let spec_w_secret = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec_str) in
-  (* Fill in the secret *)
   let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
   let enclave = Enclave.expand_secret secret enclave in
   let open Testdl in
   let complete_spec = (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
   let spec_dfa = Inputgen.build_spec_dfa complete_spec in
-  (* Pasrse the enclave and fill in the secret *)
   let input_sequence_w_secret = attack_trace_parse_or_fail input_str in
   let open Input in
   let input_sequence = List.map input_sequence_w_secret ~f:(fun i ->
@@ -57,9 +51,8 @@ let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sa
     | (IEnclave a) -> IEnclave (Enclave.atom_expand_secret secret a)
     | _ -> i
   ) in
-  (* initialize the interface with the processor's implementation *)
   let sul =
-    Sancus.Fpga.make
+    Sancus.Verilog.make
       ~workingdir:cwd
       ~tmpdir:tmpdir
       ~basename:"generic"
@@ -77,7 +70,7 @@ let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sa
       ~dumpfile:"tb_openMSP430.vcd"
       ~initial_spec:spec_dfa
       ~ignore_interrupts:ignore_interrupts () in
-        List.fold input_sequence ~init:[] ~f:(fun acc i -> let o = Sancus.Fpga.step sul i in acc @ [o])
+        List.fold input_sequence ~init:[] ~f:(fun acc i -> let o = Sancus.Verilog.step sul i in acc @ [o])
 
 (* Testable element_t *)
 (*

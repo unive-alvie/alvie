@@ -7,10 +7,10 @@ open Attacker
 (* open Enclave *)
 open Interop
 
-module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
+module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Fpga) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
 module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
 
-module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
+module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Fpga)
 
 let rec human_att_atom a =
   let open Sancus.Attacker.Attacker in
@@ -215,7 +215,7 @@ let command =
         let spec_dfa = Inputgen.build_spec_dfa complete_spec in
         (* (2) initialize the interface with the processor's implementation *)
         let sul =
-          Sancus.Verilog.make
+          Sancus.Fpga.make
             ~workingdir:cwd
             ~tmpdir:tmpdir
             ~basename:"generic"

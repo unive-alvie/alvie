@@ -8,18 +8,6 @@ open Enclave
 
 module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
 
-module IIBLSharpRW = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Randomwalkoracle.RandomWalkOracle)
-module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Pacoracle.PACOracle)
-module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
-module IIBLSharpIncrExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Incrementalexhoracle.IncrementalExhOracle)
-(* module IIBLSharpHybrid = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Hybridoracle.HybridOracle) *)
-
-module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module IncrementalOracle = Learninglib.Incrementalexhoracle.IncrementalExhOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-(* module HybridOracle = Learninglib.Hybridoracle.HybridOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) *)
-
 let spec_parse_or_fail spec =
   match Testdl.Parser.parse_spec spec with
   | Result.Ok r -> r
@@ -149,11 +137,11 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
-(* and precompute =
+    and fpga =
       flag
-      "--precompute"
-      no_arg
-      ~doc:"Tries to compute all the spec strings beforehand, so filling the observation tree and speeding up the learning (WARNING: may take a long time or fail to terminate!)" *)
+        "--fpga"
+        no_arg
+        ~doc:"Use the physical FPGA backend (default: Verilog simulator)"
     in
     fun () ->
         (* Random.self_init (); *)
@@ -188,29 +176,22 @@ let command =
         let enclave = match secret with | None -> assert (not (Enclave.has_secret enclave)); enclave | Some secret -> Enclave.expand_secret secret enclave in
         let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
         let spec_dfa = Inputgen.build_spec_dfa complete_spec in
-        (* (2) initialize the interface with the processor's implementation *)
-        let sul =
-          Sancus.Verilog.make
-            ~workingdir:cwd
-            ~tmpdir:tmpdir
-            ~basename:"generic"
-            ~verilog_compile: (cwd ^ "/../scripts/verilog_compile")
-            ~get_symbolpos: (cwd ^ "/../scripts/get_symbolpos.sh")
-            ~pmem_elf:"pmem.elf"
-            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
-            ~simulate_script:(cwd ^ "/../scripts/simulate")
-            ~submitfile:(cwd ^ "/../src/submit.f")
-            ~sancus_repo:sancus_core_gap_dir
-            ~sancus_master_key:sancus_master_key
-            ~commit:commit
-            ~templatefile:(cwd ^ "/../src/generic_template.s43")
-            ~filledfile:"generic.s43"
-            ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa
-            ~ignore_interrupts:ignore_interrupts
-            () in
-        (* (3) prepare the oracle *)
-        let attacker_atoms =
+        (* (2) + (3): choose backend, create SUL, run oracle *)
+        (* Helper: apply a make function to the common set of SUL arguments *)
+        (* Helper: run L# with any SUL implementation (locally abstract type t) *)
+        let do_run (type t)
+            (module Sul : Learninglib.Sul.SUL
+                with type t = t
+                and type input_t = Sancus.Input.t
+                and type output_t = Sancus.Output_internal.t)
+            (sul : t) =
+          let module IIBLSharpRW  = LSharp (Sancus.Input) (Sancus.Output_internal) (Sul) (Learninglib.Randomwalkoracle.RandomWalkOracle) in
+          let module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sul) (Learninglib.Pacoracle.PACOracle) in
+          let module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sul) (Learninglib.Exhaustiveoracle.ExhaustiveOracle) in
+          let module RWOracle  = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
+          let module PACOracle = Learninglib.Pacoracle.PACOracle              (Sancus.Input) (Sancus.Output_internal) (Sul) in
+          let module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
+          let attacker_atoms =
           List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
         let enclave_atoms = Set.to_list (Enclave.get_atoms enclave) in
         let alphabet_attacker = List.map attacker_atoms ~f:(fun ca -> Input.IAttacker ca) in
@@ -508,6 +489,36 @@ let command =
         let dot_dest = basename in
         IOInteropInternal.Dot.output_graph (Stdlib.open_out_bin dot_dest) graph;
           Logs.debug (fun m -> m "\n=== Graph written to %s\n" basename)
+        in
+        if fpga then (
+          let sul = Sancus.Fpga.make
+            ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+            ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+            ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+            ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
+            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
+            ~simulate_script:(cwd ^ "/../scripts/simulate")
+            ~submitfile:(cwd ^ "/../src/submit.f")
+            ~templatefile:(cwd ^ "/../src/generic_template.s43")
+            ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
+            ~dumpfile:"tb_openMSP430.vcd"
+            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+          do_run (module Sancus.Fpga) sul
+        ) else (
+          let sul = Sancus.Verilog.make
+            ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+            ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+            ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+            ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
+            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
+            ~simulate_script:(cwd ^ "/../scripts/simulate")
+            ~submitfile:(cwd ^ "/../src/submit.f")
+            ~templatefile:(cwd ^ "/../src/generic_template.s43")
+            ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
+            ~dumpfile:"tb_openMSP430.vcd"
+            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+          do_run (module Sancus.Verilog) sul
+        )
     )
 
 let () = Command_unix.run command

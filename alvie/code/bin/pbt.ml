@@ -1,5 +1,4 @@
 open Core
-open Learninglib.Lsharp
 open Sancus
 open Interop
 (*
@@ -8,12 +7,7 @@ open Enclave *)
 
 open QCheck
 
-module IIBLSharpRW = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Randomwalkoracle.RandomWalkOracle)
-module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Pacoracle.PACOracle)
 module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
-
-module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
 
 let spec_parse_or_fail spec =
   match Testdl.Parser.parse_spec spec with
@@ -74,6 +68,11 @@ let command =
         "--step-limit"
         (optional_with_default 500 int)
         ~doc:"limit (Only for randomwalk oracle) Maximum number of steps for the equivalence oracle before giving up looking for a counterexample (default: 500)"
+    and fpga =
+      flag
+        "--fpga"
+        no_arg
+        ~doc:"Use the physical FPGA backend (default: Verilog simulator)"
     in
     fun () ->
         (* Random.self_init (); *)
@@ -103,77 +102,36 @@ let command =
         let (Enclave enclave2, ISR isr2, Prepare prepare2, Cleanup cleanup2) = complete_spec2 in *)
         let spec_dfa1 = Inputgen.build_spec_dfa complete_spec1 in
         let spec_dfa2 = Inputgen.build_spec_dfa complete_spec2 in
-        (* (2) initialize the interface with the processor's implementation *)
-        let sul1 =
-          Sancus.Verilog.make
-            ~workingdir:cwd
-            ~tmpdir:tmpdir
-            ~basename:"generic"
-            ~verilog_compile: (cwd ^ "/../scripts/verilog_compile")
-            ~get_symbolpos: (cwd ^ "/../scripts/get_symbolpos.sh")
-            ~pmem_elf:"pmem.elf"
-            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
-            ~simulate_script:(cwd ^ "/../scripts/simulate")
-            ~submitfile:(cwd ^ "/../src/submit.f")
-            ~sancus_repo:sancus_core_gap_dir
-            ~sancus_master_key:sancus_master_key
-            ~commit:commit
-            ~templatefile:(cwd ^ "/../src/generic_template.s43")
-            ~filledfile:"generic.s43"
-            ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa1
-            ~ignore_interrupts:false
-            () in
-        let sul2 =
-          Sancus.Verilog.make
-            ~workingdir:cwd
-            ~tmpdir:tmpdir
-            ~basename:"generic"
-            ~verilog_compile: (cwd ^ "/../scripts/verilog_compile")
-            ~get_symbolpos: (cwd ^ "/../scripts/get_symbolpos.sh")
-            ~pmem_elf:"pmem.elf"
-            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
-            ~simulate_script:(cwd ^ "/../scripts/simulate")
-            ~submitfile:(cwd ^ "/../src/submit.f")
-            ~sancus_repo:sancus_core_gap_dir
-            ~sancus_master_key:sancus_master_key
-            ~commit:commit
-            ~templatefile:(cwd ^ "/../src/generic_template.s43")
-            ~filledfile:"generic.s43"
-            ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa2
-            ~ignore_interrupts:false
-            () in
-        (* (3) prepare the oracle *)
-        (* let attacker_atoms1 =
-          List.fold [isr1; prepare1; cleanup1] ~init:[] ~f:(fun acc b -> acc @ (Attacker.AtomSet.to_list (Attacker.get_atoms b))) in
-        let attacker_atoms2 =
-          List.fold [isr2; prepare2; cleanup2] ~init:[] ~f:(fun acc b -> acc @ (Attacker.AtomSet.to_list (Attacker.get_atoms b))) in *)
-        (* This generates a valid sequence for spec_dfa *)
-        let gen_fixed_encl eil_init sul spec_dfa n =
-          QCheck.Gen.pure (Sancus.Verilog.pre sul;
-          let rec _gen_fixed_encl eil sul spec_dfa n il ol =
-            (match n with
-            | 0 -> (il, ol)
-            | _ ->
-              match Inputgen.generate_next ?force_encl:(List.hd eil) spec_dfa il ol with
-              | `Stop -> (il, ol)
-              | `Next i ->
-                  let eil' = match List.tl eil with | None -> eil_init | _ -> eil in
-                  _gen_fixed_encl eil' sul spec_dfa (n-1) (il@[i]) (ol@[Sancus.Verilog.step ~silent:true sul i])
-            ) in
-            _gen_fixed_encl eil_init sul spec_dfa n [] []) in
-        (* let cnt = ref 0 in *)
-        let gen sul spec_dfa n =
-          (* printf "\n=== %d/%d: n=%d ===\n" (incr cnt; !cnt) step_limit n; *)
-          QCheck.Gen.pure (Sancus.Verilog.pre sul;
-          let rec _gen sul spec_dfa n il ol =
-            (match n with
-            | 0 -> (il, ol)
-            | _ -> match Inputgen.generate_next spec_dfa il ol with
-              | `Stop -> (il, ol)
-              | `Next i -> _gen sul spec_dfa (n-1) (il@[i]) (ol@[Sancus.Verilog.step ~silent:true sul i])) in
-          _gen sul spec_dfa n [] []) in
+        (* (2) choose backend and run *)
+        let do_run (type t)
+            (module Sul : Learninglib.Sul.SUL
+                with type t = t
+                and type input_t = Sancus.Input.t
+                and type output_t = Sancus.Output_internal.t)
+            (sul1 : t) (sul2 : t) =
+          (* This generates a valid sequence for spec_dfa *)
+          let gen_fixed_encl eil_init sul spec_dfa n =
+            QCheck.Gen.pure (Sul.pre sul;
+            let rec _gen_fixed_encl eil sul spec_dfa n il ol =
+              (match n with
+              | 0 -> (il, ol)
+              | _ ->
+                match Inputgen.generate_next ?force_encl:(List.hd eil) spec_dfa il ol with
+                | `Stop -> (il, ol)
+                | `Next i ->
+                    let eil' = match List.tl eil with | None -> eil_init | _ -> eil in
+                    _gen_fixed_encl eil' sul spec_dfa (n-1) (il@[i]) (ol@[Sul.step ~silent:true sul i])
+              ) in
+              _gen_fixed_encl eil_init sul spec_dfa n [] []) in
+          let gen sul spec_dfa n =
+            QCheck.Gen.pure (Sul.pre sul;
+            let rec _gen sul spec_dfa n il ol =
+              (match n with
+              | 0 -> (il, ol)
+              | _ -> match Inputgen.generate_next spec_dfa il ol with
+                | `Stop -> (il, ol)
+                | `Next i -> _gen sul spec_dfa (n-1) (il@[i]) (ol@[Sul.step ~silent:true sul i])) in
+            _gen sul spec_dfa n [] []) in
         let includes (ol : Output_internal.element_t list) (o : Output_internal.element_t) =
           List.exists ol ~f:(fun oi -> Output_internal.equal_element_t oi o) in
         (* QCheck setup *)
@@ -228,6 +186,32 @@ let command =
                   assume (valid res_p');
                   low_equiv res_p res_p'
               ) in
-          ignore (QCheck_runner.run_tests ~verbose:true [test_ni]))
+          ignore (QCheck_runner.run_tests ~verbose:true [test_ni])
+        in
+        let make_args make_fn spec =
+          make_fn
+            ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+            ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+            ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+            ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
+            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
+            ~simulate_script:(cwd ^ "/../scripts/simulate")
+            ~submitfile:(cwd ^ "/../src/submit.f")
+            ~templatefile:(cwd ^ "/../src/generic_template.s43")
+            ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
+            ~dumpfile:"tb_openMSP430.vcd"
+            ~initial_spec:spec ~ignore_interrupts:false
+            ?sim_cycle_ratio:None ()
+        in
+        if fpga then
+          do_run (module Sancus.Fpga)
+            (make_args Sancus.Fpga.make spec_dfa1)
+            (make_args Sancus.Fpga.make spec_dfa2)
+        else
+          do_run (module Sancus.Verilog)
+            (make_args Sancus.Verilog.make spec_dfa1)
+            (make_args Sancus.Verilog.make spec_dfa2))
+
+let () = Command_unix.run command
 
 let () = Command_unix.run command

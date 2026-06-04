@@ -1,8 +1,8 @@
 (executables
-  (names genall derive attack)
-  (public_names tt_genall tt_derive tt_attack)
+  (names genall derive attack_fpga attack_sim)
+  (public_names tt_genall tt_derive tt_attack_fpga tt_attack_sim)
   (modes byte exe)
-  (modules interop genall derive attack attacklib)
+  (modules interop genall derive attack_fpga attack_sim attacklib)
   (libraries alcotest sancus learninglib core core_unix core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscomparator)
   (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
 )

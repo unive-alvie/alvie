@@ -62,6 +62,11 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
+    and fpga =
+      flag
+        "--fpga"
+        no_arg
+        ~doc:"Use the physical FPGA backend (default: Verilog simulator)"
       in
      fun () ->
         Random.init 0;
@@ -167,55 +172,45 @@ let command =
           (IAttacker CRstNZ)
         )" in *)
         let input_sequence = List.t_of_sexp Sancus.Input.t_of_sexp (Sexp.load_sexp sexp_fn) in
-        (* initialize the interface with the processor's implementation *)
-        let sul =
-          Sancus.Verilog.make
-            ~workingdir:cwd
-            ~tmpdir:tmpdir
-            ~basename:"generic"
-            ~verilog_compile: (cwd ^ "/../scripts/verilog_compile")
-            ~get_symbolpos: (cwd ^ "/../scripts/get_symbolpos.sh")
-            ~pmem_elf:"pmem.elf"
+        let run_exec (type t)
+            (module Sul : Learninglib.Sul.SUL
+                with type t = t
+                and type input_t = Sancus.Input.t
+                and type output_t = Sancus.Output_internal.t)
+            (sul : t) =
+          List.iter input_sequence ~f:(fun i ->
+            let o = Sul.step sul i in
+            Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)))
+        in
+        if fpga then (
+          let sul = Sancus.Fpga.make
+            ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+            ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+            ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+            ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
             ~pmem_script:(cwd ^ "/../scripts/build_pmem")
             ~simulate_script:(cwd ^ "/../scripts/simulate")
             ~submitfile:(cwd ^ "/../src/submit.f")
-            ~sancus_repo:sancus_core_gap_dir
-            ~sancus_master_key:sancus_master_key
-            ~commit:commit
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
-            ~filledfile:"generic.s43"
+            ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa
-            ~ignore_interrupts:ignore_interrupts
-            () in
-            (* let input_sequence = [
-              Sancus.Input.IAttacker (Sancus.Attacker.CTimerEnable 3); (* Choose among 2 or 3 *)
-              Sancus.Input.IAttacker (Sancus.Attacker.CInst (Common.I_MOV (Common.S_IMM "0", Common.D_R (R 14))));
-              Sancus.Input.IAttacker (Sancus.Attacker.CInst (Common.I_MOV (Common.S_IMM "enc_e", Common.D_R (R 4))));
-              Sancus.Input.IAttacker (Sancus.Attacker.CCreateEncl ("enc_s", "enc_e", "data_s", "data_e"));
-              Sancus.Input.IAttacker (Sancus.Attacker.CJmpIn "enc_s");
-              Sancus.Input.IEnclave (Sancus.Common.I_CMP (Common.S_IMM "0", Common.D_R (R 14)));  (* Assume r14==0 *)
-              Sancus.Input.IEnclave (Sancus.Common.I_ADD (Common.S_IMM "1", Common.D_R (R 5)));
-              Sancus.Input.IEnclave (Sancus.Common.I_JMP (Common.S_R (R 4)));
-              Sancus.Input.IAttacker (Sancus.Attacker.CReti);
-            ] in *)
-            (* let rec body_seq_to_list s =
-              match s with
-              | Enclave.Epsilon -> []
-              | Enclave.Seq (Atom i, s') -> (Sancus.Input.IEnclave i)::(body_seq_to_list s')
-              | _ -> failwith "Not supported" in *)
-            (* let input_sequence = [
-              Sancus.Input.IAttacker (Attacker.CTimerEnable 3);
-              Sancus.Input.IAttacker (Attacker.CCreateEncl ("enc_s", "enc_e", "data_s", "data_e"));
-              Sancus.Input.IAttacker (Attacker.CJmpIn "enc_s");
-              Sancus.Input.IEnclave (Enclave.CInst (Common.I_CMP (Common.S_IMM "0", Common.D_R (R 4))));
-              Sancus.Input.IEnclave (Enclave.CZeroOrNop (Common.I_MOV (Common.S_IMM "42", Common.D_R (R 5)), 2));
-              Sancus.Input.IAttacker (Attacker.CReti) ] in *)
-              ignore (Sys_unix.command (sprintf "rm -f %s/tb_openMSP430.vcd" tmpdir));
-              let cmd = sprintf "ln -sr %s %s/tb_openMSP430.vcd" !sul.dumpfile tmpdir in
-              ignore (Sys_unix.command cmd);
-              List.iter input_sequence ~f:(fun i -> let o = Sancus.Verilog.step sul i in
-              Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)));
+            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+          run_exec (module Sancus.Fpga) sul
+        ) else (
+          let sul = Sancus.Verilog.make
+            ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+            ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+            ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+            ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
+            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
+            ~simulate_script:(cwd ^ "/../scripts/simulate")
+            ~submitfile:(cwd ^ "/../src/submit.f")
+            ~templatefile:(cwd ^ "/../src/generic_template.s43")
+            ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
+            ~dumpfile:"tb_openMSP430.vcd"
+            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+          run_exec (module Sancus.Verilog) sul
+        )
   )
 
 let () = Command_unix.run command

@@ -43,7 +43,7 @@ let command () =
   let spec_dfa = Inputgen.build_spec_dfa complete_spec in
   (* initialize the interface with the processor's implementation *)
   (* let sul =
-    Sancus.Verilog.make
+    Sancus.Fpga.make
       ~workingdir:cwd
       ~tmpdir:tmpdir
       ~basename:"generic"

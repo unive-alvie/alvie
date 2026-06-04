@@ -1,38 +1,44 @@
 #!/usr/bin/env bash
 
-# This script is the entry point for the learning and does everything needed automatically.
-# It takes all the possible enclave (.etdl files)/attacker (.atdl files)
-# combinations and learn them all for all the "interesting" commits.
-# Processes are spawned automatically on all the available cores.
+# Learn models for a specific attacker spec against all "interesting" commits.
 #
 # Usage:
-#   ./learn_all.sh special_commit att_spec [fast]
+#   ./learn_one.sh <special_commit> <att_spec> <subdirectory> [--fpga]
+#
+# --fpga  Use the physical FPGA backend instead of the Verilog simulator.
+#         Experiments are run sequentially to avoid serial-port conflicts.
+
+FPGA=false
+FPGA_FLAG=""
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--fpga" ]; then
+    FPGA=true; FPGA_FLAG="--fpga"
+  else
+    ARGS+=("$arg")
+  fi
+done
+set -- "${ARGS[@]}"
+
 specialcommit=$1
 attspecbn=$2
 EPS=0.01
 DELTA=0.01
-# STEP=5000
-# RST=0.09
 
 # Useful paths
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-LOGS_DIR=$SCRIPT_DIR/logs/$3
-RES_DIR=$SCRIPT_DIR/results/$3
-TMP_DIR=$SCRIPT_DIR/tmp/$3
+DIR_SUFFIX=$( $FPGA && echo "-fpga" || true )
+LOGS_DIR=$SCRIPT_DIR/logs/$3${DIR_SUFFIX}
+RES_DIR=$SCRIPT_DIR/results/$3${DIR_SUFFIX}
+TMP_DIR=$SCRIPT_DIR/tmp/$3${DIR_SUFFIX}
 
 SCG_DIR=$SCRIPT_DIR/sancus-core-gap
 SPEC_DIR=$SCRIPT_DIR/spec-lib/$3
 MM_DIR=$SCRIPT_DIR/alvie/code
 
-# Cleanup existing files
-# echo "Cleaning up"
-# rm -rf $RES_DIR
-# rm -rf $LOGS_DIR
-
 mkdir -p $RES_DIR
 mkdir -p $LOGS_DIR
-# mkdir -p $TMP_DIR
 
 # Commits in chronological order:
 #   original  fix B3    fix B6    fix B4    fix B1    fix B7(1) final
@@ -53,19 +59,22 @@ cd $MM_DIR
 # Compile the project
 dune build
 
-run() {
-  local status=0
-
-  (eval $2 & wait $!;
-  status=$?;
-  if [[ $status -ne 0 ]]; then
-    echo -e "$1 ... [KO - $3]"
-  else
-    echo "$1 ... [OK - $3]"
-  fi) &
+run_bg() {
+  local name="$1"; local cmd="$2"; local logfile="$3"
+  echo "$cmd"
+  (eval "$cmd" & wait $!
+  if [[ $? -ne 0 ]]; then echo -e "$name ... [KO - $logfile]"
+  else echo "$name ... [OK - $logfile]"; fi) &
 }
 
-# Then, iterate over all the possible combinations and learn
+run_seq() {
+  local name="$1"; local cmd="$2"; local logfile="$3"
+  echo "$cmd"
+  eval "$cmd"
+  if [[ $? -ne 0 ]]; then echo -e "$name ... [KO - $logfile]"
+  else echo "$name ... [OK - $logfile]"; fi
+}
+
 echo -e "\nLearning started: refer to files in $LOGS_DIR for details"
 
 for experiment in "${EXPERIMENTS[@]}"
@@ -76,31 +85,30 @@ do
     secret=${exp_arr[2]%%[[:space:]]}
     commit=${exp_arr[3]%%[[:space:]]}
 
-    # extra="-randomwalk"
-    name_int="$commit-$attack_name-$enclave_name-$secret-$EPS-$DELTA-int$extra"
-    name_nint="$commit-$attack_name-$enclave_name-$secret-$EPS-$DELTA-nint$extra"
+    name_int="$commit-$attack_name-$enclave_name-$secret-$EPS-$DELTA-int"
+    name_nint="$commit-$attack_name-$enclave_name-$secret-$EPS-$DELTA-nint"
     logfile_int="$LOGS_DIR/learn-$name_int.log"
     logfile_nint="$LOGS_DIR/learn-$name_nint.log"
     resfile_int="$RES_DIR/$name_int.dot"
     resfile_nint="$RES_DIR/$name_nint.dot"
 
-    # Run the learning only if it has not been done already!
     if [ -f "$resfile_int" ]; then
       echo "$name_int ... [OK - Done before]"
     else
-      # Invoke the learning process in background and send the stderr/stdout to the log file
-      run "$name_int" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_int\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > $logfile_int 2>&1" "$logfile_int"
+      cmd_int="_build/default/bin/learn.exe $FPGA_FLAG --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_int\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > $logfile_int 2>&1"
+      if $FPGA; then run_seq "$name_int"  "$cmd_int"  "$logfile_int"
+      else            run_bg  "$name_int"  "$cmd_int"  "$logfile_int"; fi
     fi
 
     if [ -f "$resfile_nint" ]; then
       echo "$name_nint ... [OK - Done before]"
     else
-      # Invoke the learning process in background and send the stderr/stdout to the log file
-      run "$name_nint" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_nint\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac --ignore-interrupts > $logfile_nint 2>&1" "$logfile_nint"
+      cmd_nint="_build/default/bin/learn.exe $FPGA_FLAG --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_nint\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac --ignore-interrupts > $logfile_nint 2>&1"
+      if $FPGA; then run_seq "$name_nint" "$cmd_nint" "$logfile_nint"
+      else            run_bg  "$name_nint" "$cmd_nint" "$logfile_nint"; fi
     fi
 done
 
-# wait_and_report
 wait
 
 echo ""

@@ -2,7 +2,7 @@
 
 (library
  (name sancus)
-  (modules input output_internal testdl enclave common inputgen attacker verilog)
+  (modules input output_internal testdl enclave common inputgen attacker verilog fpga)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_deriving.fold ppx_sexp_conv ppx_hash))
-  (libraries core logs angstrom core_unix.sys_unix core_unix vcd shexp.process ocamlgraph)
+  (libraries core logs angstrom core_unix.sys_unix core_unix unix vcd shexp.process ocamlgraph)
 )

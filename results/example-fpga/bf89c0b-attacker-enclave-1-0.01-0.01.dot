@@ -9,13 +9,13 @@ digraph G {
   
   0 -> 6 [label="((IAttacker(CStartCounting 256))(((OTime((k 10)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()5))",
           ];
-  6 -> 7 [label="((IAttacker(CCreateEncl(enc_s enc_e data_s data_e)))(((OTime((k 600)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()15))",
+  6 -> 7 [label="((IAttacker(CCreateEncl(enc_s enc_e data_s data_e)))(((OTime((k 50)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()13))",
           ];
-  7 -> 24 [label="((IAttacker(CJmpIn enc_s))(((OTime((k 18)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OJmpIn((k 2)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 1)(mode PM))))()20))",
+  7 -> 24 [label="((IAttacker(CJmpIn enc_s))(((OTime((k 18)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OJmpIn((k 2)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()20))",
            ];
   24 -> 51 [label="((IEnclave(CInst(I_CMP(S_IMM 1)(D_R(R 4)))))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 2)(mode PM))))()21))",
             ];
-  51 -> 27 [label="((IEnclave CUbr)(((OJmpOut((k 2)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 4)(mode UM))))()22))",
+  51 -> 27 [label="((IEnclave CUbr)(((OJmpOut((k 2)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 3)(mode UM))))()22))",
             ];
   
   }

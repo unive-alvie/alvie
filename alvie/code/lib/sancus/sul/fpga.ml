@@ -13,9 +13,25 @@ type label_t = string*string [@@deriving sexp,ord]
 
 let dbg_str () = match Logs.level () with | Some Logs.Debug -> "" | _ -> ">/dev/null 2>/dev/null"
 
+(* ── Persistent Python daemon channels (one FPGA session at a time) ──────── *)
+(* fpga_daemon holds (stdin_oc, stdout_ic) for fpga_daemon.py *)
+let fpga_daemon : (Stdlib.out_channel * Stdlib.in_channel) option ref = ref None
+
 let show_mode m = match m with `PM -> "PM" | `UM -> "UM"
 
 let show_e_state e = match e with `NO_SM -> "NO_SM" | `OTHER -> "OTHER" | `RETI -> "RETI" | `PP_JMPOUT -> "PP_JMPOUT" | `HANDLE -> "HANDLE"
+
+type trace_entry = {
+  pc : int;
+  inst_number : int;
+  irq : int;
+  sm_executing : int;
+  e_state : int;
+  r4 : int;
+  gie : int;
+  timerA : int;
+  umem : int;
+}
 
 type cfg_t = {
   (* These first fields contains file and script-related parameters *)
@@ -51,56 +67,52 @@ type t = cfg_t ref
 
 let clone s = ref { !s with last_inst_number = !s.last_inst_number}
 
-let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) () =
+let make ~sancus_repo ~sancus_master_key:_ ~commit:_ ~workingdir ~tmpdir ~basename ~verilog_compile:_ ~get_symbolpos ~pmem_script ~simulate_script ~submitfile:_ ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) () =
+  let fpga_port = Option.value (Sys.getenv "FPGA_PORT") ~default:"/dev/ttyUSB1" in
   Sys_unix.chdir workingdir;
   (* Create tmpdir and a temporary dir inside tmpdir *)
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "Chosen temporary directory: %s" r_tmpdir);
-  (* Create sancus-core-gap in the directory by archiving the required commit *)
-  Logs.debug (fun m -> m "Creating: %s/sancus-core-gap at commit %s" r_tmpdir commit);
-  Core_unix.mkdir_p (r_tmpdir ^ "/sancus-core-gap");
-  assert (Sys_unix.command (Format.sprintf "git -C \"%s\" archive --format=tar %s | (cd \"%s/sancus-core-gap\" && tar xf -)" sancus_repo commit r_tmpdir) = 0);
-  (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
-  Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
-  let security = Int.max 20 (4 * String.length sancus_master_key) in
-  assert (Sys_unix.command (Format.sprintf "%s/../scripts/build_config.sh \"%s/sancus-core-gap/\" %d %s %s" workingdir r_tmpdir security sancus_master_key (dbg_str ())) = 0);
-  assert (Sys_unix.command (Format.sprintf "%s/../scripts/setup_sim.sh \"%s\" %s" workingdir r_tmpdir (dbg_str ())) = 0);
-  (* Load the submit.f file *)
-  let submitfile_filled = r_tmpdir ^ "/submit.f" in
-  let submit_template = In_channel.read_all submitfile in
-  let submit_filled =
-    String.substr_replace_all submit_template ~pattern:"{{tmp_dir}}" ~with_:r_tmpdir in
-      Out_channel.write_all submitfile_filled ~data:submit_filled;
-  (* Compile the Verilog testbench beforehand *)
-  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s %s" verilog_compile r_tmpdir basename submitfile_filled ">/dev/null 2>/dev/null") in
-  if res <> 0 then
-    failwith (Format.sprintf "Error: %s returned %d." verilog_compile res)
-  else (
-    (* If compilation went well, build the configuration and return it *)
-    ref (make_cfg_t
-      ~workingdir
-      ~tmpdir:r_tmpdir
-      ~basename
-      ~get_symbolpos
-      ~pmem_script
-      ~simulate_script
-      ~templatefile
-      ~pmem_elf:(r_tmpdir ^ "/" ^ pmem_elf)
-      ~filledfile:(r_tmpdir ^ "/" ^ filledfile)
-      ~dumpfile:(r_tmpdir ^ "/" ^ dumpfile)
-      ~initial_spec
-      ~sim_cycle_ratio
-      ~enclave_history:(C_Enclave [])
-      ~ca_history:(C_ISR [], C_Prepare [], C_Cleanup [])
-      ~input_history:[]
-      ~output_history:[]
-      ~left_labels:[]
-      (* ~last_time:0  *)
-      ~last_inst_number:0
-      ~ignore_interrupts:ignore_interrupts
-      ())
-  )
+  (* Program the FPGA if FPGA_TCL is set; skip if already programmed *)
+  (match Sys.getenv "FPGA_TCL" with
+  | Some tcl_path ->
+      let tcl_dir = Filename.dirname tcl_path in
+      let tcl_file = Filename.basename tcl_path in
+      Logs.debug (fun m -> m "Programming FPGA with: %s" tcl_path);
+      assert (Sys_unix.command (Format.sprintf "cd \"%s\" && vivado -mode batch -source %s %s" tcl_dir tcl_file (dbg_str ())) = 0)
+  | None -> Logs.debug (fun m -> m "FPGA_TCL not set, skipping FPGA programming (assuming already programmed)"));
+  (* Run once-per-session FPGA build setup (pmem.h, linker script) using the live checkout *)
+  assert (Sys_unix.command (Format.sprintf "%s/../scripts/setup_fpga.sh \"%s\" \"%s\" %s" workingdir r_tmpdir sancus_repo (dbg_str ())) = 0);
+  (* Spawn the persistent Python daemon that holds the serial port open at 5 Mbaud *)
+  let daemon_cmd = Format.sprintf "python3 %s/../scripts/fpga_daemon.py %s" workingdir fpga_port in
+  Logs.debug (fun m -> m "Spawning FPGA daemon: %s" daemon_cmd);
+  let (daemon_ic, daemon_oc) = Caml_unix.open_process daemon_cmd in
+  (match Stdlib.input_line daemon_ic with
+  | "READY" -> Logs.debug (fun m -> m "FPGA daemon ready on port %s" fpga_port)
+  | line    -> failwith (Format.sprintf "FPGA daemon failed to start: %s" line));
+  fpga_daemon := Some (daemon_oc, daemon_ic);
+  ref (make_cfg_t
+    ~workingdir
+    ~tmpdir:r_tmpdir
+    ~basename
+    ~get_symbolpos
+    ~pmem_script
+    ~simulate_script
+    ~templatefile
+    ~pmem_elf:(r_tmpdir ^ "/" ^ pmem_elf)
+    ~filledfile:(r_tmpdir ^ "/" ^ filledfile)
+    ~dumpfile:(r_tmpdir ^ "/" ^ dumpfile)
+    ~initial_spec
+    ~sim_cycle_ratio
+    ~enclave_history:(C_Enclave [])
+    ~ca_history:(C_ISR [], C_Prepare [], C_Cleanup [])
+    ~input_history:[]
+    ~output_history:[]
+    ~left_labels:[]
+    ~last_inst_number:0
+    ~ignore_interrupts:ignore_interrupts
+    ())
 
 let update_cfg mode curr_spec_dfa_mode cfg i =
   let ctor a = match mode with `Label -> Label a | `NoLabel -> NoLabel a in
@@ -117,23 +129,16 @@ let update_cfg mode curr_spec_dfa_mode cfg i =
       match mode with
       | `Enclave -> Enclave.C_Enclave (enclave_history @ e ())
       | `ISR_toPM | `ISR_toUM | `Prepare | `Cleanup | `Invalid | `Finished -> Enclave.C_Enclave enclave_history in
-  (* Logs.debug (fun m -> m "\x1B[31m[Before] Verilog.update_cfg: %s\x1B[0m" (List.to_string ~f:Input.show cfg.input_history)); *)
   let res = { cfg with
       input_history = cfg.input_history @ [i];
       enclave_history = (_enclave_update cfg.enclave_history curr_spec_dfa_mode i);
       ca_history = (_attack_update cfg.ca_history curr_spec_dfa_mode i);
   } in
-  (* Logs.debug (fun m -> m "\x1B[31m[After] Verilog.update_cfg: %s\x1B[0m" (List.to_string ~f:Input.show res.input_history)); *)
   res
 
 let fill_template template_code (cfg : cfg_t) =
   (* Compile the "high-level" actions into actual code *)
   Common.reset_last_used_idx (); (* FIXME: this is very bad, but that's the easiest thing; We need to reset the index after each experiment *)
-  (* enclave, isr and cleanup sections are may be re-entered more than once w/o a reset *)
-  (*
-    - enclave: re-entered upon reti and jmpin.
-    In the both cases we do not want to "compile" the pre-existing code, so we remove from enclave_history all the instructions that appear *before* the last JmpIn and those that appear *after* the last reti (if any) in the full I/O history (i.e., intersperse_lists input output)
-  *)
   let full_history = Inputgen.intersperse_lists cfg.input_history cfg.output_history in
   let relevant_enclave (Enclave.C_Enclave eh) =
     let last_encl_segment = List.take_while
@@ -164,12 +169,8 @@ let fill_template template_code (cfg : cfg_t) =
       )
     else
       (
-      (* Otherwise, i have last_encl_segment e1 ... en IRQ ... reti ... IRQ ... reti en+1 en+2 ... and what we want to write is:
-        e1 ... en en+1 ..., so take last_encl_segment until the first reti, drop all attackers actions and to the result concat curr_encl_segment
-      *)
       let filt_last = List.filter_map last_encl_segment ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None) in
       let filt_last_len = List.length filt_last in
-      (* this is in the form e1 ... en .. en+1 en+2 ... en+k en+1 en+2 ... en+k' but labelled *)
       let res_last = (List.drop eh (List.length eh - filt_last_len)) in
       let last_encl_segment = List.take_while
         (List.rev last_encl_segment)
@@ -182,16 +183,12 @@ let fill_template template_code (cfg : cfg_t) =
       let filt_curr = List.rev (List.filter_map curr_encl_segment ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None)) in
       let filt_last_len = List.length filt_last in
       let filt_curr_len = List.length filt_curr in
-      (* extract just e1 ... en labelled and concat the part corresponding to filt_curr to it *)
       let res = (List.take res_last filt_last_len) @ (List.drop eh (List.length eh - filt_curr_len)) in
       Logs.debug (fun p -> p "eh   enclave: %s" ([%derive.show: Enclave.atom_t annot list] eh));
       Logs.debug (fun p -> p "res  enclave: %s" ([%derive.show: Enclave.atom_t annot list] res));
       Logs.debug (fun p -> p "filt last enclave: %s" ([%derive.show: Enclave.atom_t list] filt_last));
       Logs.debug (fun p -> p "filt curr enclave: %s" ([%derive.show: Enclave.atom_t list] filt_curr));
       assert(List.for_all2_exn res (filt_last @ filt_curr) ~f:(fun (NoLabel e | Label e) f -> Enclave.equal_atom_t e f));
-      (* if an enclave has already been completed once, we need to complete res with the "missing" actions.Logs
-        For that, we look for the last jmpout in eh and go backwards completing the code.
-      *)
       let completing_suffix = List.drop_while
         (List.rev full_history)
         ~f:(fun io ->
@@ -211,20 +208,13 @@ let fill_template template_code (cfg : cfg_t) =
       let completing_suffix_res = List.map ~f:(fun a -> NoLabel a) (List.drop completing_suffix_filt (List.length res)) in
       Enclave.C_Enclave (res @ completing_suffix_res)
     ) in
-  (* - ISR: We assume all sections to be executed from their beginning and just once; ISR special since multiple interrupts may occur, so this function extracts just the actions from the last reti (excluded) *)
   let relevant_isr al =
-    (* Notice that the call to relevant_isr is done only on the portion of the history of the isr *)
-    (* Extract the part of the ISR since the last unlabelled reti/jmpin (excl.). The only labelled reti/jmpin is kept. *)
     let curr_isr = List.rev (List.take_while (List.rev al) ~f:(fun a -> match a with NoLabel Attacker.CReti | NoLabel (Attacker.CJmpIn _) -> false | _ -> true)) in
     Logs.debug (fun p -> p "Curr ISR: %s" ([%derive.show: Attacker.atom_t annot list] curr_isr));
-    (* Extract the first ISR, by keeping all observables until the first reti (included!)*)
     let first_isr = List.rev (List.fold_until al ~init:[] ~f:(fun acc_isr a -> match a with Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _) -> Stop (a::acc_isr) | _ -> Continue (a::acc_isr)) ~finish:(fun isr -> isr)) in
     Logs.debug (fun p -> p "First ISR: %s" ([%derive.show: Attacker.atom_t annot list] first_isr));
-    (* The actual ISR is obtained by stiching together the current ISR and the part of the first ISR that has not been "given" yet. If curr_isr and first_isr coincide (i.e., no reti has ever been issued), we just keep curr_isr *)
     let actual_isr = curr_isr @ List.drop first_isr (List.length curr_isr) in
-        (* Logs.debug (fun p -> p "ISR: %s" ([%derive.show: Attacker.atom_t annot list] actual_isr)); *)
         actual_isr in
-  (* - Cleanup: when exiting with a jmpout more than once! --- FIXME: this is a hack *)
   let relevant_cleanup al =
     if List.is_empty al then []
     else
@@ -241,39 +231,74 @@ let fill_template template_code (cfg : cfg_t) =
   let code = String.substr_replace_all code ~pattern:"; [@inst_pre]" ~with_:(String.concat ~sep:"\n\t" prepare_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_post]" ~with_:(String.concat ~sep:"\n\t" cleanup_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_victim]" ~with_:(String.concat ~sep:"\n\t" enclave_code) in
-    (* Logs.debug (fun m -> m "filled: %s" code); *)
     attacker_labels @ enclave_labels, code
 
 let addr_of_label cfg l =
-  (* Logs.debug (fun p -> p "Verilog.addr_of_label %s %s" cfg.pmem_elf l); *)
   Int.of_string ("0x" ^ (String.substr_replace_all ~pattern:"\n" ~with_:"" (Shexp_process.eval Shexp_process.(pipe (run "bash" [cfg.get_symbolpos; cfg.pmem_elf; l]) read_all))))
 
 let ms_since t0 =
   let open Int63 in
   to_float (Time_now.nanoseconds_since_unix_epoch () - t0) /. 1_000_000.0
 
-let run_simulator (cfg : cfg_t) =
-  let build_pmem_sim = Format.sprintf "%s/../scripts/build_pmem_sim" cfg.workingdir in
+let run_fpga_script (cfg : cfg_t) =
+  (* Use lightweight per-step script: msp430-as + msp430-ld only *)
+  let build_pmem_fpga = Format.sprintf "%s/../scripts/build_pmem_fpga" cfg.workingdir in
   let t0 = Time_now.nanoseconds_since_unix_epoch () in
-  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" build_pmem_sim cfg.tmpdir cfg.basename (dbg_str ())) in
-  Logs.info (fun m -> m "[PERF] build_pmem_sim: %.1f ms" (ms_since t0));
+  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" build_pmem_fpga cfg.tmpdir cfg.basename (dbg_str ())) in
+  Logs.info (fun m -> m "[PERF] build_pmem_fpga: %.1f ms" (ms_since t0));
   if res <> 0 then
-    failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
+    failwith (Format.sprintf "Error: build_pmem_fpga returned %d." res)
   else (
-    (* Invoke the simulator *)
-    let ts = Time_now.nanoseconds_since_unix_epoch () in
-    let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ())) in
-    Logs.info (fun m -> m "[PERF] simulate: %.1f ms" (ms_since ts));
-    (* (match Logs.level () with | Some Logs.Debug -> assert (Sys_unix.command (Format.sprintf "cp %s %s" cfg.dumpfile cfg.workingdir) = 0) | _ -> ()); *)
-    if res = 1 then
-      failwith "Simulator: Stimulus did not complete!"
-    (* else if res = 2 then
-      Result.Error (Output_internal.OMaybeDiverge) *)
-    else if res = 3 then
-      failwith "Simulator: Unexpected error :("
-    else
-      (* If res = 2, simulation diverged and we signal it! *)
-      Result.Ok (res = 2, Vcd.vcd cfg.dumpfile))
+    let (daemon_oc, daemon_ic) = match !fpga_daemon with Some ch -> ch | None -> failwith "FPGA daemon not running" in
+    let query breakpoint =
+      Logs.debug (fun m -> m "FPGA daemon query: elf=%s bp=%d" cfg.pmem_elf breakpoint);
+      let tq = Time_now.nanoseconds_since_unix_epoch () in
+      (* Send request to daemon: "elf_path inst_number\n" *)
+      Stdlib.output_string daemon_oc (Format.sprintf "%s %d\n" cfg.pmem_elf breakpoint);
+      Stdlib.flush daemon_oc;
+      (* Read response lines until "DONE" *)
+      let rec collect acc =
+        let line = Stdlib.input_line daemon_ic in
+        if String.equal line "DONE" then List.rev acc
+        else collect (line :: acc)
+      in
+      let lines = collect [] in
+      Logs.info (fun m -> m "[PERF] run_fpga: %.1f ms" (ms_since tq));
+      Logs.debug (fun m -> m "FPGA daemon response (%d lines)" (List.length lines));
+      match lines with
+      | ["DIVERGED"] -> None
+      | _ ->
+          let entries = List.filter_map lines ~f:(fun line ->
+            match String.split (String.strip line) ~on:' ' with
+            | [pc_s; inst_num_s; irq_s; sm_s; e_state_s; r4_s; gie_s; timerA_s; umem_s] ->
+                (try Some {
+                  pc = Int.of_string pc_s;
+                  inst_number = Int.of_string inst_num_s;
+                  irq = Int.of_string irq_s;
+                  sm_executing = Int.of_string sm_s;
+                  e_state = Int.of_string e_state_s;
+                  r4 = Int.of_string r4_s;
+                  gie = Int.of_string gie_s;
+                  timerA = Int.of_string timerA_s;
+                  umem = Int.of_string umem_s;
+                } with _ -> None)
+            | _ -> None
+          ) in
+          (* Daemon sends entries newest-first; reverse to get chronological order *)
+          Some (List.rev entries)
+    in
+    let breakpoint = cfg.last_inst_number + 1 in
+    match query breakpoint with
+    | Some entries -> Result.Ok (false, entries)
+    | None ->
+        (* The CPU reset before inst last+1 was decoded (e.g. end_of_test cleanup reset).
+           Re-query at last_inst_number to capture the window that ended there, which
+           may contain the labeled instructions we need. Not a semantic divergence. *)
+        Logs.debug (fun m -> m "FPGA DIVERGED at bp=%d; retrying at bp=%d" breakpoint cfg.last_inst_number);
+        (match query (Int.max 1 cfg.last_inst_number) with
+        | Some entries -> Result.Ok (false, entries)
+        | None -> Result.Ok (true, []))
+  )
 
 let output_of_signals
   ~(cpu_mode_s : Output_internal.mode_t)
@@ -282,46 +307,37 @@ let output_of_signals
   ~(gie_val : string)
   ~(reg_val : string)
   ~(umem_val : string)
-  (* ~(pmem_val : string)  *)
   ~(k : int)
   ~(timerA_val : string): [< `Out of Output_internal.element_t | `OHandle of Output_internal.payload_t] =
-  (* e_state mapping:
-      0x00 - 0x0F -> non-SM
-      0x10        -> SM_IRQ_REGS
-      0x11        -> SM_IRQ_WAIT
-      0x12        -> SM_RETI_REGS
-      0x13        -> SM_IRQ_PAD
-      0x14        -> SM_RETI_PAD
-  *)
-  let word_of_bin s : word_t = Int.of_string ("0b" ^ s) in
+  let word_of_bin s : word_t = Int.of_string s in
   let e_states = List.map e_states ~f:word_of_bin in
   let compute_e_state =
-    (* Logs.debug (fun p -> p "output_of_signals.compute_e_state: e_states: %s" (List.to_string ~f:(sprintf "%#x") e_states)); *)
     (if List.for_all e_states ~f:(fun e_state -> e_state <= 0x0F) then
       `NO_SM
     else
+      (* The FPGA Sancus hardware emits one or more 0x13 (SM interrupt save)
+         states between 0x10 (SM_IRQ_REGS) and 0x11 (SM_IRQ exit).
+         Collapse extra 0x13s so HANDLE is recognised regardless of count. *)
       let rec _compute_e_state e_states = (match e_states with
         | [] -> `OTHER
         | 0x12::0x14::_ | 0x12::_ -> `RETI
-        (* | 0x14::_ -> `PP_JMPOUT *)
-        | 0x10::0x13::0x11::_ | 0x10::0x11::_ -> `HANDLE
+        | 0x10::0x11::_ -> `HANDLE
+        | 0x10::0x13::rest -> _compute_e_state (0x10::rest)
         | _::e_states_rest -> _compute_e_state e_states_rest
       ) in _compute_e_state e_states
     ) in
   let payload : Output_internal.payload_t = {
     k = k;
     gie = Bool.of_string_hum gie_val;
-    reg_val = (word_of_bin reg_val % 8); (* We limit the register to 3 bits to avoid useless looping *)
-    (* pmem_val = word_of_bin pmem_val; *)
+    reg_val = (word_of_bin reg_val % 8);
     umem_val = word_of_bin umem_val;
     timerA_counter = word_of_bin timerA_val;
     mode = cpu_mode_e
   } in
-  (*Logs.debug (fun m -> m "%s, %s, %s" (show_mode cpu_mode_s) (show_mode cpu_mode_e) (show_e_state compute_e_state)) *)
   match cpu_mode_s, cpu_mode_e, compute_e_state with
   | PM, PM, `NO_SM -> `Out (Output_internal.OTime payload)
   | UM, PM, `NO_SM -> `Out (Output_internal.OJmpIn payload)
-  | UM, _, `RETI  -> `Out (Output_internal.OReti payload) (* ! FIXME: this is actually a RETI? *)
+  | UM, _, `RETI  -> `Out (Output_internal.OReti payload)
   | PM, UM, `NO_SM -> `Out (Output_internal.OJmpOut payload)
   | _, UM, `HANDLE  -> `OHandle payload
   | UM, UM, _ -> `Out (Output_internal.OTime payload)
@@ -333,150 +349,118 @@ let output_of_signals
   | PM, UM, `RETI -> failwith "output_of_signals: found `PM, `UM, `RETI. It may be a bug!"
   | PM, PM, `RETI -> failwith "output_of_signals: found `PM, `PM, `RETI. It may be a bug!"
 
-let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) list) (dump : Vcd.vcd_t) : int * (string * string) list * Output_internal.element_t list =
-  (* let labels = List.dedup_and_sort labels ~compare:[%derive.ord: string*string] in *)
-  (* Find the interesting points in the code, using the labels *)
-  Logs.debug (fun p -> p "Verilog.analyse_dump: labels: %s" ([%derive.show: (string*string) list] labels));
+let analyse_trace (diverges : bool) (cfg : cfg_t) (labels : (string * string) list) (trace : trace_entry list) : int * (string * string) list * Output_internal.element_t list =
+  Logs.debug (fun p -> p "Fpga.analyse_trace: labels: %s" ([%derive.show: (string*string) list] labels));
+  (* Run nm once and cache all symbol addresses to avoid O(N²) shell invocations *)
   let nm_output = Shexp_process.eval Shexp_process.(pipe (run "nm" [cfg.pmem_elf]) read_all) in
   let sym_table = List.fold (String.split_lines nm_output) ~init:String.Map.empty
     ~f:(fun acc line ->
       match String.split (String.strip line) ~on:' ' with
       | [addr; _; name] -> Map.set acc ~key:name ~data:addr
-      | _ -> acc) in
+      | _ -> acc
+    ) in
   let addr_of_label_fast l =
     match Map.find sym_table l with
     | Some addr -> Int.of_string ("0x" ^ String.strip addr)
-    | None -> addr_of_label cfg l
+    | None -> addr_of_label cfg l  (* fallback to subprocess *)
   in
   let annot_pcs = List.map labels ~f:(fun (s, e) -> addr_of_label_fast s, addr_of_label_fast e) in
   let pc_to_label (s, e) = List.find_exn labels ~f:(fun (s', e') -> s = addr_of_label_fast s' && e = addr_of_label_fast e') in
-  let pc_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_pc[15:0]" in
-  let irq_map = Vcd.get_signal dump "TOP.tb_openMSP430.msp_debug_0.irq" in
-  let inst_number_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_number[31:0]" in
-  let sm_executing_map = Vcd.get_signal dump "TOP.tb_openMSP430.dut.frontend_0.sm_executing" in
-  let e_state_map = Vcd.get_signal dump "TOP.tb_openMSP430.dut.e_state[4:0]" in
-  let r4_map = Vcd.get_signal dump "TOP.tb_openMSP430.r4[15:0]" in
-  let gie_map = Vcd.get_signal dump "TOP.tb_openMSP430.gie" in
-  let timerA_map = Vcd.get_signal dump "TOP.tb_openMSP430.timerA_0.tar[15:0]" in
-  (* let pmem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem240[15:0]" in *)
-  let umem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem250[15:0]" in
-  (* Logs.debug (fun m -> m "reg_map : [%s]\n" (List.to_string (Map.to_alist r4_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
-  Logs.debug (fun m -> m "gie_map : [%s]\n" (List.to_string (Map.to_alist gie_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
-  Logs.debug (fun m -> m "timerA_map : [%s]\n" (List.to_string (Map.to_alist timerA_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  (* Logs.debug (fun m -> m "pmem_map : [%s]\n" (List.to_string (Map.to_alist pmem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  (* Logs.debug (fun m -> m "umem_map : [%s]\n" (List.to_string (Map.to_alist umem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  let time_and_pc_map = Map.fold ~init:Int.Map.empty
-    pc_map.tv
-    ~f:(fun ~key:time ~data:raw_data acc_tpm ->
-      (* Logs.debug (fun m -> m "Verilog.analyse_dump: time: %d; raw_data: %s; pc: %x; irq: %s; inst_num: %d" time raw_data (Int.of_string ("0b" ^ raw_data)) (Vcd.Signal.at_time irq_map time) (Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map time))); *)
-      if not (String.equal raw_data "x") &&
-        List.exists annot_pcs ~f:(fun (s, e) -> let pc = Int.of_string ("0b" ^ raw_data) in pc >= s && pc < e) &&
-        not (String.equal (Vcd.Signal.at_time irq_map time) "1") &&
-        (* FIXME: find a better way to do this *)
-        Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map time) >= cfg.last_inst_number &&
-        (* time >= cfg.last_time && *)
-        not (Map.exists acc_tpm ~f:(fun data' -> String.equal raw_data data'))
-      then
-          Map.add_exn acc_tpm ~key:time ~data:raw_data
-      else
-        acc_tpm
+
+  let compute_cpu_mode e = if e.sm_executing = 0 then Output_internal.UM else Output_internal.PM in
+  (* Return the first clock cycle of instruction n, or None if not in trace *)
+  let first_cycle_of n = List.find trace ~f:(fun e -> e.inst_number = n) in
+  (* Return all clock cycles of instruction n *)
+  let all_cycles_of n = List.filter trace ~f:(fun e -> e.inst_number = n) in
+
+  (* Truncate at the br #0xffff crash sentinel (PC=0xFFFF).
+     This address is architecturally unreachable as a valid decoded instruction on MSP430
+     (odd address, inside the interrupt vector table) so it only appears as the result
+     of the deliberate end-of-test crash.  Stopping here removes:
+       - the crash instruction itself
+       - any glitch entries the Sancus/reset pipeline emits after puc_rst fires
+       - second-run entries
+     All of which would otherwise corrupt last_inst_number. *)
+  let trace = List.take_while trace ~f:(fun entry -> entry.pc <> 0xFFFF) in
+
+  (* Keep only the first clock cycle per inst_number that hits an annotated PC *)
+  let matched_entries = List.filter_mapi trace ~f:(fun idx entry ->
+    let is_annotated = List.exists annot_pcs ~f:(fun (s, e) -> entry.pc >= s && entry.pc < e) in
+    if is_annotated && entry.irq <> 1 && entry.inst_number >= cfg.last_inst_number then
+      Some (idx, entry)
+    else
+      None
+  ) in
+
+  (* Deduplicate by exact PC: keep the first occurrence of each PC.
+     Multi-instruction label ranges (e.g. sancus_enable) have many distinct PCs and all
+     are preserved; last_inst_number will be set to the last one seen in the window. *)
+  let unique_matched_entries =
+    List.fold matched_entries ~init:[] ~f:(fun acc (idx, entry) ->
+      if List.exists acc ~f:(fun (_, e) -> e.pc = entry.pc) then acc
+      else acc @ [(idx, entry)]
     ) in
-  (* if Map.length time_and_pc_map >= 1000 then (* An arbitrary limit! *)
-    cfg.last_inst_number, [], [Output_internal.OMaybeDiverge]
-  else *)
-  (
-  Logs.debug (fun m -> m "time_and_pc_map: %s"
-    (Map.fold time_and_pc_map ~init:"" ~f:(fun ~key ~data acc -> sprintf "%s; (%d -> %X)" acc key (Int.of_string ("0b" ^ data))))
-  );
-  let cand_inst_numbers = List.map (Map.to_alist time_and_pc_map) ~f:(fun (ct, _) -> Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map ct)) in
-  (*
-    If the e_state after an inst_number is 0x10 (SM_IRQ_REGS) we are handling an interrupt in PM!
-    If the e_state after an inst_number is 0x02 (IRQ_0) we are handling an interrupt in UM!
-    If that's the case, we keep instructions up to inst_number and inst_number+1 and discard all the rest
-  *)
-  (* inst_cfg returns the pair (timin, inst_number) for the given inst_number *)
-  let inst_cfg inst_number = Map.min_elt (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
-  let raw_pc_of_inst_num inst_number = match inst_cfg inst_number with Some (t, _) -> Vcd.Signal.at_time pc_map t | None -> failwith "Should never happen!" in
-  (* seen_pcs collects actually seen pcs for left_labels calculation, i.e., we exclude IRQ pcs! *)
-  let seen_pcs, inst_numbers = List.fold_until cand_inst_numbers ~init:([], []) ~f:(fun (acc_seen, acc_in) curr_inst_number ->
-    let next_inst_number = curr_inst_number + 1 in
-    (match inst_cfg next_inst_number with
-    | None -> Continue ((raw_pc_of_inst_num curr_inst_number)::acc_seen, curr_inst_number::acc_in)
-    | Some (after_last_inst_time, _) ->
-        if Int.of_string("0b" ^ Vcd.Signal.at_time e_state_map after_last_inst_time) = 0x10 then
-          Stop ((raw_pc_of_inst_num curr_inst_number)::acc_seen, next_inst_number::curr_inst_number::acc_in)
-        else
-          Continue ((raw_pc_of_inst_num curr_inst_number)::acc_seen, curr_inst_number::acc_in)
-    )
-  ) ~finish:(fun r -> r) in
-  List.iter annot_pcs ~f:(fun apc -> Logs.debug (fun p -> p "Verilog.analyse_dump: annot_pcs -> lbl: (0x%x, 0x%x) -> %s" (fst apc) (snd apc) ([%derive.show: (string*string)] (pc_to_label apc))));
-  let left_labels' = List.map (List.filter annot_pcs ~f:(fun (s, e) -> Option.is_none (List.find seen_pcs ~f:(fun raw_pc -> let pc = Int.of_string ("0b" ^ raw_pc) in pc >= s && pc < e)))) ~f:pc_to_label in
-  Logs.debug (fun p -> p "Verilog.analyse_dump: left_labels: %s" (Sexp.to_string (List.sexp_of_t sexp_of_label_t left_labels')));
-  let inst_numbers = List.dedup_and_sort ~compare:Int.compare inst_numbers in
+
+  let seen_pcs, filtered_matched_entries =
+    List.fold_until unique_matched_entries ~init:([], [])
+      ~f:(fun (acc_seen, acc_entries) (idx, entry) ->
+        (* Check the first cycle of the *next* instruction for SM_IRQ_REGS (0x10) *)
+        match first_cycle_of (entry.inst_number + 1) with
+        | Some next_e when next_e.e_state = 0x10 ->
+            Stop (entry.pc :: acc_seen, acc_entries @ [(idx, entry); (idx, next_e)])
+        | _ ->
+            Continue (entry.pc :: acc_seen, acc_entries @ [(idx, entry)])
+      ) ~finish:(fun r -> r) in
+
+  let left_labels' = List.map (List.filter annot_pcs ~f:(fun (s, e) ->
+    not (List.exists seen_pcs ~f:(fun seen_pc -> seen_pc >= s && seen_pc < e))
+  )) ~f:pc_to_label in
+
+  let inst_numbers = List.map filtered_matched_entries ~f:(fun (_, entry) -> entry.inst_number) in
   Logs.debug (fun m -> m "inst_numbers: %s" (List.to_string inst_numbers ~f:(fun el -> sprintf "%d" el)));
-  (* Since after divergence, nothing different than th subsequence of actions causing the infinite loop can be executed, when inst_numbers is empty we can have two cases:
-          - if diverges holds, then the given input was "illegal" (i.e., not in the looping sequence)
-          - otherwise, we are in an unsupported case and we can output OUnsupported *)
+
   if List.is_empty inst_numbers && diverges then
-  (
     cfg.last_inst_number, [], [Output_internal.OMaybeDiverge]
-  )
   else if List.is_empty inst_numbers && not diverges then
-  (
-    Logs.debug (fun p -> p "FIXME: Could not find the instruction in the vcd file, please check your specification. The cause is usually an unsupported action, e.g., a jump from an enclave to another, an interrupt in unprotected mode, ... --- Returning Unsupported");
-    cfg.last_inst_number, [], [Output_internal.OUnsupported]
-  )
+    (
+      Logs.debug (fun p -> p "FIXME: Could not find the instruction in the trace, returning Unsupported");
+      cfg.last_inst_number, [], [Output_internal.OUnsupported]
+    )
   else
-  (
-    let last_inst_number, res = List.fold
-      inst_numbers
-      ~init:(cfg.last_inst_number, [])
-      ~f:(fun (lin, acc) inst_number ->
-        (* The below min_elt_exn should never fail, since inst_numbers is not empty here *)
-        let (ref_time_begin, _) = Map.min_elt_exn (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
-        let end_config = Map.min_elt (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number + 1)) in
-        let compute_cpu_mode t = if String.equal (Vcd.Signal.at_time sm_executing_map t) "0" then Output_internal.UM else Output_internal.PM in
-        match end_config with
-        | None ->
-          Logs.debug (fun m -> m "Verilog.analyse_dump: folding over inst_numbers and found a RESET, outputting OReset.");
-          lin, acc @ [ `Out Output_internal.OReset ]
-        | Some (ref_time_end, _) ->
-            (* Extract the list of all elements from e_state_map whose keys are >= ref_time_begin and < ref_time_end *)
-            let e_status = List.map (Map.to_alist (Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
-            (* Extract the values of registers and memory, as the last value before ref_time_end *)
-            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            (* let pmem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
-            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let k = (ref_time_end - ref_time_begin) / cfg.sim_cycle_ratio in
-            let lin' = inst_number in
-            Logs.debug (fun m -> m "===== cfg.last_inst_number %d, lin %d, lin' %d\n" cfg.last_inst_number lin lin');
-            (* Process the results into an actual output *)
-            lin', acc @ [ output_of_signals ~cpu_mode_s:(compute_cpu_mode ref_time_begin) ~cpu_mode_e:(compute_cpu_mode ref_time_end) ~e_states:e_status ~gie_val:gie_val ~reg_val:reg_val ~umem_val:umem_val (* ~pmem_val:pmem_val *) ~k:k ~timerA_val:timerA_val]
+    (
+      let last_inst_number, res = List.fold
+        filtered_matched_entries
+        ~init:(cfg.last_inst_number, [])
+        ~f:(fun (_lin, acc) (_, entry) ->
+          (* cpu_mode_s: mode at start of this instruction (first captured clock cycle) *)
+          let cpu_mode_s = compute_cpu_mode entry in
+          (* cpu_mode_e: mode at start of the next instruction.
+             If the next instruction is outside the 10-cycle window we fall back to cpu_mode_s
+             (mode unchanged). True CPU resets are signalled via DIVERGED in run_fpga_script. *)
+          let cpu_mode_e = match first_cycle_of (entry.inst_number + 1) with
+            | Some next_e -> compute_cpu_mode next_e
+            | None -> cpu_mode_s
+          in
+          (* e_status: all e_state values across the full instruction *)
+          let inst_cycles = all_cycles_of entry.inst_number in
+          let e_status = List.map inst_cycles ~f:(fun e -> sprintf "%d" e.e_state) in
+          let reg_val = sprintf "%d" entry.r4 in
+          let gie_val = if entry.gie = 1 then "true" else "false" in
+          let umem_val = sprintf "%d" entry.umem in
+          let timerA_val = sprintf "%d" entry.timerA in
+          (* k: number of clock cycles for this instruction *)
+          let k = Int.max 1 (List.length inst_cycles) in
+          let lin' = entry.inst_number in
+          lin', acc @ [ output_of_signals ~cpu_mode_s ~cpu_mode_e ~e_states:e_status ~gie_val ~reg_val ~umem_val ~k ~timerA_val ]
         ) in
-      (*
-      For each pair of labels we have an output.
-        - If a Reset or a Exception is in the list, just return such element
-        - Otherwise:
-          + If the list has length 1, it means that the original action was a single instruction (CInst, CReti for attackers or any instruction for enclaves), and we just need to extract this single element;
-          + If the length is >1 then the original action was something different (CJmpIn, CCreateEnclave, CTimerEnable):
-              * CJmpIn: we expect the sequence to be OSilent ... OSilent OJmpIn: just return OJmpIn
-              * CTimerEnable/CCreateEnclave: this will be a sequence OSilent ... OSilent : return OSilent
-              * CJmpOut: we sum the timings of the instructions composing it into k and return CJmpOut k
-          Overall: we can always return the last observable of the res list (if any)
-      *)
+
       let int_o_equal o o' = match o, o' with `OHandle k, `OHandle k' -> Output_internal.equal_payload_t k k' | `Out o, `Out o' -> Output_internal.equal_element_t o o' | _ -> false in
       let int_o_show o = match o with `OHandle k -> sprintf "`OHandle %s" (Output_internal.show_payload_t k) | `Out o -> sprintf "`Out %s" (Output_internal.show_element_t o) in
       if List.mem res (`Out Output_internal.OReset) ~equal:int_o_equal then
         cfg.last_inst_number, [], [Output_internal.OReset]
       else
         (
-          (*
-            res is a list of observables, ideally one for each instruction.
-            We now "pack together" observables of the same kind, updating their field
-          *)
-          Logs.debug (fun p -> p "Verilog.analyse_dump: complete out: %s" (List.to_string ~f:int_o_show res));
+          Logs.debug (fun p -> p "Fpga.analyse_trace: complete out: %s" (List.to_string ~f:int_o_show res));
           let merge_int_obs o o' =
             let open Output_internal in
             match o, o' with
@@ -498,7 +482,7 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
                 | Some kind -> (kind, acc_packed)
                 | None -> (o, acc_packed @ [curr_kind])) in
           let packed = packed_no_last @ [last] in
-          Logs.debug (fun p -> p "Verilog.analyse_dump: packed out: %s" (List.to_string ~f:int_o_show packed));
+          Logs.debug (fun p -> p "Fpga.analyse_trace: packed out: %s" (List.to_string ~f:int_o_show packed));
           let composed =
             let open Output_internal in
             List.foldi
@@ -512,21 +496,14 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
                   | Some (`Out (OJmpOut _)), `OHandle _, _ | Some (`Out (OTime _)), `OHandle _, _ -> acc_composite
                   | _, `Out ao, _ -> acc_composite @ [ao]
                   | _, `OHandle p, _-> acc_composite @ [OTime_Handle ({ p with k = 0; mode = PM }, p)]
-                  (* Note: Handle detected right after a reti, it means that we are in PM, so treat it like a OTime_Handle with 0 cycles in PM *)
-                  (* | _, `OHandle _, _-> failwith "Verilog.analyse_dump: unexpected OHandle while composing observables." *)
               ) in
-          (* Logs.debug (fun p -> p "Verilog.analyse_dump: composed out: %s" (Output_internal.show composed)); *)
           let no_silent = List.drop_while (List.drop_last_exn composed) ~f:(Output_internal.equal_element_t OSilent) @ [List.last_exn composed] in
-          (* Logs.debug (fun p -> p "Verilog.analyse_dump: no_silent out: %s" (Output_internal.show no_silent)); *)
-          (* We now collect the labels that were expected but were not found in the execution *)
-          (* it is important to clear left_labels each time, except when dealing with interrupts (i.e., during a Handle, and after it until a Reti!) *)
           let last_ns = List.last_exn no_silent in
           match last_ns with
           | OJmpOut_Handle _ | OTime_Handle _ | OSilent -> last_inst_number, left_labels', no_silent
           | _ -> last_inst_number, [], no_silent
         )
-  )
-)
+    )
 
 let pre (cfg : t) =
   (match Logs.level () with
@@ -540,22 +517,18 @@ let pre (cfg : t) =
       input_history = [];
       output_history = [];
       left_labels = [];
-      (* last_time = 0; *)
       last_inst_number = 0;
   }
 
 let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
   ignore (Sys_unix.command (Format.sprintf "rm -Rf \"%s/*\"" !cfg.tmpdir));
-  Logs.debug (fun m -> m "\x1B[31mVerilog.step: Invoked with %s\x1B[0m" (Sexp.to_string (Input.sexp_of_t i)));
+  Logs.debug (fun m -> m "\x1B[31mFpga.step: Invoked with %s\x1B[0m" (Sexp.to_string (Input.sexp_of_t i)));
   if not silent then
   (match Logs.level () with
     | Some Logs.App -> Format.printf "[%s" (match i with
-      (* NoInput is yellow *)
       | INoInput -> "\x1B[33m" ^ "_" ^ "\x1B[0m"
-      (* Stuff that is exceptional, in red *)
       | IAttacker Attacker.CRst -> "\x1B[1;31m" ^ "•" ^ "\x1B[0m"
       | IAttacker Attacker.CRstNZ -> "\x1B[1;31m" ^ "Z" ^ "\x1B[0m"
-      (* Stuff by the attacker, is blue *)
       | IAttacker (Attacker.CJmpIn _) -> "\x1B[34m" ^ "I" ^ "\x1B[0m"
       | IAttacker (Attacker.CCreateEncl _) -> "\x1B[34m" ^ "C" ^ "\x1B[0m"
       | IAttacker (Attacker.CTimerEnable _) -> "\x1B[34m" ^ "T" ^ "\x1B[0m"
@@ -571,7 +544,6 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
       | IAttacker (Attacker.CInst (I_NAMED _)) -> "\x1B[34m" ^ "NAMED" ^ "\x1B[0m"
       | IAttacker (Attacker.CInst (I_CMP _)) -> "\x1B[34m" ^ "=" ^ "\x1B[0m"
       | IAttacker (Attacker.CIfZ _) -> "\x1B[34m" ^ "IfZ" ^ "\x1B[0m"
-      (* Stuff by the enclave, is green *)
       | IEnclave (Enclave.CInst I_NOP) -> "\x1B[32m" ^ "N" ^ "\x1B[0m"
       | IEnclave (Enclave.CInst I_DINT) -> "\x1B[32m" ^ "D" ^ "\x1B[0m"
       | IEnclave (Enclave.CUbr) -> "\x1B[32m" ^ "U" ^ "\x1B[0m"
@@ -586,57 +558,44 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
       | IEnclave (Enclave.CInst (I_JZ _)) -> "\x1B[32m" ^ "JZ" ^ "\x1B[0m"
       | IEnclave (Enclave.CInst (I_PUSH _)) -> "\x1B[32m" ^ "P" ^ "\x1B[0m"
       | IEnclave (Enclave.CInst (I_NAMED _)) -> "\x1B[32m" ^ "NAMED" ^ "\x1B[0m"
-      (* Reti is special, let it be magenta *)
       | IAttacker (Attacker.CReti) -> "\x1B[35m" ^ "R" ^ "\x1B[0m"
       ); Out_channel.flush stdout
      | _ -> ()
   ) else ();
-  (* Check if the history of inputs + the new one is "legal" according to the spec.
-     If not, return Exception/Reset depending on whether the mode was inside the enclave or not. *)
-  Logs.debug (fun m -> m "Verilog.step: Input history: %s" (Sexp.to_string_mach (List.sexp_of_t Input.sexp_of_t !cfg.input_history)));
-  Logs.debug (fun m -> m "Verilog.step: Output history: %s" (Sexp.to_string_mach (List.sexp_of_t Output_internal.sexp_of_t !cfg.output_history)));
+  Logs.debug (fun m -> m "Fpga.step: Input history: %s" (Sexp.to_string_mach (List.sexp_of_t Input.sexp_of_t !cfg.input_history)));
+  Logs.debug (fun m -> m "Fpga.step: Output history: %s" (Sexp.to_string_mach (List.sexp_of_t Output_internal.sexp_of_t !cfg.output_history)));
   let curr_spec_dfa, matchable = Inputgen.matchable !cfg.initial_spec i !cfg.input_history !cfg.output_history in
-  Logs.debug (fun m -> m "Verilog.step: Mode: %s" (Inputgen.mode_show curr_spec_dfa.mode));
-  Logs.debug (fun m -> m "Verilog.step: Input: %s" (Input.show i));
-  (* (Partial) update of the configuration *)
+  Logs.debug (fun m -> m "Fpga.step: Mode: %s" (Inputgen.mode_show curr_spec_dfa.mode));
+  Logs.debug (fun m -> m "Fpga.step: Input: %s" (Input.show i));
   let cfg' = update_cfg `Label curr_spec_dfa.mode !cfg i in
   let last_inst_number, left_labels, out = (if not matchable then
     (
-      Logs.debug (fun m -> m "Verilog.step: %s not matchable in %s, outputting OIllegal (default)." (Input.show i) (Inputgen.mode_show curr_spec_dfa.mode));
+      Logs.debug (fun m -> m "Fpga.step: %s not matchable in %s, outputting OIllegal (default)." (Input.show i) (Inputgen.mode_show curr_spec_dfa.mode));
       cfg'.last_inst_number, [], Output_internal.default
-      (* failwith "Verilog.step: I got an illegal input!" *)
     )
   else if
     List.mem ~equal:(fun (o, _, _) (o', _, _) -> List.equal Output_internal.equal_element_t o o') cfg'.output_history ([Output_internal.OMaybeDiverge], [], 0) ||
     List.mem ~equal:Input.equal cfg'.input_history Input.INoInput ||
     List.mem ~equal:Output_internal.equal cfg'.output_history Output_internal.default then
     (
-      Logs.debug (fun m -> m "Verilog.step: cannot continue since we got empty input, illegal action or halt previously!");
+      Logs.debug (fun m -> m "Fpga.step: cannot continue since we got empty input, illegal action or halt previously!");
       cfg'.last_inst_number, [], Output_internal.default
     )
   else
     (
-      (* Logs.debug (fun m -> m "Verilog.step: input matched, running Verilog."); *)
-      (* Read the template file, fill it with the new code and write it to the filled file *)
       let template_code = In_channel.read_all cfg'.templatefile in
       let labels, code = fill_template template_code cfg' in
         Logs.debug (fun m -> m "filledfile: %s" cfg'.filledfile);
         Out_channel.write_all cfg'.filledfile ~data:code;
-        (* Now, if dry_output is None, run the simulator and collect results; Otherwise return dry_output directly *)
-        (* If the output is one of those for which left_labels might not be empty, ignore the directive! *)
-        (* Dry is used only if the output we expect empties the contents of left_labels: *)
-        (* let open Output_internal in *)
         let force_no_dry () =
-          let t, ll, e = match run_simulator cfg' with
+          let t, ll, e = match run_fpga_script cfg' with
             | Error o -> cfg'.last_inst_number, [], [o]
-            | Ok (diverges, d) ->
-                let l_last_inst_number, l_left_labels, l_out = analyse_dump diverges cfg' labels d in
-                (* If we observed a reti, we need to re-perform the analysis on left_labels, otherwise we are done! *)
+            | Ok (diverges, tr) ->
+                let l_last_inst_number, l_left_labels, l_out = analyse_trace diverges cfg' labels tr in
                 match List.find l_out ~f:(fun el -> match el with Output_internal.OReti _ -> true | _ -> false) with
                 | None -> l_last_inst_number, cfg'.left_labels @ l_left_labels, l_out
                 | Some _ ->
-                  (* Logs.debug (fun p -> p "Reti found: re-launching: ll: %s; l: %s" ([%derive.show: (string*string) list] cfg'.left_labels) ([%derive.show: (string*string) list] labels)); *)
-                  analyse_dump diverges cfg' (cfg'.left_labels @ labels) d in (t, ll, (e, ll, t))
+                  analyse_trace diverges cfg' (cfg'.left_labels @ labels) tr in (t, ll, (e, ll, t))
         in
         match dry_output with
         | None -> force_no_dry ()
@@ -649,31 +608,22 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
   ) in
   let cfg'_nolbl = update_cfg `NoLabel curr_spec_dfa.mode !cfg i in
   cfg := { cfg'_nolbl with last_inst_number = last_inst_number; left_labels = left_labels; output_history = cfg'.output_history @ [ out ] };
-  (* If we observe a reset, this is special and we should behave as if a pre () was issued by the learning algorithm *)
   if List.mem (fst3 out) OReset ~equal:Output_internal.equal_element_t then pre cfg else ();
   if not silent then
   (match Logs.level () with
   | Some Logs.App ->
       let render_output_t o = (match o with
-        (* Illegal is yellow *)
-        (* | Output_internal.OTimeout -> "\x1B[33m" ^ "⏲" ^ "\x1B[0m" *)
         | Output_internal.OIllegal -> "\x1B[33m" ^ "†" ^ "\x1B[0m"
         | Output_internal.OUnsupported -> "\x1B[33m" ^ "?" ^ "\x1B[0m"
-        (* Stuff that cannot be recovered in red *)
         | Output_internal.OReset -> "\x1B[1;31m" ^ "•" ^ "\x1B[0m"
         | Output_internal.OMaybeDiverge -> "\x1B[1;31m" ^ "∞" ^ "\x1B[0m"
-        (* Stuff caused by the attacker, is blue *)
         | Output_internal.OJmpIn _ -> "\x1B[1;34m" ^ "i" ^ "\x1B[0m"
         | Output_internal.OSilent -> "\x1B[1;34m" ^ "s" ^ "\x1B[0m"
-        (* Stuff caused by the enclave, is green *)
         | Output_internal.OJmpOut _ -> "\x1B[1;32m" ^ "o" ^ "\x1B[0m"
         | Output_internal.OTime _ -> "\x1B[1;32m" ^ "t" ^ "\x1B[0m"
-        (* Reti is special, let it be magenta *)
         | Output_internal.OTime_Handle _ -> "\x1B[1;35m" ^ "th" ^ "\x1B[0m"
         | Output_internal.OJmpOut_Handle _ -> "\x1B[1;35m" ^ "oh" ^ "\x1B[0m"
         | Output_internal.OReti _ -> "\x1B[1;35m" ^ "r" ^ "\x1B[0m"
-        (* | Output_internal.OReti_Time _ -> "\x1B[1;35m" ^ "rt" ^ "\x1B[0m"
-        | Output_internal.OReti_JmpOut _ -> "\x1B[1;35m" ^ "ro" ^ "\x1B[0m" *)
       ) in
       Format.printf "%s]" (List.fold (fst3 out) ~init:"" ~f:(fun acc o -> acc ^ render_output_t o));
     ; Out_channel.flush stdout

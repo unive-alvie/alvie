@@ -1,23 +1,32 @@
 #!/usr/bin/env bash
 
-# This script is the entry point for the automatic discovery of
-# gaps between various versions of the processor.
-# It takes all the models pairs from RES_DIR and produces
-# graphs comparing them in CEX_DIR. LIMIT variable is used to limit the number of
-# counterexamples to be considered for each pair of model
+# Compare learned models for one attacker spec (secret 0 vs secret 1).
 #
-# If fast is given it uses the fast models.
 # Usage:
-#   ./compare_one.sh <spec_basename>
+#   ./check_one.sh <att_spec> <subdirectory> [--fpga]
+#
+# --fpga  Look for models produced by the FPGA backend (<subdirectory>-fpga).
+
+FPGA=false
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--fpga" ]; then
+    FPGA=true
+  else
+    ARGS+=("$arg")
+  fi
+done
+set -- "${ARGS[@]}"
 
 specbn=$1
 
 # Useful paths
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-LOGS_DIR=$SCRIPT_DIR/logs/$2
-RES_DIR=$SCRIPT_DIR/results/$2
-CEX_DIR=$SCRIPT_DIR/counterexamples/$2
+DIR_SUFFIX=$( $FPGA && echo "-fpga" || true )
+LOGS_DIR=$SCRIPT_DIR/logs/$2${DIR_SUFFIX}
+RES_DIR=$SCRIPT_DIR/results/$2${DIR_SUFFIX}
+CEX_DIR=$SCRIPT_DIR/counterexamples/$2${DIR_SUFFIX}
 TMP_DIR=$SCRIPT_DIR/tmp
 
 MM_DIR=$SCRIPT_DIR/alvie/code
@@ -25,6 +34,7 @@ MM_DIR=$SCRIPT_DIR/alvie/code
 cd $SCRIPT_DIR
 
 mkdir -p $LOGS_DIR
+mkdir -p $CEX_DIR
 
 # Loads the list of all available models
 readarray ZERO_MODELS <<< "$(ls $RES_DIR/*-${specbn}-*-0-*-int.dot)"
@@ -61,7 +71,6 @@ do
         m2_nint=${m2//int/nint}
         m2_name="$(basename $m2 .dot)"
 
-        # No need of comparing a model with itself
         if [ "$m1_name" = "$m2_name" ]; then
           continue
         fi
@@ -71,8 +80,6 @@ do
         logfile="$LOGS_DIR/compare-$commit-$specbn.log"
         name="$commit-$specbn"
 
-        # Call the comparison process
-        # echo "_build/default/bin/compare.exe --tmpdir \"$TMP_DIR\" --m1 \"${m1%%[[:space:]]}\" --m2 \"${m2%%[[:space:]]}\" --cex-file \"$cexfile\" $cexlimit > \"$logfile\" 2>&1"
         run "$name" "_build/default/bin/fa.exe --tmpdir \"$TMP_DIR\" --m1-int \"${m1%%[[:space:]]}\" --m2-int \"${m2%%[[:space:]]}\"  --m1-nint \"${m1_nint%%[[:space:]]}\" --m2-nint \"${m2_nint%%[[:space:]]}\" --witness-file-basename \"$cexfile\" --debug $cexlimit > \"$logfile\" 2>&1" "$logfile"
     done
 done
