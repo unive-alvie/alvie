@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `ffe65b6` and adds these documents:
+`origin/documentation` points to `5e5254a` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -801,7 +801,11 @@ Markdown remains under `docs/`; `.github/workflows/pages.yml` copies those
 files into the Starlight content directory, builds, and deploys on every push
 to `documentation`. GitHub Pages is enabled with workflow builds at:
 `https://unive-alvie.github.io/alvie/`. The workflow was last verified
-successfully by run `29244559808`.
+successfully by run `29247729989`.
+
+The site has a dedicated `/alvie/getting-started/` tutorial and the shared
+Starlight CSS defines a brighter dark-theme accent so documentation links stay
+readable against the dark background.
 
 The website landing page's `Getting started` button targets
 `/alvie/getting-started/`; keep that route stable when reorganizing the docs.
