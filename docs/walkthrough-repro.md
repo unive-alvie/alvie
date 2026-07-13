@@ -3,8 +3,6 @@ title: Reproducing the Simulation Experiments
 description: Build ALVIE and reproduce the paper experiments.
 ---
 
-# Reproducing the Simulation Experiments
-
 This walkthrough covers the stable Verilog-simulator workflow. It assumes the
 repository root is the current directory and that `sancus-core-gap` is checked
 out there.

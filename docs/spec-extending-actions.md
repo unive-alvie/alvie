@@ -3,8 +3,6 @@ title: Extending TestDL Actions
 description: Add a new attacker or enclave action to ALVIE.
 ---
 
-# Extending TestDL: Add a New Action End-to-End
-
 This guide is for contributors who want to introduce a new action in TestDL and make it usable in ALVIE.
 
 ## Scope

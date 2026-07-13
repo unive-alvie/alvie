@@ -3,8 +3,6 @@ title: Log and Output Reference
 description: How to read ALVIE learning logs and model outputs.
 ---
 
-# ALVIE Log & Output Reference
-
 This document explains how to read the live progress output and log files produced by ALVIE's learning (`learn.exe`) and comparison (`fa.exe`) phases.
 
 ## Learning Phase Output (`learn.exe`)

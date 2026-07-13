@@ -3,8 +3,6 @@ title: TestDL Action Reference
 description: Syntax and semantics of TestDL actions.
 ---
 
-# TestDL Action Reference (Intuition and Semantics)
-
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
 It complements `docs/spec-tutorial.md` (how to write specs) and `docs/spec-extending-actions.md` (how to extend the language).

@@ -3,8 +3,6 @@ title: Code Architecture
 description: The stable simulator-based ALVIE implementation.
 ---
 
-# ALVIE Code Architecture
-
 This document describes the stable, simulator-based implementation in this
 branch. FPGA support is maintained separately and is intentionally outside
 this guide.

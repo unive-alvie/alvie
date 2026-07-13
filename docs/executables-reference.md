@@ -3,8 +3,6 @@ title: Executables Reference
 description: Command-line reference for ALVIE's simulator tools.
 ---
 
-# ALVIE Executables Reference
-
 All executables are built with `dune build` from inside `alvie/code/` and run as:
 
 ```

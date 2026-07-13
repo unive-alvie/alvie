@@ -1,9 +1,7 @@
 ---
-title: Getting started
+title: Getting Started
 description: A first-session tutorial for building ALVIE and learning a Sancus model.
 ---
-
-# Getting started
 
 This tutorial is a guided first session with ALVIE. In about one hour, you
 will build the project, run the included Sancus example, inspect the learned

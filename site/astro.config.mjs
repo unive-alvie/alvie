@@ -10,22 +10,22 @@ export default defineConfig({
       description: 'Automated analysis of Sancus using active automata learning.',
       customCss: ['./src/styles/custom.css'],
       sidebar: [
+        { label: 'Getting Started', slug: 'getting-started' },
         {
           label: 'Guides',
           items: [
-            { label: 'Getting started', slug: 'getting-started' },
-            { label: 'Reproducing the experiments', slug: 'walkthrough-repro' },
-            { label: 'TestDL tutorial', slug: 'spec-tutorial' },
-            { label: 'TestDL actions', slug: 'testdl-action-reference' },
-            { label: 'Extending TestDL', slug: 'spec-extending-actions' },
+            { label: 'Reproducing the Simulation Experiments', slug: 'walkthrough-repro' },
+            { label: 'TestDL Specification Tutorial', slug: 'spec-tutorial' },
+            { label: 'TestDL Action Reference', slug: 'testdl-action-reference' },
+            { label: 'Extending TestDL Actions', slug: 'spec-extending-actions' },
           ],
         },
         {
           label: 'Reference',
           items: [
-            { label: 'Executables', slug: 'executables-reference' },
-            { label: 'Logs and outputs', slug: 'log-output-reference' },
-            { label: 'Code architecture', slug: 'code-architecture' },
+            { label: 'Executables Reference', slug: 'executables-reference' },
+            { label: 'Logs and Outputs Reference', slug: 'log-output-reference' },
+            { label: 'Code Architecture', slug: 'code-architecture' },
           ],
         },
       ],
