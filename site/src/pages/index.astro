@@ -28,7 +28,13 @@ const documentationUrl = `${baseUrl}/walkthrough-repro/`;
         <div class="alvie-actions">
           <a class="alvie-button alvie-primary" href={gettingStartedUrl}>Getting started</a>
           <a class="alvie-button" href="https://github.com/unive-alvie/alvie">Repository</a>
-          <a class="alvie-button" href="https://arxiv.org/abs/2404.09518">Paper</a>
+          <details class="alvie-paper">
+            <summary class="alvie-button">Paper</summary>
+            <div class="alvie-paper-menu" role="menu">
+              <a href="https://arxiv.org/abs/2404.09518" role="menuitem">arXiv preprint</a>
+              <a href="https://doi.org/10.1109/CSF61375.2024.00023" role="menuitem">IEEE published version</a>
+            </div>
+          </details>
         </div>
       </section>
 
