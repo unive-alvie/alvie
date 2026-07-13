@@ -22,26 +22,26 @@ from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says
 | `--encl-spec <file>` | Path to enclave specification (`.etdl` file) |
 | `--oracle <mode>` | Query oracle mode: `randomwalk`, `pac`, or `exhaustive` |
 
-### Optional flags
+### Other flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--res <file>` | _(none)_ | Output `.dot` file path for the learned model |
-| `--tmpdir <dir>` | `/tmp` | Directory for temporary Verilog simulation files |
-| `--sancus <dir>` | `../..` (repo root) | Path to the Sancus simulator root |
-| `--commit <sha>` | _(HEAD)_ | Git commit of the Sancus simulator to check out before running |
-| `--secret <0\|1>` | `0` | Secret value loaded into the enclave (controls which branch is executed) |
-| `--epsilon <float>` | `0.005` | PAC epsilon parameter (accuracy bound) |
-| `--delta <float>` | `0.005` | PAC delta parameter (confidence bound) |
-| `--step-limit <int>` | `200` | Max steps per random walk / PAC sample |
-| `--round-limit <int>` | _(none)_ | Max total learning rounds before stopping |
-| `--reset-probability <float>` | `0.1` | Probability of reset in random-walk oracle |
-| `--bad-probability <float>` | `0.05` | Probability of injecting a "bad" (non-standard) input |
-| `--pac-bound <int>` | _(computed)_ | Override the number of PAC samples |
+| `--res <file>` | required | Output `.dot` file path for the learned model |
+| `--tmpdir <dir>` | required | Directory for temporary Verilog simulation files |
+| `--sancus <dir>` | required | Path to the Sancus simulator root |
+| `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check |
+| `--secret <value>` | absent | Secret substituted into the enclave specification; required when the spec contains `?` |
+| `--epsilon <float>` | `0.001` | PAC epsilon parameter |
+| `--delta <float>` | `0.001` | PAC delta parameter |
+| `--pac-bound <int>` | `1` | PAC reset bound |
+| `--step-limit <int>` | `500` | Max steps for a random-walk equivalence query |
+| `--round-limit <int>` | unlimited | Max rounds for a PAC equivalence query |
+| `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
+| `--bad-probability <float>` | `0.20` | Probability of generating an input not driven by the specification |
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
 | `--sancus-master-key <hex>` | _(default key)_ | Master key passed to the Sancus simulator |
 | `--dry` | false | Dry run: set up the simulator but do not learn |
-| `--report <file>` | _(none)_ | Write a JSON learning report to this file |
+| `--report` | false | Print the learning statistics table |
 | `--debug` | false | Enable debug-level logging |
 | `--info` | false | Enable info-level logging |
 
@@ -69,7 +69,7 @@ This learns a model for the `example` attack with secret=0 using random-walk equ
 
 ## 2. `fa.exe` — Find flow-analysis (NI) violations between two models
 
-**Purpose:** Takes four `.dot` Mealy machines — the secret=0 and secret=1 models in both the interrupt (`--int`) and no-interrupt (`--nint`) variants — and uses mCRL2 model checking to find distinguishing traces (counterexamples to non-interference). Outputs a witness graph in `.dot` format.
+**Purpose:** Takes two interrupt-enabled `.dot` Mealy machines and optionally their two no-interrupt counterparts. It uses mCRL2 model checking to find distinguishing traces. Supplying the no-interrupt models removes witnesses that already exist without interrupt scheduling.
 
 ### Flags
 
@@ -77,11 +77,11 @@ This learns a model for the `example` attack with secret=0 using random-walk equ
 |------|---------|-------------|
 | `--m1-int <file>` | _(required)_ | secret=0 model, interrupt variant (`.dot`) |
 | `--m2-int <file>` | _(required)_ | secret=1 model, interrupt variant (`.dot`) |
-| `--m1-nint <file>` | _(required)_ | secret=0 model, no-interrupt variant (`.dot`) |
-| `--m2-nint <file>` | _(required)_ | secret=1 model, no-interrupt variant (`.dot`) |
+| `--m1-nint <file>` | optional | secret=0 no-interrupt model (`.dot`) |
+| `--m2-nint <file>` | optional | secret=1 no-interrupt model (`.dot`) |
 | `--witness-file-basename <base>` | _(required)_ | Output path prefix; produces `<base>_int.dot` |
 | `--tmpdir <dir>` | `/tmp` | Directory for intermediate mCRL2 files |
-| `--cex-limit <int>` | `1` | Number of counterexamples to enumerate |
+| `--cex-limit <int>` | unlimited | Maximum number of counterexamples to enumerate |
 | `--debug` | false | Enable debug-level logging |
 
 ### Output
@@ -101,7 +101,7 @@ _build/default/bin/fa.exe \
   --cex-limit 3
 ```
 
-Produces `/tmp/example-orig-witness_int.dot` containing up to 3 distinguishing attack traces.
+Produces `/tmp/example-orig-witness_int.dot` containing up to 3 distinguishing attack traces. The tool also reports the number of flow-analysis violations on stderr.
 
 ---
 
@@ -126,7 +126,6 @@ Same setup flags as `learn.exe` (minus oracle/learning flags):
 | `--ignore-interrupts` | Collapse interrupt outputs |
 | `--sancus-master-key <hex>` | Master key |
 | `--debug` | Debug logging |
-| `--info` | Info logging |
 
 ### Output
 
@@ -143,7 +142,7 @@ _build/default/bin/exec.exe \
   --att-spec  ../../spec-lib/example/attacker.atdl \
   --encl-spec ../../spec-lib/example/enclave.etdl \
   --secret    1 \
-  --info
+  --debug
 ```
 
 ---
@@ -165,7 +164,6 @@ This is faster than `learn.exe` for a quick sanity-check but less thorough (it c
 | `--tmpdir <dir>` | `/tmp` | Temp directory |
 | `--sancus <dir>` | `../..` | Sancus simulator root |
 | `--commit <sha>` | _(HEAD)_ | Simulator git commit |
-| `--secret <0\|1>` | `0` | Secret value (the two runs differ only in this) |
 | `--ignore-interrupts` | false | Collapse interrupt outputs |
 | `--sancus-master-key <hex>` | _(default)_ | Master key |
 | `--debug` | false | Debug logging |

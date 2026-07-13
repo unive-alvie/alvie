@@ -6,22 +6,36 @@
 # Processes are spawned automatically on all the available cores.
 #
 # Usage:
-#   ./learn_all.sh att_spec [fast]
+#   ./learn_one_nospecial.sh <att_spec> <subdirectory>
 # specialcommit=$1
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <att_spec> <subdirectory>" >&2
+  exit 2
+fi
 attspecbn=$1
+subdir=$2
 EPS=0.01
 DELTA=0.01
 
 # Useful paths
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-LOGS_DIR=$SCRIPT_DIR/logs/$3
-RES_DIR=$SCRIPT_DIR/results/$3
-TMP_DIR=$SCRIPT_DIR/tmp/$3
+LOGS_DIR=$SCRIPT_DIR/logs/$subdir
+RES_DIR=$SCRIPT_DIR/results/$subdir
+TMP_DIR=$SCRIPT_DIR/tmp/$subdir
 
 SCG_DIR=$SCRIPT_DIR/sancus-core-gap
-SPEC_DIR=$SCRIPT_DIR/spec-lib/$3
+SPEC_DIR=$SCRIPT_DIR/spec-lib/$subdir
 MM_DIR=$SCRIPT_DIR/alvie/code
+
+if [ ! -d "$SPEC_DIR" ]; then
+  SPEC_DIR=$SCRIPT_DIR/spec-lib
+fi
+
+if [ ! -f "$SPEC_DIR/$attspecbn.atdl" ] || [ ! -f "$SPEC_DIR/enclave-complete.etdl" ]; then
+  echo "Missing specifications in $SPEC_DIR" >&2
+  exit 2
+fi
 
 # Cleanup existing files
 # echo "Cleaning up"

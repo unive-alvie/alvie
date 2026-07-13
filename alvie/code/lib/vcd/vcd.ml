@@ -42,6 +42,10 @@ let vcd (filename : string) =
   }
 
 let get_signal (v : vcd_t) (signal : string) =
-  (* List.iter v.full_names_to_tv ~f:(fun (fn, _) -> Logs.debug (fun p -> p "(looking %s) %s\n" signal fn)); *)
-  let _, tv = List.find_exn v.full_names_to_tv ~f:(fun (fn, _) -> String.equal fn signal) in
+  let normalize_signal_name s = Option.value (String.chop_prefix s ~prefix:"TOP.") ~default:s in
+  let _, tv =
+    List.find_exn v.full_names_to_tv ~f:(fun (fn, _) ->
+      String.equal fn signal ||
+      String.equal (normalize_signal_name fn) (normalize_signal_name signal))
+  in
     Signal.make ~tv:tv

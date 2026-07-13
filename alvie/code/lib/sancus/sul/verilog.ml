@@ -57,11 +57,14 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "Chosen temporary directory: %s" r_tmpdir);
-  (* Copy the sancus-core-gap in the directory *)
-  Logs.debug (fun m -> m "Copying: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
-  assert (Sys_unix.command (Format.sprintf "cp -a %s %s/sancus-core-gap" sancus_repo r_tmpdir) = 0);
+  (* Clone the repository instead of copying its worktree. A submodule's
+     .git file points back to the parent repository and is not usable after a
+     plain cp into the temporary directory. *)
+  Logs.debug (fun m -> m "Cloning: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
+  assert (Sys_unix.command (Format.sprintf "git clone --no-local --quiet %s %s/sancus-core-gap" sancus_repo r_tmpdir) = 0);
   (* Use the required commit *)
   Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
+  assert (Sys_unix.command (Format.sprintf "cd %s/sancus-core-gap; git fetch --quiet origin '+refs/*:refs/remotes/source/*'" r_tmpdir) = 0);
   assert (Sys_unix.command (Format.sprintf "cd %s/sancus-core-gap; git checkout %s %s" r_tmpdir commit (dbg_str ())) = 0);
   (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
   Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
@@ -333,16 +336,16 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
   Logs.debug (fun p -> p "Verilog.analyse_dump: labels: %s" ([%derive.show: (string*string) list] labels));
   let annot_pcs = List.map labels ~f:(fun (s, e) -> addr_of_label cfg s, addr_of_label cfg e) in
   let pc_to_label (s, e) = List.find_exn labels ~f:(fun (s', e') -> s = addr_of_label cfg s' && e = addr_of_label cfg e') in
-  let pc_map = Vcd.get_signal dump "tb_openMSP430.inst_pc[15:0]" in
-  let irq_map = Vcd.get_signal dump "tb_openMSP430.msp_debug_0.irq" in
-  let inst_number_map = Vcd.get_signal dump "tb_openMSP430.inst_number[31:0]" in
-  let sm_executing_map = Vcd.get_signal dump "tb_openMSP430.dut.frontend_0.sm_executing" in
-  let e_state_map = Vcd.get_signal dump "tb_openMSP430.dut.e_state[4:0]" in
-  let r4_map = Vcd.get_signal dump "tb_openMSP430.r4[15:0]" in
-  let gie_map = Vcd.get_signal dump "tb_openMSP430.gie" in
-  let timerA_map = Vcd.get_signal dump "tb_openMSP430.timerA_0.tar[15:0]" in
+  let pc_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_pc[15:0]" in
+  let irq_map = Vcd.get_signal dump "TOP.tb_openMSP430.msp_debug_0.irq" in
+  let inst_number_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_number[31:0]" in
+  let sm_executing_map = Vcd.get_signal dump "TOP.tb_openMSP430.dut.frontend_0.sm_executing" in
+  let e_state_map = Vcd.get_signal dump "TOP.tb_openMSP430.dut.e_state[4:0]" in
+  let r4_map = Vcd.get_signal dump "TOP.tb_openMSP430.r4[15:0]" in
+  let gie_map = Vcd.get_signal dump "TOP.tb_openMSP430.gie" in
+  let timerA_map = Vcd.get_signal dump "TOP.tb_openMSP430.timerA_0.tar[15:0]" in
   (* let pmem_map = Vcd.get_signal dump "tb_openMSP430.mem240[15:0]" in *)
-  let umem_map = Vcd.get_signal dump "tb_openMSP430.mem250[15:0]" in
+  let umem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem250[15:0]" in
   (* Logs.debug (fun m -> m "reg_map : [%s]\n" (List.to_string (Int.Map.to_alist r4_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
   Logs.debug (fun m -> m "gie_map : [%s]\n" (List.to_string (Int.Map.to_alist gie_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
   Logs.debug (fun m -> m "timerA_map : [%s]\n" (List.to_string (Int.Map.to_alist timerA_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)

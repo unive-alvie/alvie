@@ -12,13 +12,13 @@ module Mealy (S : EltType) (I : EltType) (O : EltType) = struct
     include (Comparator.Make (struct type t = (S.t * I.t) [@@deriving ord,sexp_of,of_sexp] end))
   end
 
-  module TransitionMap = Map.Make_using_comparator (SIPair) [@@deriving sexp]
+  module TransitionMap = Map.Make_using_comparator (SIPair)
   type transition_map_t = (O.t * S.t) TransitionMap.t [@@deriving sexp]
 
   type sset_t = SSet.t [@@deriving sexp_of]
   type iset_t = ISet.t [@@deriving sexp_of]
 
-  module PredMap = Map.Make_using_comparator (S) [@@deriving sexp_of]
+  module PredMap = Map.Make_using_comparator (S)
   type pred_map_t = SIPair.t PredMap.t [@@deriving sexp_of]
 
   (* The type of the Mealy automaton, with the additional pred_map just used in ObservationTrees *)
