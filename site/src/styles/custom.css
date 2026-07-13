@@ -10,6 +10,19 @@
   --sl-font: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Starlight uses the accent-high value for links in dark mode. */
+:root[data-theme='dark'] {
+  --alvie-ink: #eef4f5;
+  --alvie-muted: #b8c7ca;
+  --alvie-line: #3b4d52;
+  --alvie-teal: #8bd5df;
+  --alvie-red: #ff9b83;
+  --sl-color-accent-low: #173c44;
+  --sl-color-accent: #51b8c6;
+  --sl-color-accent-high: #8bd5df;
+  --sl-color-text-accent: #8bd5df;
+}
+
 .alvie-home {
   box-sizing: border-box;
   min-height: 100vh;
