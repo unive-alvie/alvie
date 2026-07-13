@@ -144,6 +144,29 @@ let command =
         ~doc:"Use the physical FPGA backend (default: Verilog simulator)"
     in
     fun () ->
+        let learn_start = Time_now.nanoseconds_since_unix_epoch () in
+        let phase_rows = ref [] in
+        let ms_since start =
+          let open Int63 in
+          to_float (Time_now.nanoseconds_since_unix_epoch () - start) /. 1_000_000.0
+        in
+        let phase name f =
+          let start = Time_now.nanoseconds_since_unix_epoch () in
+          Exn.protect
+            ~f
+            ~finally:(fun () ->
+              phase_rows := (name, ms_since start) :: !phase_rows)
+        in
+        let print_phase_summary () =
+          let total_ms = ms_since learn_start in
+          let phases =
+            !phase_rows
+            |> List.rev
+            |> List.map ~f:(fun (name, ms) -> sprintf "%s_ms=%.1f" name ms)
+            |> String.concat ~sep:" "
+          in
+          eprintf "[LEARN_PHASES] total_ms=%.1f %s\n%!" total_ms phases
+        in
         (* Random.self_init (); *)
         Random.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
@@ -152,30 +175,38 @@ let command =
         else if info then Logs.set_level (Some Logs.Info)
         else Logs.set_level (Some Logs.App);
 
-        let cwd = Sys_unix.getcwd () in
-        (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
-        (* Create tmpdir if not present *)
-        (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
-        let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
-        (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
-        (* Create resultdir if not present *)
-        let resdir = String.drop_suffix resfile (String.length (List.last_exn (String.split resfile ~on:'/'))) in
-        (* Logs.debug (fun m -> m "Result directory: %s" resdir); *)
-        (match Sys_unix.file_exists resdir with | `No -> Core_unix.mkdir_p resdir | _ -> ());
-        (* Basic sanity checks on the repo *)
-        assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
-        assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
+        let cwd, tmpdir =
+          phase "setup" (fun () ->
+            let cwd = Sys_unix.getcwd () in
+            (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
+            (* Create tmpdir if not present *)
+            (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
+            let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
+            (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
+            (* Create resultdir if not present *)
+            let resdir = String.drop_suffix resfile (String.length (List.last_exn (String.split resfile ~on:'/'))) in
+            (* Logs.debug (fun m -> m "Result directory: %s" resdir); *)
+            (match Sys_unix.file_exists resdir with | `No -> Core_unix.mkdir_p resdir | _ -> ());
+            (* Basic sanity checks on the repo *)
+            assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
+            assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
+            cwd, tmpdir)
+        in
         (* (1) load the spec *)
-        let enclave_spec_str = In_channel.read_all enclave_spec_fn in
-        let attacker_spec_str = In_channel.read_all attacker_spec_fn in
-        Logs.debug (fun m -> m "Enclave spec: %s" enclave_spec_str);
-        Logs.debug (fun m -> m "Attacker spec: %s" attacker_spec_str);
-        let spec_w_secret = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec_str) in
-        let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
-        (* Secret must be expanded *)
-        let enclave = match secret with | None -> assert (not (Enclave.has_secret enclave)); enclave | Some secret -> Enclave.expand_secret secret enclave in
-        let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
-        let spec_dfa = Inputgen.build_spec_dfa complete_spec in
+        let enclave, isr, prepare, cleanup, spec_dfa =
+          phase "spec" (fun () ->
+            let enclave_spec_str = In_channel.read_all enclave_spec_fn in
+            let attacker_spec_str = In_channel.read_all attacker_spec_fn in
+            Logs.debug (fun m -> m "Enclave spec: %s" enclave_spec_str);
+            Logs.debug (fun m -> m "Attacker spec: %s" attacker_spec_str);
+            let spec_w_secret = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec_str) in
+            let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
+            (* Secret must be expanded *)
+            let enclave = match secret with | None -> assert (not (Enclave.has_secret enclave)); enclave | Some secret -> Enclave.expand_secret secret enclave in
+            let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
+            let spec_dfa = Inputgen.build_spec_dfa complete_spec in
+            enclave, isr, prepare, cleanup, spec_dfa)
+        in
         (* (2) + (3): choose backend, create SUL, run oracle *)
         (* Helper: apply a make function to the common set of SUL arguments *)
         (* Helper: run L# with any SUL implementation (locally abstract type t) *)
@@ -191,14 +222,18 @@ let command =
           let module RWOracle  = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
           let module PACOracle = Learninglib.Pacoracle.PACOracle              (Sancus.Input) (Sancus.Output_internal) (Sul) in
           let module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
-          let attacker_atoms =
-          List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
-        let enclave_atoms = Set.to_list (Enclave.get_atoms enclave) in
-        let alphabet_attacker = List.map attacker_atoms ~f:(fun ca -> Input.IAttacker ca) in
-        let alphabet_enclave = List.map enclave_atoms ~f:(fun i -> Input.IEnclave i) in
-        let complete_input_alphabet = Input.INoInput :: alphabet_attacker @ alphabet_enclave in
+          let complete_input_alphabet =
+            phase "alphabet" (fun () ->
+              let attacker_atoms =
+                List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
+              let enclave_atoms = Set.to_list (Enclave.get_atoms enclave) in
+              let alphabet_attacker = List.map attacker_atoms ~f:(fun ca -> Input.IAttacker ca) in
+              let alphabet_enclave = List.map enclave_atoms ~f:(fun i -> Input.IEnclave i) in
+              Input.INoInput :: alphabet_attacker @ alphabet_enclave)
+          in
         let
           (outputquery_cnt, equivquery_cnt, sul_reset_cnt, sul_step_cnt, sul_step_dry_cnt, avg_len, sigmasq_len), time, learned =
+          phase "learn_oracle" (fun () ->
           if String.equal oracle_name "randomwalk" then
             let oracle = (RWOracle.make
                 ~step_limit:step_limit
@@ -445,7 +480,7 @@ let command =
             HybridOracle.get_stats oracle,
             Time_now.nanoseconds_since_unix_epoch () - start,
             learned *)
-          else failwith "Unknown oracle!"
+          else failwith "Unknown oracle!")
         in
         (* and, finally, (5) to produce the output *)
         if report then
@@ -483,15 +518,18 @@ let command =
                 equivquery_cnt
                 avgpath_len
             ) else (printf "\n"); *)
-        let final_model = filter_model learned in
-        let graph = IOInteropInternal.dot_of_t final_model in
-        let basename = sprintf "%s" resfile in
-        let dot_dest = basename in
-        IOInteropInternal.Dot.output_graph (Stdlib.open_out_bin dot_dest) graph;
+        let final_model = phase "filter_model" (fun () -> filter_model learned) in
+        phase "dot_write" (fun () ->
+          let graph = IOInteropInternal.dot_of_t final_model in
+          let basename = sprintf "%s" resfile in
+          let dot_dest = basename in
+          IOInteropInternal.Dot.output_graph (Stdlib.open_out_bin dot_dest) graph;
           Logs.debug (fun m -> m "\n=== Graph written to %s\n" basename)
+        );
         in
+        let () =
         if fpga then (
-          let sul = Sancus.Fpga.make
+          let sul = phase "sul_make" (fun () -> Sancus.Fpga.make
             ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
             ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
             ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
@@ -502,10 +540,10 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts ()) in
           do_run (module Sancus.Fpga) sul
         ) else (
-          let sul = Sancus.Verilog.make
+          let sul = phase "sul_make" (fun () -> Sancus.Verilog.make
             ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
             ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
             ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
@@ -516,9 +554,11 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+            ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts ()) in
           do_run (module Sancus.Verilog) sul
         )
+        in
+        print_phase_summary ()
     )
 
 let () = Command_unix.run command

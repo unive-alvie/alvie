@@ -13,13 +13,222 @@ type label_t = string*string [@@deriving sexp,ord]
 
 let dbg_str () = match Logs.level () with | Some Logs.Debug -> "" | _ -> ">/dev/null 2>/dev/null"
 
-(* ── Persistent Python daemon channels (one FPGA session at a time) ──────── *)
-(* fpga_daemon holds (stdin_oc, stdout_ic) for fpga_daemon.py *)
-let fpga_daemon : (Stdlib.out_channel * Stdlib.in_channel) option ref = ref None
+external serial_open_baud : string -> int -> Caml_unix.file_descr = "caml_serial_open_baud"
+external serial_flush_input : Caml_unix.file_descr -> unit = "caml_serial_flush_input" [@@noalloc]
+
+let fpga_serial : Caml_unix.file_descr option ref = ref None
+
+let close_fpga_serial () =
+  match !fpga_serial with
+  | None -> ()
+  | Some fd ->
+      fpga_serial := None;
+      (try Caml_unix.close fd with _ -> ())
+
+let () = Stdlib.at_exit close_fpga_serial
+
+type fpga_stats_t = {
+  mutable build_calls : int;
+  mutable build_ms : float;
+  mutable query_calls : int;
+  mutable query_ms : float;
+  mutable query_send_ms : float;
+  mutable query_recv_ms : float;
+}
+
+let fpga_stats = {
+  build_calls = 0;
+  build_ms = 0.0;
+  query_calls = 0;
+  query_ms = 0.0;
+  query_send_ms = 0.0;
+  query_recv_ms = 0.0;
+}
+
+let () =
+  Stdlib.at_exit (fun () ->
+    if fpga_stats.build_calls > 0 || fpga_stats.query_calls > 0 then
+      Printf.eprintf
+        "[FPGA_STATS] build_calls=%d build_ms=%.1f query_calls=%d query_ms=%.1f query_send_ms=%.1f query_recv_ms=%.1f avg_build_ms=%.1f avg_query_ms=%.1f\n%!"
+        fpga_stats.build_calls
+        fpga_stats.build_ms
+        fpga_stats.query_calls
+        fpga_stats.query_ms
+        fpga_stats.query_send_ms
+        fpga_stats.query_recv_ms
+        (if fpga_stats.build_calls = 0 then 0.0 else fpga_stats.build_ms /. Float.of_int fpga_stats.build_calls)
+        (if fpga_stats.query_calls = 0 then 0.0 else fpga_stats.query_ms /. Float.of_int fpga_stats.query_calls)
+  )
 
 let show_mode m = match m with `PM -> "PM" | `UM -> "UM"
 
 let show_e_state e = match e with `NO_SM -> "NO_SM" | `OTHER -> "OTHER" | `RETI -> "RETI" | `PP_JMPOUT -> "PP_JMPOUT" | `HANDLE -> "HANDLE"
+
+let check_latency_timer fpga_port =
+  let latency_file =
+    Format.sprintf "/sys/bus/usb-serial/devices/%s/latency_timer" (Filename.basename fpga_port)
+  in
+  let latency =
+    match Sys_unix.file_exists latency_file with
+    | `Yes -> In_channel.read_all latency_file |> String.strip
+    | `No ->
+        failwith (Format.sprintf "FPGA latency timer file not found: %s" latency_file)
+    | `Unknown ->
+        failwith (Format.sprintf "FPGA latency timer file not accessible: %s" latency_file)
+  in
+  if not (String.equal latency "1") then
+    failwith
+      (Format.sprintf
+         "FPGA latency timer must be 1 before learning (found %s at %s)"
+         latency latency_file)
+
+let swap_bytes s =
+  let len = String.length s in
+  let len' = if len mod 2 = 0 then len else len + 1 in
+  let out = Bytes.create len' in
+  let rec loop i =
+    if i < len then begin
+      let b0 = String.get s i in
+      let b1 = if i + 1 < len then String.get s (i + 1) else '\000' in
+      Bytes.set out i b1;
+      Bytes.set out (i + 1) b0;
+      loop (i + 2)
+    end
+  in
+  loop 0;
+  Bytes.to_string out
+
+let get_u8 s i = Char.to_int (String.get s i)
+
+let get_u16_le s i =
+  get_u8 s i lor (get_u8 s (i + 1) lsl 8)
+
+let get_u32_le s i =
+  get_u16_le s i lor (get_u16_le s (i + 2) lsl 16)
+
+let get_u64_le s i =
+  let lo = Int64.of_int (get_u32_le s i) in
+  let hi = Int64.shift_left (Int64.of_int (get_u32_le s (i + 4))) 32 in
+  Int64.(lo lor hi)
+
+let read_c_string s off =
+  let rec finish i =
+    if i >= String.length s || Char.equal (String.get s i) '\000' then
+      String.sub s ~pos:off ~len:(i - off)
+    else
+      finish (i + 1)
+  in
+  finish off
+
+type elf_section = {
+  name : string;
+  offset : int;
+  size : int;
+}
+
+let parse_elf_sections path =
+  let bytes = In_channel.read_all path in
+  if String.length bytes < 16 then
+    failwith (Format.sprintf "ELF too short: %s" path);
+  if not (String.equal (String.sub bytes ~pos:0 ~len:4) "\127ELF") then
+    failwith (Format.sprintf "Not an ELF file: %s" path);
+  let elf_class = get_u8 bytes 4 in
+  let elf_data = get_u8 bytes 5 in
+  if elf_data <> 1 then
+    failwith (Format.sprintf "Big-endian ELF not supported: %s" path);
+  let shoff, shentsize, shnum, shstrndx, off_off, size_off =
+    match elf_class with
+    | 1 ->
+        let shoff = get_u32_le bytes 32 in
+        let shentsize = get_u16_le bytes 46 in
+        let shnum = get_u16_le bytes 48 in
+        let shstrndx = get_u16_le bytes 50 in
+        shoff, shentsize, shnum, shstrndx, 16, 20
+    | 2 ->
+        let shoff = Int64.to_int_exn (get_u64_le bytes 40) in
+        let shentsize = get_u16_le bytes 58 in
+        let shnum = get_u16_le bytes 60 in
+        let shstrndx = get_u16_le bytes 62 in
+        shoff, shentsize, shnum, shstrndx, 24, 32
+    | _ -> failwith (Format.sprintf "Unknown ELF class %d in %s" elf_class path)
+  in
+  let shstr_hdr =
+    let base = shoff + (shstrndx * shentsize) in
+    let offset =
+      if elf_class = 1 then get_u32_le bytes (base + off_off)
+      else Int64.to_int_exn (get_u64_le bytes (base + off_off))
+    in
+    let size =
+      if elf_class = 1 then get_u32_le bytes (base + size_off)
+      else Int64.to_int_exn (get_u64_le bytes (base + size_off))
+    in
+    { name = ""; offset; size }
+  in
+  let shstr = String.sub bytes ~pos:shstr_hdr.offset ~len:shstr_hdr.size in
+  let section_name_at idx =
+    let base = shoff + (idx * shentsize) in
+    let name_off = get_u32_le bytes base in
+    read_c_string shstr name_off
+  in
+  let section_data name =
+    let rec find idx =
+      if idx >= shnum then
+        failwith (Format.sprintf "Missing ELF section %s in %s" name path)
+      else if String.equal (section_name_at idx) name then
+        let base = shoff + (idx * shentsize) in
+        let offset =
+          if elf_class = 1 then get_u32_le bytes (base + off_off)
+          else Int64.to_int_exn (get_u64_le bytes (base + off_off))
+        in
+        let size =
+          if elf_class = 1 then get_u32_le bytes (base + size_off)
+          else Int64.to_int_exn (get_u64_le bytes (base + size_off))
+        in
+        String.sub bytes ~pos:offset ~len:size
+      else
+        find (idx + 1)
+    in
+    find 0
+  in
+  let text = section_data ".text" in
+  let vectors = section_data ".vectors" in
+  swap_bytes text, swap_bytes vectors
+
+let build_payload ~pmem ~vectors ~inst_number =
+  let pmem_len = String.length pmem in
+  let vectors_len = String.length vectors in
+  let payload_len = 1 + 2 + pmem_len + 2 + vectors_len + 2 in
+  let payload = Bytes.create payload_len in
+  let pos = ref 0 in
+  let add_byte n =
+    Bytes.set payload !pos (Char.of_int_exn (n land 0xff));
+    incr pos
+  in
+  let add_u16 n =
+    add_byte n;
+    add_byte (n lsr 8)
+  in
+  let add_string s =
+    let len = String.length s in
+    for i = 0 to len - 1 do
+      Bytes.set payload (!pos + i) (String.get s i)
+    done;
+    pos := !pos + len
+  in
+  add_byte 0xff;
+  add_u16 pmem_len;
+  add_string pmem;
+  add_u16 vectors_len;
+  add_string vectors;
+  add_u16 inst_number;
+  Bytes.to_string payload
+
+let open_fpga_serial fpga_port =
+  close_fpga_serial ();
+  let fd = serial_open_baud fpga_port 5_000_000 in
+  serial_flush_input fd;
+  fpga_serial := Some fd;
+  fd
 
 type trace_entry = {
   pc : int;
@@ -69,6 +278,7 @@ let clone s = ref { !s with last_inst_number = !s.last_inst_number}
 
 let make ~sancus_repo ~sancus_master_key:_ ~commit:_ ~workingdir ~tmpdir ~basename ~verilog_compile:_ ~get_symbolpos ~pmem_script ~simulate_script ~submitfile:_ ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) () =
   let fpga_port = Option.value (Sys.getenv "FPGA_PORT") ~default:"/dev/ttyUSB1" in
+  check_latency_timer fpga_port;
   Sys_unix.chdir workingdir;
   (* Create tmpdir and a temporary dir inside tmpdir *)
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
@@ -84,14 +294,9 @@ let make ~sancus_repo ~sancus_master_key:_ ~commit:_ ~workingdir ~tmpdir ~basena
   | None -> Logs.debug (fun m -> m "FPGA_TCL not set, skipping FPGA programming (assuming already programmed)"));
   (* Run once-per-session FPGA build setup (pmem.h, linker script) using the live checkout *)
   assert (Sys_unix.command (Format.sprintf "%s/../scripts/setup_fpga.sh \"%s\" \"%s\" %s" workingdir r_tmpdir sancus_repo (dbg_str ())) = 0);
-  (* Spawn the persistent Python daemon that holds the serial port open at 5 Mbaud *)
-  let daemon_cmd = Format.sprintf "python3 %s/../scripts/fpga_daemon.py %s" workingdir fpga_port in
-  Logs.debug (fun m -> m "Spawning FPGA daemon: %s" daemon_cmd);
-  let (daemon_ic, daemon_oc) = Caml_unix.open_process daemon_cmd in
-  (match Stdlib.input_line daemon_ic with
-  | "READY" -> Logs.debug (fun m -> m "FPGA daemon ready on port %s" fpga_port)
-  | line    -> failwith (Format.sprintf "FPGA daemon failed to start: %s" line));
-  fpga_daemon := Some (daemon_oc, daemon_ic);
+  (* Open the serial port once and keep it alive for the whole learning session. *)
+  let _serial_fd = open_fpga_serial fpga_port in
+  Logs.debug (fun m -> m "FPGA serial port open on %s" fpga_port);
   ref (make_cfg_t
     ~workingdir
     ~tmpdir:r_tmpdir
@@ -240,64 +445,100 @@ let ms_since t0 =
   let open Int63 in
   to_float (Time_now.nanoseconds_since_unix_epoch () - t0) /. 1_000_000.0
 
+let trace_entries_of_raw raw =
+  if String.length raw < 800 then
+    None
+  else
+    let entries =
+      List.filter_map (List.init 50 ~f:Fn.id) ~f:(fun entry_idx ->
+        let base = entry_idx * 16 in
+        try
+          Some {
+            pc = (Char.to_int raw.[base] lsl 8) lor Char.to_int raw.[base + 1];
+            inst_number =
+              (Char.to_int raw.[base + 5] lsl 24)
+              lor (Char.to_int raw.[base + 6] lsl 16)
+              lor (Char.to_int raw.[base + 7] lsl 8)
+              lor Char.to_int raw.[base + 8];
+            irq = Char.to_int raw.[base + 2] land 0x1;
+            sm_executing = Char.to_int raw.[base + 3] land 0x1;
+            e_state = Char.to_int raw.[base + 9] land 0x1f;
+            r4 = (Char.to_int raw.[base + 10] lsl 8) lor Char.to_int raw.[base + 11];
+            gie = Char.to_int raw.[base + 4] land 0x1;
+            timerA = (Char.to_int raw.[base + 12] lsl 8) lor Char.to_int raw.[base + 13];
+            umem = (Char.to_int raw.[base + 14] lsl 8) lor Char.to_int raw.[base + 15];
+          }
+        with _ -> None)
+    in
+    Some (List.rev entries)
+
 let run_fpga_script (cfg : cfg_t) =
   (* Use lightweight per-step script: msp430-as + msp430-ld only *)
   let build_pmem_fpga = Format.sprintf "%s/../scripts/build_pmem_fpga" cfg.workingdir in
   let t0 = Time_now.nanoseconds_since_unix_epoch () in
   let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" build_pmem_fpga cfg.tmpdir cfg.basename (dbg_str ())) in
-  Logs.info (fun m -> m "[PERF] build_pmem_fpga: %.1f ms" (ms_since t0));
+  let build_ms = ms_since t0 in
+  fpga_stats.build_calls <- fpga_stats.build_calls + 1;
+  fpga_stats.build_ms <- fpga_stats.build_ms +. build_ms;
+  Logs.info (fun m -> m "[PERF] build_pmem_fpga: %.1f ms" build_ms);
   if res <> 0 then
     failwith (Format.sprintf "Error: build_pmem_fpga returned %d." res)
   else (
-    let (daemon_oc, daemon_ic) = match !fpga_daemon with Some ch -> ch | None -> failwith "FPGA daemon not running" in
-    let query breakpoint =
-      Logs.debug (fun m -> m "FPGA daemon query: elf=%s bp=%d" cfg.pmem_elf breakpoint);
+  let query breakpoint =
+      Logs.debug (fun m -> m "FPGA serial query: elf=%s bp=%d" cfg.pmem_elf breakpoint);
       let tq = Time_now.nanoseconds_since_unix_epoch () in
-      (* Send request to daemon: "elf_path inst_number\n" *)
-      Stdlib.output_string daemon_oc (Format.sprintf "%s %d\n" cfg.pmem_elf breakpoint);
-      Stdlib.flush daemon_oc;
-      (* Read response lines until "DONE" *)
-      let rec collect acc =
-        let line = Stdlib.input_line daemon_ic in
-        if String.equal line "DONE" then List.rev acc
-        else collect (line :: acc)
+      let pmem, vectors = parse_elf_sections cfg.pmem_elf in
+      let payload = build_payload ~pmem ~vectors ~inst_number:breakpoint in
+      let fd = match !fpga_serial with Some fd -> fd | None -> failwith "FPGA serial not open" in
+      serial_flush_input fd;
+      let rec write_all off =
+        if off < String.length payload then
+          let written = Caml_unix.write_substring fd payload off (String.length payload - off) in
+          if written <= 0 then failwith "FPGA serial write failed"
+          else write_all (off + written)
       in
-      let lines = collect [] in
-      Logs.info (fun m -> m "[PERF] run_fpga: %.1f ms" (ms_since tq));
-      Logs.debug (fun m -> m "FPGA daemon response (%d lines)" (List.length lines));
-      match lines with
-      | ["DIVERGED"] -> None
-      | _ ->
-          let entries = List.filter_map lines ~f:(fun line ->
-            match String.split (String.strip line) ~on:' ' with
-            | [pc_s; inst_num_s; irq_s; sm_s; e_state_s; r4_s; gie_s; timerA_s; umem_s] ->
-                (try Some {
-                  pc = Int.of_string pc_s;
-                  inst_number = Int.of_string inst_num_s;
-                  irq = Int.of_string irq_s;
-                  sm_executing = Int.of_string sm_s;
-                  e_state = Int.of_string e_state_s;
-                  r4 = Int.of_string r4_s;
-                  gie = Int.of_string gie_s;
-                  timerA = Int.of_string timerA_s;
-                  umem = Int.of_string umem_s;
-                } with _ -> None)
-            | _ -> None
-          ) in
-          (* Daemon sends entries newest-first; reverse to get chronological order *)
-          Some (List.rev entries)
-    in
-    let breakpoint = cfg.last_inst_number + 1 in
-    match query breakpoint with
-    | Some entries -> Result.Ok (false, entries)
-    | None ->
-        (* The CPU reset before inst last+1 was decoded (e.g. end_of_test cleanup reset).
-           Re-query at last_inst_number to capture the window that ended there, which
-           may contain the labeled instructions we need. Not a semantic divergence. *)
-        Logs.debug (fun m -> m "FPGA DIVERGED at bp=%d; retrying at bp=%d" breakpoint cfg.last_inst_number);
-        (match query (Int.max 1 cfg.last_inst_number) with
-        | Some entries -> Result.Ok (false, entries)
-        | None -> Result.Ok (true, []))
+      let tsend = Time_now.nanoseconds_since_unix_epoch () in
+      write_all 0;
+      let send_ms = ms_since tsend in
+      (* Read 800 bytes of trace data *)
+      let trecv = Time_now.nanoseconds_since_unix_epoch () in
+      let raw = Bytes.create 800 in
+      let rec read_all off =
+        if off >= 800 then Some off
+        else
+          let readable, _, _ = Caml_unix.select [fd] [] [] 2.0 in
+          if List.is_empty readable then
+            None
+          else
+            let n = Caml_unix.read fd raw off (800 - off) in
+            if n <= 0 then None
+            else read_all (off + n)
+      in
+      let raw =
+        match read_all 0 with
+        | Some 800 -> Bytes.to_string raw
+        | _ -> ""
+      in
+      let recv_ms = ms_since trecv in
+      let query_ms = ms_since tq in
+      fpga_stats.query_calls <- fpga_stats.query_calls + 1;
+      fpga_stats.query_ms <- fpga_stats.query_ms +. query_ms;
+      fpga_stats.query_send_ms <- fpga_stats.query_send_ms +. send_ms;
+      fpga_stats.query_recv_ms <- fpga_stats.query_recv_ms +. recv_ms;
+      Logs.info (fun m -> m "[PERF] run_fpga: %.1f ms" query_ms);
+      trace_entries_of_raw raw
+  in
+  let breakpoint = cfg.last_inst_number + 1 in
+  match query breakpoint with
+  | Some entries -> Result.Ok (false, entries)
+  | None ->
+      (* The CPU reset before inst last+1 was decoded (e.g. end_of_test cleanup reset).
+         Re-query at last_inst_number to capture the window that ended there, which
+         may contain the labeled instructions we need. Not a semantic divergence. *)
+      Logs.debug (fun m -> m "FPGA DIVERGED at bp=%d; retrying at bp=%d" breakpoint cfg.last_inst_number);
+      (match query (Int.max 1 cfg.last_inst_number) with
+      | Some entries -> Result.Ok (false, entries)
+      | None -> Result.Ok (true, []))
   )
 
 let output_of_signals
@@ -435,7 +676,7 @@ let analyse_trace (diverges : bool) (cfg : cfg_t) (labels : (string * string) li
           (* cpu_mode_s: mode at start of this instruction (first captured clock cycle) *)
           let cpu_mode_s = compute_cpu_mode entry in
           (* cpu_mode_e: mode at start of the next instruction.
-             If the next instruction is outside the 10-cycle window we fall back to cpu_mode_s
+             If the next instruction is outside the trace window we fall back to cpu_mode_s
              (mode unchanged). True CPU resets are signalled via DIVERGED in run_fpga_script. *)
           let cpu_mode_e = match first_cycle_of (entry.inst_number + 1) with
             | Some next_e -> compute_cpu_mode next_e
@@ -444,10 +685,17 @@ let analyse_trace (diverges : bool) (cfg : cfg_t) (labels : (string * string) li
           (* e_status: all e_state values across the full instruction *)
           let inst_cycles = all_cycles_of entry.inst_number in
           let e_status = List.map inst_cycles ~f:(fun e -> sprintf "%d" e.e_state) in
-          let reg_val = sprintf "%d" entry.r4 in
-          let gie_val = if entry.gie = 1 then "true" else "false" in
-          let umem_val = sprintf "%d" entry.umem in
-          let timerA_val = sprintf "%d" entry.timerA in
+          (* Match Verilog analysis: payload signals are sampled at the next
+             instruction boundary, after writes have had a chance to commit. *)
+          let payload_entry =
+            match first_cycle_of (entry.inst_number + 1) with
+            | Some next_entry -> next_entry
+            | None -> Option.value (List.last inst_cycles) ~default:entry
+          in
+          let reg_val = sprintf "%d" payload_entry.r4 in
+          let gie_val = if payload_entry.gie = 1 then "true" else "false" in
+          let umem_val = sprintf "%d" payload_entry.umem in
+          let timerA_val = sprintf "%d" payload_entry.timerA in
           (* k: number of clock cycles for this instruction *)
           let k = Int.max 1 (List.length inst_cycles) in
           let lin' = entry.inst_number in

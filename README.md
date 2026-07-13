@@ -46,8 +46,8 @@ Once the container is ready, you can run any ALVIE command:
 
 ```bash
 cd /home/alvie
-./learn_one.sh d54f031 b6    # Learn B6 model
-./check_one.sh b6            # Check B6 model
+./learn_one.sh d54f031 b6 b6 # Learn B6 model
+./check_one.sh b6 b6         # Check B6 model
 ```
 
 ### Build Docker Image Locally
@@ -130,6 +130,42 @@ sudo rm /etc/apt/sources.list.d/jammy-universe.sources.list
 sudo apt-get update
 ```
 
+# FPGA Setup
+
+The FPGA backend expects the board to be programmed before running ALVIE.
+Programming scripts are in:
+
+```bash
+cd /home/matteo/projects/alvie/arty_s7_openmsp430_sancus/scripts
+vivado -mode batch -source S.tcl
+```
+
+Replace `S.tcl` with the Vivado script to run.
+
+The programming Tcl scripts verify the bitstream SHA-256 before upload. The
+expected hash for the current `inst_number_50_ef753b6` image is:
+
+```text
+8270dd57894434a9a05e58c2ee84791f47ec830f4904f3d2cc6b3b7fe5272eb3
+```
+
+Script name suffixes describe the instrumented FPGA image:
+
+- `_inst_number`: execution checkpoints at a given instruction number.
+- `_inst_pc`: execution checkpoints at a given program counter.
+- `_inst_number_50`: execution checkpoints at a given instruction number, with
+  an observation window of 50 cycles instead of 10.
+- `_ef753b6`: image built from Sancus git commit `ef753b6`.
+
+If the script name does not indicate a commit, it uses Sancus commit `bf89c0b`,
+the final Sancus commit with all known bugs fixed except paper bugs V-B8 and
+V-B9.
+
+For learning, pass `--fpga` to the wrapper scripts. FPGA mode now opens the
+serial port once inside the OCaml SUL and keeps it alive for the whole
+learning session. The default port is `/dev/ttyUSB1`; override it with
+`FPGA_PORT` if needed.
+
 # Running the found attacks
 
 Once the container is ready, you can run the following command to check that the attacks reported in the paper are synthesized correctly and actually break the security of the relevant Sancus versions (the full test requires a few minutes):
@@ -172,11 +208,11 @@ rm -Rf results/*attack-name*.dot counterexamples/*attack-name*/*.dot
 ```
 to delete the existing models and witness graphs, then launch the learning with
 ```
-$ ./learn_one.sh patch-commit attack-name
+$ ./learn_one.sh patch-commit attack-name attack-name
 ```
 Once the learning is done (results in `results` folder), just run
 ```
-$ ./check_one.sh attack-name
+$ ./check_one.sh attack-name attack-name
 ```
 to produce the witness graph for `attack-name`.
 You can find it in the `counterexamples` directory.
@@ -198,13 +234,13 @@ You can find it in the `counterexamples` directory.
 In our experience one of the fastest single experiment to run is **B6**, i.e.,
 ```
 $ rm -Rf results/*-b6-*.dot counterexamples/b6/*.dot
-$ ./learn_one.sh d54f031 b6
-$ ./check_one.sh b6
+$ ./learn_one.sh d54f031 b6 b6
+$ ./check_one.sh b6 b6
 ```
 
 If you want to test on one of the new attacks (i.e., **B8** or **B9**) use the following command for learning (command for the checking phase is identical!):
 ```
-$ ./learn_one_nospecial.sh attack-name
+$ ./learn_one_nospecial.sh attack-name attack-name
 ```
 
 ## Learning and checking all the experiments
@@ -216,13 +252,13 @@ rm -Rf results/*.dot counterexamples/*/*.dot
 ```
 and then run:
 ```
-$ ./learn_all.sh
+$ ./learn_all.sh complete
 ```
 to learn all the models in the paper.
 
 Once the learning is done (results in `results` folder), just run
 ```
-$ ./check_all.sh
+$ ./check_all.sh complete
 ```
 to produce the witness graphs.
 You can find them in the `counterexamples` directory.

@@ -10,6 +10,62 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
   module IIOMealy = Mealy (ShowableInt) (I) (O)
   module IIOObservationTree = ObservationTree (ShowableInt) (I) (O)
 
+  type profile_t = {
+    mutable next_input_calls : int;
+    mutable next_input_ms : float;
+    mutable append_calls : int;
+    mutable append_ms : float;
+    mutable append_lhs_len_sum : int;
+    mutable append_lhs_len_max : int;
+  }
+
+  let profile = {
+    next_input_calls = 0;
+    next_input_ms = 0.0;
+    append_calls = 0;
+    append_ms = 0.0;
+    append_lhs_len_sum = 0;
+    append_lhs_len_max = 0;
+  }
+
+  let ms_since t0 =
+    let open Int63 in
+    to_float (Time_now.nanoseconds_since_unix_epoch () - t0) /. 1_000_000.0
+
+  let timed f =
+    let t0 = Time_now.nanoseconds_since_unix_epoch () in
+    let res = f () in
+    res, ms_since t0
+
+  let append_one xs x =
+    let lhs_len = List.length xs in
+    let res, ms = timed (fun () -> xs @ [x]) in
+    profile.append_calls <- profile.append_calls + 1;
+    profile.append_ms <- profile.append_ms +. ms;
+    profile.append_lhs_len_sum <- profile.append_lhs_len_sum + lhs_len;
+    profile.append_lhs_len_max <- Int.max profile.append_lhs_len_max lhs_len;
+    res
+
+  let timed_next_input next_input hyp is os =
+    let res, ms = timed (fun () -> next_input hyp is os) in
+    profile.next_input_calls <- profile.next_input_calls + 1;
+    profile.next_input_ms <- profile.next_input_ms +. ms;
+    res
+
+  let () =
+    Stdlib.at_exit (fun () ->
+      if profile.next_input_calls > 0 || profile.append_calls > 0 then
+        Printf.eprintf
+          "[RW_ORACLE_PROFILE] next_input_calls=%d next_input_ms=%.1f avg_next_input_ms=%.3f append_calls=%d append_ms=%.1f append_lhs_len_avg=%.1f append_lhs_len_max=%d\n%!"
+          profile.next_input_calls
+          profile.next_input_ms
+          (if profile.next_input_calls = 0 then 0.0 else profile.next_input_ms /. Float.of_int profile.next_input_calls)
+          profile.append_calls
+          profile.append_ms
+          (if profile.append_calls = 0 then 0.0 else Float.of_int profile.append_lhs_len_sum /. Float.of_int profile.append_calls)
+          profile.append_lhs_len_max
+    )
+
   type stats_t = {
     mutable outputquery_cnt : int;
     mutable equivquery_cnt : int;
@@ -115,7 +171,7 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
       ~init:(ot, [], ot.s0)
       ~f:(fun (ot_acc, ol_acc, prev_ot_state) i ->
         let ot_acc', o_ot, next_state = ot_updater oracle ot_acc sul prev_ot_state i in
-          (ot_acc', ol_acc @ [(i, o_ot)], next_state)
+          (ot_acc', append_one ol_acc (i, o_ot), next_state)
       ) in
     S.post sul;
     (ot', iol)
@@ -154,7 +210,7 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
           )
         else (
           (* Logs.debug (fun m -> m "equiv_query: start oracle.next_input"); *)
-          let new_i = oracle.next_input hyp is os in
+          let new_i = timed_next_input oracle.next_input hyp is os in
           (* Logs.debug (fun m -> m "equiv_query: end oracle.next_input"); *)
           (* Compare ot with the SUL and update it if needed -- the result holds for both the ot and the SUL *)
           (* Logs.debug (fun m -> m "equiv_query: start ot_updater"); *)
@@ -171,12 +227,15 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
                 failwith (Format.sprintf "(RW) equiv_query - this may be a bug: %d -- %s/?? --> ?? in hyp!"
                   prev_state (Sexp.to_string (I.sexp_of_t new_i)))
             | Some (o_hyp, _) when not (O.equal o o_hyp) ->
-                Logs.debug (fun m -> m "(RW) equiv_query: cex found: %s; o_hyp: %s; o_sul: %s" (List.to_string ~f:I.show (is@[new_i])) (O.show o_hyp) (O.show o));
+                let is' = append_one is new_i in
+                Logs.debug (fun m -> m "(RW) equiv_query: cex found: %s; o_hyp: %s; o_sul: %s" (List.to_string ~f:I.show is') (O.show o_hyp) (O.show o));
                 S.post sul;
-                `Cex (ot', is@[new_i]) (* We found a counter example! *)
+                `Cex (ot', is') (* We found a counter example! *)
             | Some (o_hyp, s_hyp) ->
-                Logs.debug (fun m -> m "(RW) equiv_query: candidate cex: %s; outs_hyp/sul: %s" (List.to_string ~f:I.show (is@[new_i])) (List.to_string ~f:O.show (os@[o_hyp])));
-                _equiv_query ot' (num_steps+1) s_hyp next_state (is@[new_i]) (os@[o_hyp]))
+                let is' = append_one is new_i in
+                let os' = append_one os o_hyp in
+                Logs.debug (fun m -> m "(RW) equiv_query: candidate cex: %s; outs_hyp/sul: %s" (List.to_string ~f:I.show is') (List.to_string ~f:O.show os'));
+                _equiv_query ot' (num_steps+1) s_hyp next_state is' os')
       ) in
       do_reset ();
       _equiv_query ot 0 hyp.s0 ot.s0 [] []

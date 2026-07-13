@@ -20,23 +20,44 @@ for arg in "$@"; do
 done
 set -- "${ARGS[@]}"
 
+usage() {
+  echo "Usage: $0 <subdirectory> [--fpga]" >&2
+  exit 2
+}
+
+if [ "$#" -ne 1 ]; then
+  usage
+fi
+
+subdir=$1
+
 # Useful paths
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
 DIR_SUFFIX=$( $FPGA && echo "-fpga" || true )
-LOGS_DIR=$SCRIPT_DIR/logs/$1${DIR_SUFFIX}
-RES_DIR=$SCRIPT_DIR/results/$1${DIR_SUFFIX}
-TMP_DIR=$SCRIPT_DIR/tmp/$1${DIR_SUFFIX}
+LOGS_DIR=$SCRIPT_DIR/logs/$subdir${DIR_SUFFIX}
+RES_DIR=$SCRIPT_DIR/results/$subdir${DIR_SUFFIX}
+TMP_DIR=$SCRIPT_DIR/tmp/$subdir${DIR_SUFFIX}
 
 SCG_DIR=$SCRIPT_DIR/sancus-core-gap
-SPEC_DIR=$SCRIPT_DIR/spec-lib/$1
+SPEC_ROOT=$SCRIPT_DIR/spec-lib
+SPEC_DIR=$SPEC_ROOT/$subdir
 MM_DIR=$SCRIPT_DIR/alvie/code
 
 EPS=0.01
 DELTA=0.01
 
-mkdir -p $RES_DIR
-mkdir -p $LOGS_DIR
+if [ ! -d "$SPEC_DIR" ]; then
+  SPEC_DIR=$SPEC_ROOT
+fi
+
+if [ ! -f "$SPEC_DIR/enclave-complete.etdl" ]; then
+  echo "Missing enclave specification in $SPEC_DIR" >&2
+  exit 2
+fi
+
+mkdir -p "$RES_DIR"
+mkdir -p "$LOGS_DIR"
 
 # Commits in chronological order:
 #   original  fix B2    fix B3    fix B6    fix B4    fix B1    fix B7(1) final

@@ -20,7 +20,17 @@ for arg in "$@"; do
 done
 set -- "${ARGS[@]}"
 
+usage() {
+  echo "Usage: $0 <att_spec> <subdirectory> [--fpga]" >&2
+  exit 2
+}
+
+if [ "$#" -ne 2 ]; then
+  usage
+fi
+
 attspecbn=$1
+subdir=$2
 EPS=0.01
 DELTA=0.01
 
@@ -28,16 +38,26 @@ DELTA=0.01
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
 DIR_SUFFIX=$( $FPGA && echo "-fpga" || true )
-LOGS_DIR=$SCRIPT_DIR/logs/$2${DIR_SUFFIX}
-RES_DIR=$SCRIPT_DIR/results/$2${DIR_SUFFIX}
-TMP_DIR=$SCRIPT_DIR/tmp/$2${DIR_SUFFIX}
+LOGS_DIR=$SCRIPT_DIR/logs/$subdir${DIR_SUFFIX}
+RES_DIR=$SCRIPT_DIR/results/$subdir${DIR_SUFFIX}
+TMP_DIR=$SCRIPT_DIR/tmp/$subdir${DIR_SUFFIX}
 
 SCG_DIR=$SCRIPT_DIR/sancus-core-gap
-SPEC_DIR=$SCRIPT_DIR/spec-lib/$2
+SPEC_ROOT=$SCRIPT_DIR/spec-lib
+SPEC_DIR=$SPEC_ROOT/$subdir
 MM_DIR=$SCRIPT_DIR/alvie/code
 
-mkdir -p $RES_DIR
-mkdir -p $LOGS_DIR
+if [ ! -d "$SPEC_DIR" ]; then
+  SPEC_DIR=$SPEC_ROOT
+fi
+
+if [ ! -f "$SPEC_DIR/$attspecbn.atdl" ] || [ ! -f "$SPEC_DIR/enclave-complete.etdl" ]; then
+  echo "Missing specifications in $SPEC_DIR for attacker '$attspecbn' and enclave 'enclave-complete'" >&2
+  exit 2
+fi
+
+mkdir -p "$RES_DIR"
+mkdir -p "$LOGS_DIR"
 
 declare -a EXPERIMENTS=(
   "${attspecbn} enclave-complete 0 ef753b6"

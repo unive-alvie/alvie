@@ -13,6 +13,33 @@ type label_t = string*string [@@deriving sexp,ord]
 
 let dbg_str () = match Logs.level () with | Some Logs.Debug -> "" | _ -> ">/dev/null 2>/dev/null"
 
+type verilog_stats_t = {
+  mutable build_calls : int;
+  mutable build_ms : float;
+  mutable simulate_calls : int;
+  mutable simulate_ms : float;
+}
+
+let verilog_stats = {
+  build_calls = 0;
+  build_ms = 0.0;
+  simulate_calls = 0;
+  simulate_ms = 0.0;
+}
+
+let () =
+  Stdlib.at_exit (fun () ->
+    if verilog_stats.build_calls > 0 || verilog_stats.simulate_calls > 0 then
+      Printf.eprintf
+        "[VERILOG_STATS] build_calls=%d build_ms=%.1f simulate_calls=%d simulate_ms=%.1f avg_build_ms=%.1f avg_simulate_ms=%.1f\n%!"
+        verilog_stats.build_calls
+        verilog_stats.build_ms
+        verilog_stats.simulate_calls
+        verilog_stats.simulate_ms
+        (if verilog_stats.build_calls = 0 then 0.0 else verilog_stats.build_ms /. Float.of_int verilog_stats.build_calls)
+        (if verilog_stats.simulate_calls = 0 then 0.0 else verilog_stats.simulate_ms /. Float.of_int verilog_stats.simulate_calls)
+  )
+
 let show_mode m = match m with `PM -> "PM" | `UM -> "UM"
 
 let show_e_state e = match e with `NO_SM -> "NO_SM" | `OTHER -> "OTHER" | `RETI -> "RETI" | `PP_JMPOUT -> "PP_JMPOUT" | `HANDLE -> "HANDLE"
@@ -256,14 +283,20 @@ let run_simulator (cfg : cfg_t) =
   let build_pmem_sim = Format.sprintf "%s/../scripts/build_pmem_sim" cfg.workingdir in
   let t0 = Time_now.nanoseconds_since_unix_epoch () in
   let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" build_pmem_sim cfg.tmpdir cfg.basename (dbg_str ())) in
-  Logs.info (fun m -> m "[PERF] build_pmem_sim: %.1f ms" (ms_since t0));
+  let build_ms = ms_since t0 in
+  verilog_stats.build_calls <- verilog_stats.build_calls + 1;
+  verilog_stats.build_ms <- verilog_stats.build_ms +. build_ms;
+  Logs.info (fun m -> m "[PERF] build_pmem_sim: %.1f ms" build_ms);
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
   else (
     (* Invoke the simulator *)
     let ts = Time_now.nanoseconds_since_unix_epoch () in
     let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ())) in
-    Logs.info (fun m -> m "[PERF] simulate: %.1f ms" (ms_since ts));
+    let simulate_ms = ms_since ts in
+    verilog_stats.simulate_calls <- verilog_stats.simulate_calls + 1;
+    verilog_stats.simulate_ms <- verilog_stats.simulate_ms +. simulate_ms;
+    Logs.info (fun m -> m "[PERF] simulate: %.1f ms" simulate_ms);
     (* (match Logs.level () with | Some Logs.Debug -> assert (Sys_unix.command (Format.sprintf "cp %s %s" cfg.dumpfile cfg.workingdir) = 0) | _ -> ()); *)
     if res = 1 then
       failwith "Simulator: Stimulus did not complete!"
@@ -441,15 +474,18 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
           Logs.debug (fun m -> m "Verilog.analyse_dump: folding over inst_numbers and found a RESET, outputting OReset.");
           lin, acc @ [ `Out Output_internal.OReset ]
         | Some (ref_time_end, _) ->
-            (* Extract the list of all elements from e_state_map whose keys are >= ref_time_begin and < ref_time_end *)
+            (* Extract current-instruction Sancus states only.  The value at
+               ref_time_end belongs to the next instruction, even though
+               payload writes have become observable by then. *)
             let e_status = List.map (Map.to_alist (Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
-            (* Extract the values of registers and memory, as the last value before ref_time_end *)
-            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            (* Extract the values of registers and memory, as the last value at
+               or before ref_time_end.  Writes commit on this boundary. *)
+            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
             (* let pmem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
-            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let k = (ref_time_end - ref_time_begin) / cfg.sim_cycle_ratio in
+            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            let k = (ref_time_end - ref_time_begin + 1) / cfg.sim_cycle_ratio in
             let lin' = inst_number in
             Logs.debug (fun m -> m "===== cfg.last_inst_number %d, lin %d, lin' %d\n" cfg.last_inst_number lin lin');
             (* Process the results into an actual output *)
