@@ -24,43 +24,20 @@ const documentationUrl = `${baseUrl}/walkthrough-repro/`;
       </header>
 
       <section class="alvie-intro" aria-labelledby="page-title">
-        <p class="alvie-kicker">Sancus analysis toolkit</p>
-        <h1 id="page-title">Learn the model.<br /><span>Find the attack.</span></h1>
+        <h1 id="page-title">ALVIE</h1>
         <p class="alvie-summary">
           ALVIE learns observable models of Sancus enclaves and compares their
           behavior across secrets to expose security violations.
         </p>
         <div class="alvie-actions">
-          <a class="alvie-primary" href={documentationUrl}>Read the documentation <span aria-hidden="true">-&gt;</span></a>
-          <a href="https://github.com/unive-alvie/alvie">View on GitHub <span aria-hidden="true">-&gt;</span></a>
-        </div>
-      </section>
-
-      <section class="alvie-workflow" aria-label="ALVIE workflow">
-        <div class="alvie-step">
-          <span class="alvie-index">01</span>
-          <strong>Specifications</strong>
-          <span>Attacker and enclave behavior in TestDL.</span>
-        </div>
-        <div class="alvie-arrow" aria-hidden="true">-&gt;</div>
-        <div class="alvie-step">
-          <span class="alvie-index">02</span>
-          <strong>Active learning</strong>
-          <span>L# queries a Verilog Sancus model.</span>
-        </div>
-        <div class="alvie-arrow" aria-hidden="true">-&gt;</div>
-        <div class="alvie-step">
-          <span class="alvie-index">03</span>
-          <strong>Witnesses</strong>
-          <span>Graphviz counterexamples for violations.</span>
+          <a class="alvie-button alvie-primary" href={documentationUrl}>Documentation</a>
+          <a class="alvie-button" href="https://github.com/unive-alvie/alvie">Repository</a>
         </div>
       </section>
 
       <footer class="alvie-footer">
-        <span>OCaml</span>
-        <span>Verilog simulator</span>
-        <span>Graphviz</span>
-        <span>Open source</span>
+        <a href="https://github.com/unive-alvie/alvie/blob/main/LICENSE">MIT License</a>
+        <span>Copyright ALVIE team</span>
       </footer>
     </main>
   </body>
