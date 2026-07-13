@@ -15,15 +15,15 @@ export default defineConfig({
           label: 'Guides',
           items: [
             { label: 'Reproducing the Simulation Experiments', slug: 'walkthrough-repro' },
+            { label: 'TestDL Tutorial: V-B1 Example', slug: 'testdl-tutorial-vb1' },
+            { label: 'Extending TestDL Actions', slug: 'spec-extending-actions' },
           ],
         },
         {
           label: 'Reference',
           items: [
-            { label: 'TestDL Tutorial: V-B1 Example', slug: 'testdl-tutorial-vb1' },
             { label: 'TestDL Language Reference', slug: 'spec-tutorial' },
             { label: 'TestDL Action Reference', slug: 'testdl-action-reference' },
-            { label: 'Extending TestDL Actions', slug: 'spec-extending-actions' },
             { label: 'Executables Reference', slug: 'executables-reference' },
             { label: 'Logs and Outputs Reference', slug: 'log-output-reference' },
             { label: 'Code Architecture', slug: 'code-architecture' },
