@@ -77,7 +77,7 @@ unprotected memory value, the timer counter, and the processor mode.
 
 The payload is deliberately smaller than the simulator state: it represents
 what the attacker can observe. See
-`docs/log-output-reference.md` for the rendered symbols and payload fields.
+the [Log and Output Reference](log-output-reference/) for the rendered symbols and payload fields.
 
 ## Learning and comparison boundaries
 
@@ -97,7 +97,7 @@ the four-model matrix and the comparison phase are both required.
 
 Update the syntax and parser, the attacker or enclave atom type, compilation,
 derivative/action-set logic, and tests. Follow
-`docs/spec-extending-actions.md`.
+the [Extending TestDL Actions](../guides/spec-extending-actions/) guide.
 
 ### Add a learning backend
 

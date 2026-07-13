@@ -114,9 +114,9 @@ the SUL. The graph records a distinguishing trace, so it is usually more
 useful to read a short path than to inspect every state.
 
 For the meaning of output tokens and timing payloads, see
-[`Logs and outputs`](/alvie/log-output-reference/). For the four-model
+[`Logs and outputs`](/alvie/reference/log-output-reference/). For the four-model
 comparison and its command-line arguments, see
-[`Executables reference`](/alvie/executables-reference/).
+[`Executables reference`](/alvie/reference/executables-reference/).
 
 ## 4. Understand the specifications
 
@@ -128,8 +128,8 @@ Experiments are driven by two TestDL files:
   actions.
 
 The included example specifications are under `spec-lib/example/`. Start with
-the [TestDL tutorial](/alvie/spec-tutorial/) to understand their syntax, then
-use the [action reference](/alvie/testdl-action-reference/) when reading an
+the [TestDL tutorial](/alvie/reference/spec-tutorial/) to understand their syntax, then
+use the [action reference](/alvie/reference/testdl-action-reference/) when reading an
 existing specification.
 
 The attack-focused specifications intentionally restrict the attacker to keep
@@ -169,13 +169,13 @@ logs when diagnosing a slow or failed experiment.
 
 ## Where to go next
 
-- [`Reproducing the Simulation Experiments`](/alvie/walkthrough-repro/) has
+- [`Reproducing the Simulation Experiments`](/alvie/guides/walkthrough-repro/) has
   the full simulator experiment commands and attack mapping.
-- [`Executables Reference`](/alvie/executables-reference/) documents the
+- [`Executables Reference`](/alvie/reference/executables-reference/) documents the
   direct `learn.exe`, `fa.exe`, `exec.exe`, and `pbt.exe` interfaces.
-- [`Code Architecture`](/alvie/code-architecture/) explains the parser,
+- [`Code Architecture`](/alvie/reference/code-architecture/) explains the parser,
   input generator, SUL, learner, and comparison pipeline.
-- [`Extending TestDL`](/alvie/spec-extending-actions/) is the starting point
+- [`Extending TestDL`](/alvie/guides/spec-extending-actions/) is the starting point
   for adding a specification action.
 
 The project README contains the repository layout, complete attack list, and

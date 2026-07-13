@@ -11,24 +11,8 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       sidebar: [
         { label: 'Getting Started', slug: 'getting-started' },
-        {
-          label: 'Guides',
-          items: [
-            { label: 'Reproducing the Simulation Experiments', slug: 'walkthrough-repro' },
-            { label: 'TestDL Tutorial: V-B1 Example', slug: 'testdl-tutorial-vb1' },
-            { label: 'Extending TestDL Actions', slug: 'spec-extending-actions' },
-          ],
-        },
-        {
-          label: 'Reference',
-          items: [
-            { label: 'TestDL Language Reference', slug: 'spec-tutorial' },
-            { label: 'TestDL Action Reference', slug: 'testdl-action-reference' },
-            { label: 'Executables Reference', slug: 'executables-reference' },
-            { label: 'Logs and Outputs Reference', slug: 'log-output-reference' },
-            { label: 'Code Architecture', slug: 'code-architecture' },
-          ],
-        },
+        { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },
+        { label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
       ],
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/unive-alvie/alvie' },

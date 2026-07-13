@@ -36,7 +36,7 @@ jobs:
         run: |
           rm -rf site/src/content/docs
           mkdir -p site/src/content/docs
-          cp docs/*.md site/src/content/docs/
+          cp -R docs/. site/src/content/docs/
       - name: Build Astro Starlight site
         working-directory: site
         run: npm run build

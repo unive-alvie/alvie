@@ -12,7 +12,7 @@ The example uses a reduced fast profile so the first model can be learned more
 quickly.
 
 The complete syntax and semantics are in the
-[TestDL Action Reference](/alvie/testdl-action-reference/). Use that page
+[TestDL Action Reference](/alvie/reference/testdl-action-reference/). Use that page
 when you need details; this tutorial focuses on where to start and what each
 part is doing.
 
@@ -78,7 +78,7 @@ ifz (mov #42, &unprot_mem; nop)
 ```
 
 The full meaning of `ifz`, operands, memory labels, and instruction atoms is
-covered by the [TestDL Action Reference](/alvie/testdl-action-reference/).
+covered by the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
 
 ## 3. Read the attacker specification
 
@@ -175,12 +175,12 @@ cp spec-lib/fast/b1.atdl /tmp/my-b1.atdl
 Change one timer, choice, or action and rerun the direct command with a new
 `--res` and `--tmpdir`. Parser errors usually come from a missing semicolon,
 unmatched parenthesis, unknown action, or invalid register. Consult the
-[action reference](/alvie/testdl-action-reference/) for exact syntax and
-[Extending TestDL Actions](/alvie/spec-extending-actions/) when adding a new
+[action reference](/alvie/reference/testdl-action-reference/) for exact syntax and
+[Extending TestDL Actions](/alvie/guides/spec-extending-actions/) when adding a new
 language construct.
 
 ## Related files
 
 - Complete V-B1 attacker profile: `spec-lib/b1.atdl`
 - Complete enclave profile: `spec-lib/enclave-complete.etdl`
-- Full experiment workflow: [Reproducing the Simulation Experiments](/alvie/walkthrough-repro/)
+- Full experiment workflow: [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/)
