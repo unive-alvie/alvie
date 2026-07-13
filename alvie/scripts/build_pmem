@@ -26,20 +26,26 @@ headfile="$tmpdir/sancus-core-gap/core/sim/rtl_sim/bin/template_defs.asm"
 #headfile=$scriptsdir/template_defs.asm;
 sancus_macro="sancus_macros.asm"
 
+
+# If on MacOS, used gsed
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    alias sed="gsed"
+fi
+
 # Copy necessary files
 cp $srcdir/$sancus_macro $tmpdir/$sancus_macro
 cp $asmfile $tmpdir/pmem.s43
 cp $scriptsdir/omsp_config.sh $tmpdir/omsp_config.sh
 
 cp $incfilev  $incfile
-sed -i 's/`ifdef/#ifdef/g'   $incfile
-sed -i 's/`ifndef/#ifndef/g' $incfile
-sed -i 's/`else/#else/g'     $incfile
-sed -i 's/`endif/#endif/g'   $incfile
-sed -i 's/`define/#define/g' $incfile
-sed -ie 's/`include/\/\/#include/g' $incfile
-sed -i 's/`//g'              $incfile
-sed -i "s/'//g"              $incfile
+sed -ie 's/`ifdef/#ifdef/g'   $incfile
+sed -ie 's/`ifndef/#ifndef/g' $incfile
+sed -ie 's/`else/#else/g'     $incfile
+sed -ie 's/`endif/#endif/g'   $incfile
+sed -ie 's/`define/#define/g' $incfile
+sed -iee 's/`include/\/\/#include/g' $incfile
+sed -ie 's/`//g'              $incfile
+sed -ie "s/'//g"              $incfile
 
 # Use MSPGCC preprocessor to extract the Program, Data
 # and Peripheral memory sizes

@@ -10,36 +10,36 @@ digraph G {
   8 [shape=circle, ];
   9 [shape=circle, ];
   10 [shape=circle, ];
-  
-  
+
+
   0 -> 1 [fontcolor="#000000", color="#000000",
           label="start_counting 256/Time (k = 10, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
           style="dashed", ];
   1 -> 2 [fontcolor="#000000", color="#000000",
-          label="create/Time (k = 648, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+          label="create/Time (k = 600, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
           style="dashed", ];
   2 -> 3 [fontcolor="#000000", color="#000000",
           label="jin enc_s/Time (k = 18, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
           style="dashed", ];
   3 -> 4 [fontcolor="#000000", color="#000000",
-          label="jin enc_s/JmpIn (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 2, mode = PM)",
+          label="jin enc_s/JmpIn (k = 2, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
           style="dashed", ];
   4 -> 5 [fontcolor="#000000", color="#000000",
-          label="cmp #0, r4/Time (k = 1, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
+          label="cmp #0, r4/Time (k = 1, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 2, mode = PM)",
           style="dashed", ];
   4 -> 8 [fontcolor="#A40000", color="#A40000",
-          label="cmp #1, r4/Time (k = 1, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
+          label="cmp #1, r4/Time (k = 1, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 2, mode = PM)",
           style="dotted", ];
   5 -> 6 [fontcolor="#000000", color="#000000",
-          label="ubr/Time (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 10, mode = PM)",
+          label="ubr/Time (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 9, mode = PM)",
           style="dashed", ];
   6 -> 7 [fontcolor="#000000", color="#000000",
-          label="ubr/Time (k = 2, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 12, mode = UM)",
+          label="ubr/Time (k = 2, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 11, mode = UM)",
           style="dashed", ];
   8 -> 9 [fontcolor="#A40000", color="#A40000",
-          label="ubr/Time (k = 2, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 5, mode = UM)",
+          label="ubr/Time (k = 2, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 4, mode = UM)",
           style="dotted", ];
   9 -> 10 [fontcolor="#A40000", color="#A40000", label="ubr/JmpOut",
            style="dotted", ];
-  
+
   }

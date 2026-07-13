@@ -17,4 +17,5 @@ cp $verfile $tmpdir/stimulus.v
 # Start verilog simulation
 echo "Compiling $verfile => $tmpdir/simv"
 # iverilog -o $tmpdir/simv -I $tmpdir -c $submitfile
+
 verilator -O3 --noassert -I$tmpdir -f $submitfile --binary -j 0 -Wno-fatal --trace --Mdir $tmpdir/sancus-core-gap/obj_dir -o simv

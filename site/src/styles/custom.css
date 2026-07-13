@@ -1,0 +1,187 @@
+:root {
+  --alvie-ink: #172126;
+  --alvie-muted: #64747a;
+  --alvie-line: #d9e1e3;
+  --alvie-teal: #176575;
+  --alvie-red: #c4573d;
+  --sl-color-accent-low: #e8eef0;
+  --sl-color-accent: var(--alvie-teal);
+  --sl-color-accent-high: #104451;
+  --sl-font: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Starlight uses the accent-high value for links in dark mode. */
+:root[data-theme='dark'] {
+  --alvie-ink: #eef4f5;
+  --alvie-muted: #b8c7ca;
+  --alvie-line: #3b4d52;
+  --alvie-teal: #8bd5df;
+  --alvie-red: #ff9b83;
+  --sl-color-accent-low: #173c44;
+  --sl-color-accent: #51b8c6;
+  --sl-color-accent-high: #8bd5df;
+  --sl-color-text-accent: #8bd5df;
+}
+
+.alvie-home {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 3.5rem;
+  color: var(--alvie-ink);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.alvie-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 5.5rem;
+  border-bottom: 1px solid var(--alvie-line);
+}
+
+.alvie-brand {
+  color: var(--alvie-ink);
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-decoration: none;
+}
+
+.alvie-header nav,
+.alvie-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.alvie-header a,
+.alvie-actions a,
+.alvie-footer a {
+  color: var(--alvie-teal);
+  font-size: .9rem;
+  text-decoration: none;
+}
+
+.alvie-header a:hover,
+.alvie-header a:focus-visible,
+.alvie-footer a:hover,
+.alvie-footer a:focus-visible {
+  color: var(--alvie-red);
+  text-decoration: underline;
+  text-underline-offset: .25em;
+}
+
+.alvie-intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 0;
+  text-align: center;
+}
+
+.alvie-intro h1 {
+  margin: 0;
+  color: var(--alvie-ink);
+  font-size: clamp(4.5rem, 13vw, 9rem);
+  font-weight: 700;
+  letter-spacing: -.06em;
+  line-height: .9;
+}
+
+.alvie-summary {
+  max-width: 39rem;
+  margin: 2rem 0 2.25rem;
+  color: var(--alvie-muted);
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.alvie-actions { gap: .75rem; }
+.alvie-button {
+  border: 1px solid var(--alvie-teal);
+  padding: .75rem 1.15rem;
+  color: var(--alvie-teal) !important;
+  font-weight: 650;
+}
+
+.alvie-button:hover,
+.alvie-button:focus-visible {
+  border-color: var(--alvie-red);
+  background: #fff8f5;
+  color: var(--alvie-red) !important;
+  text-decoration: none !important;
+}
+
+.alvie-button.alvie-primary {
+  background: var(--alvie-teal);
+  color: white !important;
+}
+
+.alvie-button.alvie-primary:hover,
+.alvie-button.alvie-primary:focus-visible {
+  background: var(--alvie-red);
+  color: white !important;
+}
+
+.alvie-paper { position: relative; }
+.alvie-paper summary { list-style: none; cursor: pointer; }
+.alvie-paper summary::-webkit-details-marker { display: none; }
+.alvie-paper summary::after { content: 'v'; margin-left: .55rem; font-size: .85em; }
+.alvie-paper[open] summary::after { content: '^'; }
+.alvie-paper-menu {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + .5rem);
+  right: 0;
+  display: grid;
+  min-width: 13rem;
+  border: 1px solid var(--alvie-line);
+  background: #fff;
+  box-shadow: 0 .5rem 1.5rem rgb(23 33 38 / 12%);
+  text-align: left;
+}
+:root[data-theme='dark'] .alvie-paper-menu { background: #1b2529; }
+.alvie-paper-menu a {
+  padding: .7rem .85rem;
+  color: var(--alvie-ink) !important;
+  font-size: .85rem;
+  text-decoration: none;
+}
+.alvie-paper-menu a:hover,
+.alvie-paper-menu a:focus-visible {
+  background: #fff8f5;
+  color: var(--alvie-red) !important;
+  text-decoration: none;
+}
+:root[data-theme='dark'] .alvie-paper-menu a:hover,
+:root[data-theme='dark'] .alvie-paper-menu a:focus-visible { background: #26383d; }
+
+.alvie-footer {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  border-top: 1px solid var(--alvie-line);
+  padding: 1.5rem 0 2rem;
+  color: var(--alvie-muted);
+  font-size: .78rem;
+  text-align: center;
+}
+
+.alvie-footer span { color: var(--alvie-muted); }
+
+@media (max-width: 700px) {
+  .alvie-home { padding: 0 1.5rem; }
+  .alvie-header { min-height: 4.5rem; }
+  .alvie-header nav { gap: .85rem; }
+  .alvie-header nav a { font-size: .78rem; }
+  .alvie-intro { padding: 4rem 0; }
+  .alvie-summary { font-size: 1rem; }
+  .alvie-actions { flex-wrap: wrap; justify-content: center; }
+  .alvie-footer { flex-direction: column; gap: .5rem; }
+}

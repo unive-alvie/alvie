@@ -1,0 +1,47 @@
+---
+import '../styles/custom.css';
+
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+const gettingStartedUrl = `${baseUrl}/getting-started/`;
+const documentationUrl = `${baseUrl}/guides/walkthrough-repro/`;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="ALVIE: active learning for Sancus security analysis." />
+    <title>ALVIE | Sancus analysis toolkit</title>
+  </head>
+  <body>
+    <main class="alvie-home">
+      <header class="alvie-header">
+        <a class="alvie-brand" href={baseUrl || '/'}>ALVIE</a>
+      </header>
+
+      <section class="alvie-intro" aria-labelledby="page-title">
+        <h1 id="page-title">ALVIE</h1>
+        <p class="alvie-summary">
+          ALVIE learns observable models of Sancus enclaves and compares their
+          behavior across secrets to expose security violations.
+        </p>
+        <div class="alvie-actions">
+          <a class="alvie-button alvie-primary" href={gettingStartedUrl}>Getting started</a>
+          <a class="alvie-button" href="https://github.com/unive-alvie/alvie">Repository</a>
+          <details class="alvie-paper">
+            <summary class="alvie-button">Paper</summary>
+            <div class="alvie-paper-menu" role="menu">
+              <a href="https://arxiv.org/abs/2404.09518" role="menuitem">arXiv preprint</a>
+              <a href="https://doi.org/10.1109/CSF61375.2024.00023" role="menuitem">IEEE published version</a>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <footer class="alvie-footer">
+        <a href="https://github.com/unive-alvie/alvie/blob/main/LICENSE">MIT License</a>
+        <span>Copyright ALVIE team</span>
+      </footer>
+    </main>
+  </body>
+</html>

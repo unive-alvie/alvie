@@ -22,6 +22,12 @@ The project is structured as follows:
 * `counterexamples` includes the witness graphs (pdf renderings are in the subfolder `pdf`)
 * `Dockerfile` is the docker file for the project
 * `*.sh` files are useful to reproduce our results (see below)
+* `docs` contains the maintained guides and technical references
+
+The rendered documentation is published at
+[unive-alvie.github.io/alvie](https://unive-alvie.github.io/alvie/). Start
+with the [Getting Started guide](docs/getting-started.md) or the
+[simulation reproduction guide](docs/guides/walkthrough-repro.md).
 
 # Notes on the specifications
 
@@ -46,8 +52,8 @@ Once the container is ready, you can run any ALVIE command:
 
 ```bash
 cd /home/alvie
-./learn_one.sh d54f031 b6    # Learn B6 model
-./check_one.sh b6            # Check B6 model
+./learn_one.sh d54f031 b6 b6 # Learn B6 models
+./check_one.sh b6 b6         # Compare B6 models
 ```
 
 ### Build Docker Image Locally
@@ -172,11 +178,11 @@ rm -Rf results/*attack-name*.dot counterexamples/*attack-name*/*.dot
 ```
 to delete the existing models and witness graphs, then launch the learning with
 ```
-$ ./learn_one.sh patch-commit attack-name
+$ ./learn_one.sh patch-commit attack-name namespace
 ```
 Once the learning is done (results in `results` folder), just run
 ```
-$ ./check_one.sh attack-name
+$ ./check_one.sh attack-name namespace
 ```
 to produce the witness graph for `attack-name`.
 You can find it in the `counterexamples` directory.
@@ -198,13 +204,13 @@ You can find it in the `counterexamples` directory.
 In our experience one of the fastest single experiment to run is **B6**, i.e.,
 ```
 $ rm -Rf results/*-b6-*.dot counterexamples/b6/*.dot
-$ ./learn_one.sh d54f031 b6
-$ ./check_one.sh b6
+$ ./learn_one.sh d54f031 b6 b6
+$ ./check_one.sh b6 b6
 ```
 
 If you want to test on one of the new attacks (i.e., **B8** or **B9**) use the following command for learning (command for the checking phase is identical!):
 ```
-$ ./learn_one_nospecial.sh attack-name
+$ ./learn_one_nospecial.sh attack-name namespace
 ```
 
 ## Learning and checking all the experiments
@@ -216,13 +222,13 @@ rm -Rf results/*.dot counterexamples/*/*.dot
 ```
 and then run:
 ```
-$ ./learn_all.sh
+$ ./learn_all.sh namespace
 ```
 to learn all the models in the paper.
 
 Once the learning is done (results in `results` folder), just run
 ```
-$ ./check_all.sh
+$ ./check_all.sh namespace
 ```
 to produce the witness graphs.
 You can find them in the `counterexamples` directory.

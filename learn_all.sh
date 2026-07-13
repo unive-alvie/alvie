@@ -6,18 +6,32 @@
 # Processes are spawned automatically on all the available cores.
 #
 # Usage:
-#   ./learn_all.sh [fast]
+#   ./learn_all.sh <subdirectory>
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <subdirectory>" >&2
+  exit 2
+fi
+subdir=$1
 
 # Useful paths
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-LOGS_DIR=$SCRIPT_DIR/logs/$1
-RES_DIR=$SCRIPT_DIR/results/$1
-TMP_DIR=$SCRIPT_DIR/tmp/$1
+LOGS_DIR=$SCRIPT_DIR/logs/$subdir
+RES_DIR=$SCRIPT_DIR/results/$subdir
+TMP_DIR=$SCRIPT_DIR/tmp/$subdir
 
 SCG_DIR=$SCRIPT_DIR/sancus-core-gap
-SPEC_DIR=$SCRIPT_DIR/spec-lib/$1
+SPEC_DIR=$SCRIPT_DIR/spec-lib/$subdir
 MM_DIR=$SCRIPT_DIR/alvie/code
+
+if [ ! -d "$SPEC_DIR" ]; then
+  SPEC_DIR=$SCRIPT_DIR/spec-lib
+fi
+
+if [ ! -f "$SPEC_DIR/enclave-complete.etdl" ]; then
+  echo "Missing enclave specification in $SPEC_DIR" >&2
+  exit 2
+fi
 
 EPS=0.01
 DELTA=0.01
@@ -131,7 +145,7 @@ do
       echo "$name_int ... [OK - Done before]"
     else
       # Invoke the learning process in background and send the stderr/stdout to the log file
-      run "$name_int" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_int\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > $logfile_int 2>&1" "$logfile_nint"
+      run "$name_int" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_int\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > $logfile_int 2>&1" "$logfile_int"
     fi
 
     if [ -f "$resfile_nint" ]; then
