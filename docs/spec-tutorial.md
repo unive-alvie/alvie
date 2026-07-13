@@ -1,3 +1,8 @@
+---
+title: TestDL Specification Tutorial
+description: Define ALVIE attacker and enclave specifications.
+---
+
 # ALVIE Spec Tutorial: Attacker and Victim Modeling
 
 This guide explains how to write ALVIE specifications without digging into the OCaml internals. A full ALVIE run is built by combining:

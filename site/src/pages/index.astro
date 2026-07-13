@@ -1,0 +1,30 @@
+---
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+---
+
+<StarlightPage
+  frontmatter={{
+    title: 'ALVIE',
+    description: 'Automated analysis of Sancus using active automata learning.',
+    template: 'splash',
+  }}
+>
+  <div class="alvie-hero">
+    <p class="alvie-eyebrow">Automated security analysis</p>
+    <h1>ALVIE</h1>
+    <p class="alvie-lede">Learning observable models of Sancus enclaves and finding attacks through active automata learning.</p>
+    <div class="alvie-actions">
+      <a class="alvie-button alvie-button-primary" href="https://github.com/unive-alvie/alvie">Repository</a>
+      <a class="alvie-button" href="https://arxiv.org/abs/2404.09518">Paper</a>
+      <a class="alvie-button" href="/alvie/docs/walkthrough-repro/">Documentation</a>
+    </div>
+  </div>
+
+  <div class="alvie-overview">
+    <div>
+      <p class="alvie-eyebrow">What it does</p>
+      <h2>From specifications to witnesses</h2>
+    </div>
+    <p>ALVIE combines TestDL attacker and enclave specifications with the L# learning algorithm. It learns models from the Sancus simulator, compares secret-dependent behaviors, and emits Graphviz witness graphs for observable violations.</p>
+  </div>
+</StarlightPage>

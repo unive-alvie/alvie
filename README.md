@@ -25,11 +25,11 @@ Start with [`docs/walkthrough-repro.md`](docs/walkthrough-repro.md) for a
 working experiment and [`docs/code-architecture.md`](docs/code-architecture.md)
 for the implementation overview.
 
-The project landing page is published at
+The project landing page and rendered documentation are published at
 `https://unive-alvie.github.io/alvie/` once GitHub Pages is enabled for the
-repository. The repository documentation is canonical and is linked from the
-site; the Wiki is reserved for informal notes and discussion rather than being
-a second copy of the technical reference.
+repository. The site is built with Astro Starlight from the canonical Markdown
+files in `docs/`; the Wiki is reserved for informal notes and discussion rather
+than being a second copy of the technical reference.
 
 ## Prerequisites
 
