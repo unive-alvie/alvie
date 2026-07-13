@@ -31,8 +31,20 @@ The important distinction is:
 
 ## 1. Prepare the environment
 
-The Dockerfile is the reference environment. From the repository root, build
-and start it with:
+The fastest first setup is the published Docker image, which includes the
+reference ALVIE environment and the required Sancus checkout:
+
+```bash
+docker pull matteobusi/alvie
+docker run --rm -it matteobusi/alvie
+```
+
+The container starts in its repository root. The image is published at
+[Docker Hub](https://hub.docker.com/r/matteobusi/alvie). `--rm` removes the
+container when you exit; mount a host directory if you need results to persist
+outside the container.
+
+To build the same environment locally instead, use the repository Dockerfile:
 
 ```bash
 docker build --platform linux/amd64 -t alvie .
