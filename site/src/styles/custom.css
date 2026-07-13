@@ -1,19 +1,46 @@
 :root {
-  --sl-color-accent-low: #f4e6e0;
-  --sl-color-accent: #a7462d;
-  --sl-color-accent-high: #6f291b;
-  --sl-font: Georgia, 'Times New Roman', serif;
+  --sl-color-accent-low: #e8eef0;
+  --sl-color-accent: #1f5865;
+  --sl-color-accent-high: #143b45;
+  --sl-font: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
-.alvie-hero { max-width: 48rem; padding: 5rem 0 3rem; }
-.alvie-eyebrow { color: var(--sl-color-accent); font: 700 .75rem/1.2 Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; }
-.alvie-hero h1 { font-size: clamp(4rem, 13vw, 8rem); letter-spacing: .02em; }
-.alvie-lede { max-width: 42rem; color: var(--sl-color-gray-2); font-size: 1.35rem; }
-.alvie-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
-.alvie-button { border: 1px solid var(--sl-color-gray-4); padding: .7rem 1rem; color: inherit; text-decoration: none; }
-.alvie-button:hover, .alvie-button:focus-visible { border-color: var(--sl-color-accent); color: var(--sl-color-accent-high); }
-.alvie-button-primary { border-color: var(--sl-color-accent); background: var(--sl-color-accent); color: white; }
-.alvie-overview { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.3fr); gap: 2rem; border-top: 1px solid var(--sl-color-gray-5); padding: 2rem 0; }
-.alvie-overview h2 { margin-top: .5rem; }
-.alvie-overview > p { margin: 0; color: var(--sl-color-gray-2); font-size: 1.05rem; }
-@media (max-width: 700px) { .alvie-overview { grid-template-columns: 1fr; } }
+.alvie-home {
+  box-sizing: border-box;
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: #fff;
+  color: #15191b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.alvie-home h1 {
+  margin: 0;
+  color: #15191b;
+  font-size: 3rem;
+  font-weight: 650;
+  letter-spacing: .08em;
+  line-height: 1;
+}
+
+.alvie-home nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.alvie-home a {
+  color: #1f5865;
+  font-size: .95rem;
+  text-decoration: none;
+}
+
+.alvie-home a:hover,
+.alvie-home a:focus-visible {
+  color: #143b45;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}

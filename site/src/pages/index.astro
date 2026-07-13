@@ -1,30 +1,25 @@
 ---
-import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import '../styles/custom.css';
+
+const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+const documentationUrl = `${baseUrl}/walkthrough-repro/`;
 ---
 
-<StarlightPage
-  frontmatter={{
-    title: 'ALVIE',
-    description: 'Automated analysis of Sancus using active automata learning.',
-    template: 'splash',
-  }}
->
-  <div class="alvie-hero">
-    <p class="alvie-eyebrow">Automated security analysis</p>
-    <h1>ALVIE</h1>
-    <p class="alvie-lede">Learning observable models of Sancus enclaves and finding attacks through active automata learning.</p>
-    <div class="alvie-actions">
-      <a class="alvie-button alvie-button-primary" href="https://github.com/unive-alvie/alvie">Repository</a>
-      <a class="alvie-button" href="https://arxiv.org/abs/2404.09518">Paper</a>
-      <a class="alvie-button" href="/alvie/docs/walkthrough-repro/">Documentation</a>
-    </div>
-  </div>
-
-  <div class="alvie-overview">
-    <div>
-      <p class="alvie-eyebrow">What it does</p>
-      <h2>From specifications to witnesses</h2>
-    </div>
-    <p>ALVIE combines TestDL attacker and enclave specifications with the L# learning algorithm. It learns models from the Sancus simulator, compares secret-dependent behaviors, and emits Graphviz witness graphs for observable violations.</p>
-  </div>
-</StarlightPage>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="ALVIE: active learning for Sancus security analysis." />
+    <title>ALVIE</title>
+  </head>
+  <body>
+    <main class="alvie-home">
+      <h1>ALVIE</h1>
+      <nav aria-label="ALVIE links">
+        <a href="https://github.com/unive-alvie/alvie">repo</a>
+        <a href="https://arxiv.org/abs/2404.09518">paper</a>
+        <a href={documentationUrl}>documentation</a>
+      </nav>
+    </main>
+  </body>
+</html>
