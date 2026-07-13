@@ -18,16 +18,24 @@ when you need details; this tutorial focuses on where to start and what each
 part is doing.
 
 For the quickest setup, use the published Docker image described in
-[Getting Started](/alvie/getting-started/):
+[Getting Started](/alvie/getting-started/). Mount a host directory so the
+witness PDF produced later survives after the container exits:
 
 ```bash
+mkdir -p "$PWD/alvie-output"
 docker pull matteobusi/alvie
-docker run --rm -it matteobusi/alvie
+docker run --rm -it \
+  -v "$PWD/alvie-output:/output" \
+  matteobusi/alvie
 ```
 
 The image already contains ALVIE, its dependencies, and `sancus-core-gap`; it
 starts in the repository root, so the paths below work unchanged. The Docker
 Hub image is [matteobusi/alvie](https://hub.docker.com/r/matteobusi/alvie).
+Inside the container, use `/output` for files you want to keep; on the host,
+they appear in `./alvie-output`. The repository Dockerfile installs Graphviz
+for the rendering command below. Rebuild the image locally if the published
+image predates that update.
 Use the native setup instructions in [Getting Started](/alvie/getting-started/)
 only when you need a local development environment.
 
@@ -60,11 +68,12 @@ effects such as execution time, control-flow boundaries, and unprotected
 memory. A **side channel** exists when those public observations differ for
 secret `0` and secret `1`.
 
-V-B1 is a timing/interrupt example: the victim takes a different branch after
-comparing the secret, and a precisely timed interrupt makes that difference
-observable. ALVIE learns models for both secret values and searches them for
-such a distinguishing behavior. This is the workflow described in the
-[ALVIE paper](https://arxiv.org/abs/2404.09518).
+V-B1 is a timing/interrupt example. The vulnerable Sancus implementation takes
+one extra CPU cycle for the first instruction after `reti` (return from
+interrupt), while its security model expects that instruction to take the
+normal time. ALVIE learns models for both secret values and searches them for
+an attacker-visible consequence of that one-cycle mismatch. This is the
+workflow described in the [ALVIE paper](https://arxiv.org/abs/2404.09518).
 
 ## 1. Prepare the checkout
 
@@ -175,13 +184,17 @@ Run the same four-model comparison that ALVIE uses for an attack assessment:
 
 ```bash
 cd alvie/code
+# Docker container:
+export ALVIE_OUTPUT=/output
+# Native host: export ALVIE_OUTPUT=/tmp/alvie-output
+mkdir -p "$ALVIE_OUTPUT/vb1-fa"
 dune exec bin/fa.exe -- \
   --m1-int ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-int.dot \
   --m2-int ../../results/ef753b6-b1-enclave-complete-1-0-0.01-0.01-int.dot \
   --m1-nint ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-nint.dot \
   --m2-nint ../../results/ef753b6-b1-enclave-complete-1-0.01-0.01-nint.dot \
-  --tmpdir /tmp/alvie-vb1-fa \
-  --witness-file-basename /tmp/alvie-vb1-fa/witness \
+  --tmpdir "$ALVIE_OUTPUT/vb1-fa" \
+  --witness-file-basename "$ALVIE_OUTPUT/vb1-fa/witness" \
   --cex-limit 1
 ```
 
@@ -192,9 +205,11 @@ The arguments deliberately name all four models:
 - `--m1-nint` and `--m2-nint` are their no-interrupt counterparts. ALVIE
   subtracts differences already present without interrupts, leaving behavior
   attributable to the interrupt-enabled threat model.
-- `--tmpdir` is a disposable work directory for mCRL2 intermediate files.
+- `ALVIE_OUTPUT=/output` selects the Docker bind mount. Native users can set
+  it to `/tmp/alvie-output` instead. `--tmpdir` is a disposable work directory
+  for mCRL2 intermediate files.
 - `--witness-file-basename` chooses the output prefix; ALVIE writes
-  `/tmp/alvie-vb1-fa/witness_int.dot`.
+  `$ALVIE_OUTPUT/vb1-fa/witness_int.dot`.
 - `--cex-limit 1` asks for one witness, which keeps this introductory result
   focused and fast.
 
@@ -205,15 +220,25 @@ For the complete comparison interface, see [Executables Reference](/alvie/refere
 Render the resulting Graphviz file:
 
 ```bash
-dot -Tpdf /tmp/alvie-vb1-fa/witness_int.dot \
-  -o /tmp/alvie-vb1-fa/witness_int.pdf
+dot -Tpdf "$ALVIE_OUTPUT/vb1-fa/witness_int.dot" \
+  -o "$ALVIE_OUTPUT/vb1-fa/witness_int.pdf"
 ```
 
 `dot -Tpdf` turns the witness graph into a PDF; `-o` gives that PDF its name.
-Open it with a local PDF viewer. To inspect the labels directly instead, run:
+Open it with a local PDF viewer. In the Docker workflow, the PDF is now on the
+host under `./alvie-output/vb1-fa/`. If you are using an older published image
+without Graphviz, copy the checked-in rendering instead:
 
 ```bash
-sed -n '1,150p' /tmp/alvie-vb1-fa/witness_int.dot
+cp ../../counterexamples/b1/pdf/ef753b6-b1_int.pdf \
+  "$ALVIE_OUTPUT/vb1-fa/reference-witness.pdf"
+```
+
+To locate the important labels directly in the generated graph, run:
+
+```bash
+grep -nE 'add #1, &data_s|timer_enable 1|timerA_counter = [01]' \
+  "$ALVIE_OUTPUT/vb1-fa/witness_int.dot"
 ```
 
 The graph starts with the common setup: `timer_enable 3`, `create`, and
@@ -222,12 +247,26 @@ is the model for secret `0`; the red dotted path is the model for secret `1`.
 The attacker is not choosing `cmp #0, r4` or `cmp #1, r4`: those are the two
 secret-specific enclave programs being compared.
 
-At the next `ifz` action, the two paths can have different timing. In the
-reference witness, one path reaches an interrupt after a longer protected-mode
-step while the other reaches it earlier. The subsequent `IRQ`,
-`timer_enable 1`, and `reti` edges show the attacker-controlled interrupt
-handler making that timing difference visible. This is the V-B1 observation:
-the public interrupt/timing trace reveals which secret-dependent path ran.
+Follow the branch labelled `ifz [ add #1, &data_s; nop], [ nop; add #1,
+&data_s;]`. The attacker first uses `timer_enable 3` so an interrupt arrives
+during the first instruction of that action. In the handler, it executes
+`timer_enable 1` and then `reti`, scheduling another interrupt for the first
+cycle after the handler returns.
+
+Timer A counts from `0` to the requested value, so the decisive public value
+is either `0` or `1`:
+
+- With secret `0`, the first cycle after `reti` is Sancus padding intended to
+  mitigate the Nemesis attack. The second interrupt therefore runs immediately
+  after that padding, and the attacker observes `timerA_counter = 0`.
+- With secret `1`, control first returns to the enclave to execute the
+  remaining `nop`. Because of V-B1, that `nop` takes two cycles rather than
+  one, so the originally balanced `ifz` branches are no longer balanced. When
+  the attacker regains control, it observes `timerA_counter = 1`.
+
+That single public timer value distinguishes the secret-dependent executions.
+It is the V-B1 attack: a one-cycle implementation/model mismatch after `reti`
+becomes a secret-dependent timing observation.
 
 The witness is evidence for this threat model and these learned models. It is
 not a claim that every Sancus program leaks, nor does it automatically provide

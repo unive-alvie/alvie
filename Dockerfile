@@ -12,7 +12,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Base packages (wget and libboost-dev needed for mCRL2 source build on arm64)
 RUN apt-get update && apt-get install -y \
-    software-properties-common build-essential cmake iverilog tk \
+    software-properties-common build-essential cmake iverilog tk graphviz \
     binutils-msp430 gcc-msp430 msp430-libc msp430mcu expect-dev \
     git autoconf python3 flex bison pkg-config libffi-dev python3-dev \
     nano joe python3-pip wget libboost-dev \

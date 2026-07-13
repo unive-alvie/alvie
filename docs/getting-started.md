@@ -32,17 +32,24 @@ The important distinction is:
 ## 1. Prepare the environment
 
 The fastest first setup is the published Docker image, which includes the
-reference ALVIE environment and the required Sancus checkout:
+reference ALVIE environment and the required Sancus checkout. Create a host
+directory first, then mount it into the container so PDFs, witness graphs, and
+other outputs remain available after the container exits:
 
 ```bash
+mkdir -p "$PWD/alvie-output"
 docker pull matteobusi/alvie
-docker run --rm -it matteobusi/alvie
+docker run --rm -it \
+  -v "$PWD/alvie-output:/output" \
+  matteobusi/alvie
 ```
 
 The container starts in its repository root. The image is published at
 [Docker Hub](https://hub.docker.com/r/matteobusi/alvie). `--rm` removes the
-container when you exit; mount a host directory if you need results to persist
-outside the container.
+container when you exit; the bind mount preserves files written below
+`/output` on the host in `./alvie-output`. The repository Dockerfile includes
+Graphviz for rendering `.dot` models and witnesses. Rebuild the image locally
+if the published image predates that change.
 
 To build the same environment locally instead, use the repository Dockerfile:
 
