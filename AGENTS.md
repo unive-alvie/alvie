@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `30bf7c2` and adds these documents:
+`origin/documentation` points to `ffe65b6` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -776,6 +776,8 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
   `pbt.exe` flags and outputs.
 - `docs/log-output-reference.md`: learning/comparison log formats.
 - `docs/walkthrough-repro.md`: Docker/native setup and paper reproduction.
+- `docs/getting-started.md`: first-session tutorial covering setup, the paper
+  example, outputs, specifications, and the first attack run.
 
 Issue coverage is currently:
 
@@ -800,6 +802,9 @@ files into the Starlight content directory, builds, and deploys on every push
 to `documentation`. GitHub Pages is enabled with workflow builds at:
 `https://unive-alvie.github.io/alvie/`. The workflow was last verified
 successfully by run `29244559808`.
+
+The website landing page's `Getting started` button targets
+`/alvie/getting-started/`; keep that route stable when reorganizing the docs.
 
 The FPGA implementation is kept on `feat/alvie-fpga` (Git refs cannot contain
 the requested `:` character), currently at commit `8bb0765`.
