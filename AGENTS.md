@@ -822,6 +822,12 @@ workflow still starts from pushes to `documentation`, publishes `site/dist`
 to the target repository's `gh-pages` branch, and also keeps the existing
 project-site deployment as a fallback. The source repository requires the
 `PAGES_DEPLOY_TOKEN` Actions secret for the cross-repository publication.
+The secret is referenced only through `${{ secrets.PAGES_DEPLOY_TOKEN }}` and
+was confirmed masked in the successful workflow log; no token material is in
+repository history or the public Pages repository. The current secret came
+from the CLI's classic token and should be replaced with a fine-grained token
+limited to `unive-alvie/unive-alvie.github.io` contents write access when
+convenient. Deploy keys are disabled on the target repository.
 
 The website landing page's `Getting started` button targets
 `/alvie/getting-started/`; keep that route stable when reorganizing the docs.
