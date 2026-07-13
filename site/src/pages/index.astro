@@ -2,6 +2,7 @@
 import '../styles/custom.css';
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
+const gettingStartedUrl = `${baseUrl}/getting-started/`;
 const documentationUrl = `${baseUrl}/walkthrough-repro/`;
 ---
 
@@ -30,7 +31,7 @@ const documentationUrl = `${baseUrl}/walkthrough-repro/`;
           behavior across secrets to expose security violations.
         </p>
         <div class="alvie-actions">
-          <a class="alvie-button alvie-primary" href={documentationUrl}>Documentation</a>
+          <a class="alvie-button alvie-primary" href={gettingStartedUrl}>Getting started</a>
           <a class="alvie-button" href="https://github.com/unive-alvie/alvie">Repository</a>
         </div>
       </section>

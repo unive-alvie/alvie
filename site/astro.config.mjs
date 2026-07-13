@@ -13,6 +13,7 @@ export default defineConfig({
         {
           label: 'Guides',
           items: [
+            { label: 'Getting started', slug: 'getting-started' },
             { label: 'Reproducing the experiments', slug: 'walkthrough-repro' },
             { label: 'TestDL tutorial', slug: 'spec-tutorial' },
             { label: 'TestDL actions', slug: 'testdl-action-reference' },
