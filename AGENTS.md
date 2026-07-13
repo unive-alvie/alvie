@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `0fd133c` and adds these documents:
+`origin/documentation` points to `ff1f8c3` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -778,6 +778,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 - `docs/walkthrough-repro.md`: Docker/native setup and paper reproduction.
 - `docs/getting-started.md`: first-session tutorial covering setup, the paper
   example, outputs, specifications, and the first attack run.
+- `docs/testdl-tutorial-vb1.md`: focused one-hour fast V-B1 TestDL tutorial.
 
 Issue coverage is currently:
 
@@ -801,7 +802,7 @@ Markdown remains under `docs/`; `.github/workflows/pages.yml` copies those
 files into the Starlight content directory, builds, and deploys on every push
 to `documentation`. GitHub Pages is enabled with workflow builds at:
 `https://unive-alvie.github.io/alvie/`. The workflow was last verified
-successfully by run `29249793780`.
+successfully by run `29255677923`.
 
 The site has a dedicated `/alvie/getting-started/` tutorial and the shared
 Starlight CSS defines a brighter dark-theme accent so documentation links stay
@@ -812,6 +813,11 @@ Guides group, so it remains visible while browsing other documentation pages.
 Guide and reference labels are standardized to match their page titles, and
 duplicate manual top-level headings were removed because Starlight renders the
 frontmatter title automatically.
+
+The former mixed `docs/spec-tutorial.md` page is presented as `TestDL Language
+Reference`; the new `TestDL Tutorial: Fast V-B1` page is the guided exercise.
+Issue #15 has a detailed body and implementation comment and should be closed
+after these documentation changes are merged into `main`.
 
 The landing page has a native Paper dropdown linking to the arXiv preprint and
 the IEEE published version (DOI `10.1109/CSF61375.2024.00023`).
