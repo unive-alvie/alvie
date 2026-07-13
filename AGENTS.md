@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `f47f9eb` and adds these documents:
+`origin/documentation` points to `30bf7c2` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -788,12 +788,21 @@ Issue coverage is currently:
   architecture, mainstream-language configuration, RISC-V roadmap, or new
   threat-model guide.
 
-Before merging that branch, update its commands against the current wrappers:
-`learn_one.sh` now requires `<special_commit> <att_spec> <subdirectory>` and
-supports `--fpga`; the current workflow also has four models per attack,
-`spec-lib/fast` variants, and FPGA latency/reset/programming requirements.
-The walkthrough's `check_example.sh` and two-argument `learn_one.sh` examples
-are stale for this branch and need correction.
+The documentation branch was validated with `dune build`, executable help
+commands, shell syntax checks, and the complete simulation example
+(`./learn_example.sh && ./check_example.sh`). The example learned both models
+and passed comparison. Its README and walkthrough are simulation-only; FPGA
+operation is documented in this file and in the FPGA branch.
+
+The branch also contains the Astro Starlight site under `site/`. Canonical
+Markdown remains under `docs/`; `.github/workflows/pages.yml` copies those
+files into the Starlight content directory, builds, and deploys on every push
+to `documentation`. GitHub Pages is enabled with workflow builds at:
+`https://unive-alvie.github.io/alvie/`. The workflow was last verified
+successfully by run `29244559808`.
+
+The FPGA implementation is kept on `feat/alvie-fpga` (Git refs cannot contain
+the requested `:` character), currently at commit `8bb0765`.
 
 ### Code documentation gap
 
