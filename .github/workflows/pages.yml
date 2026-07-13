@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 env:
   ASTRO_TELEMETRY_DISABLED: 1
@@ -40,14 +38,11 @@ jobs:
       - name: Build Astro Starlight site
         working-directory: site
         run: npm run build
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
+      - name: Publish organization site
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          enablement: true
-      - name: Upload site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/dist
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          personal_token: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          external_repository: unive-alvie/unive-alvie.github.io
+          publish_branch: gh-pages
+          publish_dir: site/dist
+          force_orphan: true
