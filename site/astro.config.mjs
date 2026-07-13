@@ -15,7 +15,8 @@ export default defineConfig({
           label: 'Guides',
           items: [
             { label: 'Reproducing the Simulation Experiments', slug: 'walkthrough-repro' },
-            { label: 'TestDL Specification Tutorial', slug: 'spec-tutorial' },
+            { label: 'TestDL Tutorial: Fast V-B1', slug: 'testdl-tutorial-vb1' },
+            { label: 'TestDL Language Reference', slug: 'spec-tutorial' },
             { label: 'TestDL Action Reference', slug: 'testdl-action-reference' },
             { label: 'Extending TestDL Actions', slug: 'spec-extending-actions' },
           ],

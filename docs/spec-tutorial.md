@@ -1,6 +1,6 @@
 ---
-title: TestDL Specification Tutorial
-description: Define ALVIE attacker and enclave specifications.
+title: TestDL Language Reference
+description: Atoms, combinators, semantics, and extension points in TestDL.
 ---
 
 This guide explains how to write ALVIE specifications without digging into the OCaml internals. A full ALVIE run is built by combining:
