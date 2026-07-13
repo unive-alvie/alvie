@@ -8,8 +8,9 @@ by ALVIE. In about one hour, we illustrate the TestDL languages through a
 worked example: the specification used to reproduce the V-B1 vulnerability
 from the [*Mind the Gap* paper](https://mici.hu/papers/bognar22gap.pdf), using
 the corresponding [Sancus implementation](https://github.com/martonbognar/sancus-core-gap).
-The example uses a reduced fast profile so the first model can be learned more
-quickly.
+The language walkthrough uses a reduced fast profile. The attack reproduction
+uses the complete, checked-in V-B1 models, so it remains a real result rather
+than a made-up teaching example.
 
 The complete syntax and semantics are in the
 [TestDL Action Reference](/alvie/reference/testdl-action-reference/). Use that page
@@ -46,8 +47,24 @@ spec-lib/fast/enclave-complete.etdl
 ```
 
 The fast profile is intentionally smaller than the complete profile. It is
-suitable for learning the language and workflow, but it is not a replacement
-for the full paper experiment.
+suitable for learning the language, but it is not a replacement for the full
+paper experiment.
+
+### A short security vocabulary
+
+You do not need prior Sancus or side-channel experience for this tutorial.
+Here, a **secret** is a value held by the enclave that the attacker should not
+be able to distinguish. The attacker cannot read protected memory directly,
+but can choose allowed actions, request timer interrupts, and observe public
+effects such as execution time, control-flow boundaries, and unprotected
+memory. A **side channel** exists when those public observations differ for
+secret `0` and secret `1`.
+
+V-B1 is a timing/interrupt example: the victim takes a different branch after
+comparing the secret, and a precisely timed interrupt makes that difference
+observable. ALVIE learns models for both secret values and searches them for
+such a distinguishing behavior. This is the workflow described in the
+[ALVIE paper](https://arxiv.org/abs/2404.09518).
 
 ## 1. Prepare the checkout
 
@@ -145,59 +162,83 @@ as enclave expressions. The [TestDL Language Reference](/alvie/reference/spec-tu
 describes their grammar, and the [TestDL Action Reference](/alvie/reference/testdl-action-reference/)
 defines the actions.
 
-## 4. Learn one model first
+## 4. Reproduce the checked-in V-B1 witness
 
-Run one secret value directly. This keeps the first experiment understandable:
+Learning V-B1 from scratch can take a long time, even with a bounded oracle.
+For this first session, use the four complete V-B1 models already tracked in
+the repository. They were learned for vulnerable Sancus revision `ef753b6`:
+
+- one model for each secret value (`0` and `1`);
+- one interrupt-enabled and one no-interrupt model for each secret.
+
+Run the same four-model comparison that ALVIE uses for an attack assessment:
 
 ```bash
 cd alvie/code
-dune exec bin/learn.exe -- \
-  --att-spec ../../spec-lib/fast/b1.atdl \
-  --encl-spec ../../spec-lib/fast/enclave-complete.etdl \
-  --oracle randomwalk \
-  --step-limit 500 \
-  --reset-probability 0.05 \
-  --res /tmp/alvie-b1-fast-s0.dot \
-  --tmpdir /tmp/alvie-b1-fast-s0 \
-  --sancus ../../sancus-core-gap \
-  --commit ef753b6 \
-  --secret 0
+dune exec bin/fa.exe -- \
+  --m1-int ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-int.dot \
+  --m2-int ../../results/ef753b6-b1-enclave-complete-1-0-0.01-0.01-int.dot \
+  --m1-nint ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-nint.dot \
+  --m2-nint ../../results/ef753b6-b1-enclave-complete-1-0.01-0.01-nint.dot \
+  --tmpdir /tmp/alvie-vb1-fa \
+  --witness-file-basename /tmp/alvie-vb1-fa/witness \
+  --cex-limit 1
 ```
 
-This command learns one model for secret `0` only:
+The arguments deliberately name all four models:
 
-- `--att-spec` and `--encl-spec` select the fast V-B1 attacker and victim
-  languages.
-- `--oracle randomwalk` selects random-walk equivalence queries;
-  `--step-limit 500` bounds each walk and `--reset-probability 0.05` gives the
-  probability of restarting a walk.
-- `--res` is the learned-model output file, while `--tmpdir` holds generated
-  assembly, binaries, simulator files, and VCD traces.
-- `--sancus` locates the Sancus checkout; `--commit ef753b6` selects the
-  vulnerable revision used by the V-B1 case study; `--secret 0` substitutes
-  `0` for the enclave's `?` placeholder.
+- `--m1-int` and `--m2-int` are the interrupt-enabled models for secret `0`
+  and secret `1`.
+- `--m1-nint` and `--m2-nint` are their no-interrupt counterparts. ALVIE
+  subtracts differences already present without interrupts, leaving behavior
+  attributable to the interrupt-enabled threat model.
+- `--tmpdir` is a disposable work directory for mCRL2 intermediate files.
+- `--witness-file-basename` chooses the output prefix; ALVIE writes
+  `/tmp/alvie-vb1-fa/witness_int.dot`.
+- `--cex-limit 1` asks for one witness, which keeps this introductory result
+  focused and fast.
 
-The command writes a learned Mealy machine to `/tmp/alvie-b1-fast-s0.dot`.
-For the complete option reference, see [Executables Reference](/alvie/reference/executables-reference/#1-learnexe--learn-a-mealy-machine-model).
+For the complete comparison interface, see [Executables Reference](/alvie/reference/executables-reference/#2-faexe--find-flow-analysis-ni-violations-between-two-models).
 
-Inspect it with:
+## 5. Render and inspect the witness
+
+Render the resulting Graphviz file:
 
 ```bash
-head -20 /tmp/alvie-b1-fast-s0.dot
-dot -Tpdf /tmp/alvie-b1-fast-s0.dot -o /tmp/alvie-b1-fast-s0.pdf
+dot -Tpdf /tmp/alvie-vb1-fa/witness_int.dot \
+  -o /tmp/alvie-vb1-fa/witness_int.pdf
 ```
 
-`head` shows the beginning of the Graphviz model as text. `dot -Tpdf` renders
-the same file to a PDF; `-o` names that PDF. These commands inspect the learned
-model and do not rerun learning.
+`dot -Tpdf` turns the witness graph into a PDF; `-o` gives that PDF its name.
+Open it with a local PDF viewer. To inspect the labels directly instead, run:
 
-The `.dot` file is an observed model, not the generated victim program. Its
-edges contain attacker inputs and the outputs returned by the simulator.
+```bash
+sed -n '1,150p' /tmp/alvie-vb1-fa/witness_int.dot
+```
 
-## 5. Use the wrapper after the first run
+The graph starts with the common setup: `timer_enable 3`, `create`, and
+`jin enc_s`. It then shows two executions side by side. The black dashed path
+is the model for secret `0`; the red dotted path is the model for secret `1`.
+The attacker is not choosing `cmp #0, r4` or `cmp #1, r4`: those are the two
+secret-specific enclave programs being compared.
 
-Once the direct command is clear, use the repository wrapper for the example's
-fast profile:
+At the next `ifz` action, the two paths can have different timing. In the
+reference witness, one path reaches an interrupt after a longer protected-mode
+step while the other reaches it earlier. The subsequent `IRQ`,
+`timer_enable 1`, and `reti` edges show the attacker-controlled interrupt
+handler making that timing difference visible. This is the V-B1 observation:
+the public interrupt/timing trace reveals which secret-dependent path ran.
+
+The witness is evidence for this threat model and these learned models. It is
+not a claim that every Sancus program leaks, nor does it automatically provide
+a code repair. The [Log and Output Reference](/alvie/reference/log-output-reference/)
+explains fields such as `k`, `gie`, `timerA_counter`, `PM`, and `UM`.
+
+## 6. Optional: learn the models yourself
+
+The comparison above is complete and immediately reproducible. Run learning
+yourself only when you have time to let it finish and want to regenerate the
+models. The repository wrapper runs the full V-B1 experiment:
 
 ```bash
 cd ../..
@@ -213,14 +254,16 @@ interrupts for the vulnerable, special-fix, and final commits. `check_one.sh
 b1 fast` compares the secret pairs and subtracts no-interrupt witnesses.
 
 Results, logs, and temporary files are placed under `results/fast/`,
-`logs/fast/`, and `tmp/fast/`. See [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/)
-for wrapper behavior and [Executables Reference](/alvie/reference/executables-reference/)
+`logs/fast/`, and `tmp/fast/`. This can take many hours; it is not a required
+step in the one-hour tutorial. See
+[Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/) for
+wrapper behavior and [Executables Reference](/alvie/reference/executables-reference/)
 for the underlying commands.
 
 For the full paper profile, replace `fast` with a separate namespace and use
 the complete specifications. Expect it to take substantially longer.
 
-## 6. Make a small change
+## 7. Make a small change
 
 Copy a specification before experimenting so generated output stays separate:
 
