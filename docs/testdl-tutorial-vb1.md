@@ -1,11 +1,13 @@
 ---
-title: 'TestDL Tutorial: Fast V-B1'
-description: A one-hour introduction to ALVIE specifications through the fast V-B1 profile.
+title: 'TestDL Tutorial: V-B1 Example'
+description: A one-hour introduction to the TestDL languages through a worked V-B1 example.
 ---
 
 This tutorial is a first practical session with the two small languages used
-by ALVIE. In about one hour, you will read the fast V-B1 specifications and
-learn one model from them.
+by ALVIE. In about one hour, we illustrate the TestDL languages through a
+worked example: the specification used to reproduce the V-B1 vulnerability
+from the *Mind the Gap* paper. The example uses a reduced fast profile so the
+first model can be learned more quickly.
 
 The complete syntax and semantics are in the
 [TestDL Action Reference](/alvie/testdl-action-reference/). Use that page
@@ -20,16 +22,16 @@ An ALVIE experiment combines two files:
   including interrupt behavior;
 - an enclave specification (`.etdl`) describes the victim program.
 
-The tutorial uses:
+The worked example uses:
 
 ```text
 spec-lib/fast/b1.atdl
 spec-lib/fast/enclave-complete.etdl
 ```
 
-The fast profile is intentionally smaller than the complete V-B1 profile. It
-is suitable for learning the workflow, but it is not a replacement for the
-full paper experiment.
+The fast profile is intentionally smaller than the complete profile. It is
+suitable for learning the language and workflow, but it is not a replacement
+for the full paper experiment.
 
 ## 1. Prepare the checkout
 
@@ -86,7 +88,7 @@ prepare { ... };
 cleanup { ... };
 ```
 
-The fast V-B1 profile contains:
+The example attacker specification contains:
 
 ```text
 isr {
@@ -143,8 +145,8 @@ edges contain attacker inputs and the outputs returned by the simulator.
 
 ## 5. Use the wrapper after the first run
 
-Once the direct command is clear, use the repository wrapper for the fast
-profile:
+Once the direct command is clear, use the repository wrapper for the example's
+fast profile:
 
 ```bash
 cd ../..
