@@ -1,46 +1,137 @@
 :root {
+  --alvie-ink: #172126;
+  --alvie-muted: #64747a;
+  --alvie-line: #d9e1e3;
+  --alvie-teal: #176575;
+  --alvie-red: #c4573d;
   --sl-color-accent-low: #e8eef0;
-  --sl-color-accent: #1f5865;
-  --sl-color-accent-high: #143b45;
+  --sl-color-accent: var(--alvie-teal);
+  --sl-color-accent-high: #104451;
   --sl-font: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .alvie-home {
   box-sizing: border-box;
   min-height: 100vh;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 1.5rem;
-  padding: 2rem;
-  background: #fff;
-  color: #15191b;
+  display: flex;
+  flex-direction: column;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 3.5rem;
+  color: var(--alvie-ink);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
-.alvie-home h1 {
-  margin: 0;
-  color: #15191b;
-  font-size: 3rem;
-  font-weight: 650;
-  letter-spacing: .08em;
-  line-height: 1;
-}
-
-.alvie-home nav {
+.alvie-header {
   display: flex;
-  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 5.5rem;
+  border-bottom: 1px solid var(--alvie-line);
 }
 
-.alvie-home a {
-  color: #1f5865;
-  font-size: .95rem;
+.alvie-brand {
+  color: var(--alvie-ink);
+  font-size: 1.05rem;
+  font-weight: 750;
+  letter-spacing: .12em;
   text-decoration: none;
 }
 
-.alvie-home a:hover,
-.alvie-home a:focus-visible {
-  color: #143b45;
+.alvie-header nav,
+.alvie-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.alvie-header a,
+.alvie-actions a {
+  color: var(--alvie-teal);
+  font-size: .9rem;
+  text-decoration: none;
+}
+
+.alvie-header a:hover,
+.alvie-header a:focus-visible,
+.alvie-actions a:hover,
+.alvie-actions a:focus-visible {
+  color: var(--alvie-red);
   text-decoration: underline;
-  text-underline-offset: .2em;
+  text-underline-offset: .25em;
+}
+
+.alvie-intro {
+  max-width: 48rem;
+  padding: 7rem 0 6.5rem;
+}
+
+.alvie-kicker,
+.alvie-index {
+  margin: 0 0 1.25rem;
+  color: var(--alvie-red);
+  font-size: .72rem;
+  font-weight: 750;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.alvie-intro h1 {
+  margin: 0;
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 700;
+  letter-spacing: -.045em;
+  line-height: .98;
+}
+
+.alvie-intro h1 span { color: var(--alvie-teal); }
+
+.alvie-summary {
+  max-width: 39rem;
+  margin: 2rem 0 2.25rem;
+  color: var(--alvie-muted);
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+.alvie-actions a { padding-bottom: .2rem; border-bottom: 1px solid currentColor; }
+.alvie-actions .alvie-primary { color: var(--alvie-ink); font-weight: 650; }
+
+.alvie-workflow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: start;
+  gap: 1.25rem;
+  border-top: 1px solid var(--alvie-line);
+  border-bottom: 1px solid var(--alvie-line);
+  padding: 2rem 0;
+}
+
+.alvie-step { display: grid; gap: .55rem; }
+.alvie-step .alvie-index { margin: 0; color: var(--alvie-teal); }
+.alvie-step strong { font-size: 1rem; }
+.alvie-step > span:last-child { color: var(--alvie-muted); font-size: .9rem; line-height: 1.45; }
+.alvie-arrow { padding-top: 2rem; color: var(--alvie-red); }
+
+.alvie-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 1.5rem 0 2rem;
+  color: var(--alvie-muted);
+  font-size: .78rem;
+}
+
+.alvie-footer span + span::before { content: '/'; margin-right: 1.5rem; color: var(--alvie-line); }
+
+@media (max-width: 700px) {
+  .alvie-home { padding: 0 1.5rem; }
+  .alvie-header { min-height: 4.5rem; }
+  .alvie-header nav { gap: .85rem; }
+  .alvie-header nav a { font-size: .78rem; }
+  .alvie-intro { padding: 5rem 0 4.5rem; }
+  .alvie-workflow { grid-template-columns: 1fr; gap: 1.5rem; }
+  .alvie-arrow { display: none; }
+  .alvie-footer { gap: .75rem 1rem; }
+  .alvie-footer span + span::before { margin-right: 1rem; }
 }

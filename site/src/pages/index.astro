@@ -10,16 +10,58 @@ const documentationUrl = `${baseUrl}/walkthrough-repro/`;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="description" content="ALVIE: active learning for Sancus security analysis." />
-    <title>ALVIE</title>
+    <title>ALVIE | Sancus analysis toolkit</title>
   </head>
   <body>
     <main class="alvie-home">
-      <h1>ALVIE</h1>
-      <nav aria-label="ALVIE links">
-        <a href="https://github.com/unive-alvie/alvie">repo</a>
-        <a href="https://arxiv.org/abs/2404.09518">paper</a>
-        <a href={documentationUrl}>documentation</a>
-      </nav>
+      <header class="alvie-header">
+        <a class="alvie-brand" href={baseUrl || '/'}>ALVIE</a>
+        <nav aria-label="Primary navigation">
+          <a href="https://github.com/unive-alvie/alvie">repo</a>
+          <a href="https://arxiv.org/abs/2404.09518">paper</a>
+          <a href={documentationUrl}>documentation</a>
+        </nav>
+      </header>
+
+      <section class="alvie-intro" aria-labelledby="page-title">
+        <p class="alvie-kicker">Sancus analysis toolkit</p>
+        <h1 id="page-title">Learn the model.<br /><span>Find the attack.</span></h1>
+        <p class="alvie-summary">
+          ALVIE learns observable models of Sancus enclaves and compares their
+          behavior across secrets to expose security violations.
+        </p>
+        <div class="alvie-actions">
+          <a class="alvie-primary" href={documentationUrl}>Read the documentation <span aria-hidden="true">-&gt;</span></a>
+          <a href="https://github.com/unive-alvie/alvie">View on GitHub <span aria-hidden="true">-&gt;</span></a>
+        </div>
+      </section>
+
+      <section class="alvie-workflow" aria-label="ALVIE workflow">
+        <div class="alvie-step">
+          <span class="alvie-index">01</span>
+          <strong>Specifications</strong>
+          <span>Attacker and enclave behavior in TestDL.</span>
+        </div>
+        <div class="alvie-arrow" aria-hidden="true">-&gt;</div>
+        <div class="alvie-step">
+          <span class="alvie-index">02</span>
+          <strong>Active learning</strong>
+          <span>L# queries a Verilog Sancus model.</span>
+        </div>
+        <div class="alvie-arrow" aria-hidden="true">-&gt;</div>
+        <div class="alvie-step">
+          <span class="alvie-index">03</span>
+          <strong>Witnesses</strong>
+          <span>Graphviz counterexamples for violations.</span>
+        </div>
+      </section>
+
+      <footer class="alvie-footer">
+        <span>OCaml</span>
+        <span>Verilog simulator</span>
+        <span>Graphviz</span>
+        <span>Open source</span>
+      </footer>
     </main>
   </body>
 </html>
