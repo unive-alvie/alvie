@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `0cf27ad` and adds these documents:
+`origin/documentation` points to `0fd133c` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -801,7 +801,7 @@ Markdown remains under `docs/`; `.github/workflows/pages.yml` copies those
 files into the Starlight content directory, builds, and deploys on every push
 to `documentation`. GitHub Pages is enabled with workflow builds at:
 `https://unive-alvie.github.io/alvie/`. The workflow was last verified
-successfully by run `29248386551`.
+successfully by run `29249793780`.
 
 The site has a dedicated `/alvie/getting-started/` tutorial and the shared
 Starlight CSS defines a brighter dark-theme accent so documentation links stay
@@ -815,6 +815,13 @@ frontmatter title automatically.
 
 The landing page has a native Paper dropdown linking to the arXiv preprint and
 the IEEE published version (DOI `10.1109/CSF61375.2024.00023`).
+
+The public organization Pages repository `unive-alvie/unive-alvie.github.io`
+serves the same built site at `https://unive-alvie.github.io/`. The source
+workflow still starts from pushes to `documentation`, publishes `site/dist`
+to the target repository's `gh-pages` branch, and also keeps the existing
+project-site deployment as a fallback. The source repository requires the
+`PAGES_DEPLOY_TOKEN` Actions secret for the cross-repository publication.
 
 The website landing page's `Getting started` button targets
 `/alvie/getting-started/`; keep that route stable when reorganizing the docs.
