@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `ff1f8c3` and adds these documents:
+`origin/documentation` points to `de7ee49` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -802,7 +802,7 @@ Markdown remains under `docs/`; `.github/workflows/pages.yml` copies those
 files into the Starlight content directory, builds, and deploys on every push
 to `documentation`. GitHub Pages is enabled with workflow builds at:
 `https://unive-alvie.github.io/alvie/`. The workflow was last verified
-successfully by run `29255677923`.
+successfully by run `29256103640`.
 
 The site has a dedicated `/alvie/getting-started/` tutorial and the shared
 Starlight CSS defines a brighter dark-theme accent so documentation links stay
@@ -815,7 +815,10 @@ duplicate manual top-level headings were removed because Starlight renders the
 frontmatter title automatically.
 
 The former mixed `docs/spec-tutorial.md` page is presented as `TestDL Language
-Reference`; the new `TestDL Tutorial: Fast V-B1` page is the guided exercise.
+Reference`; the new `TestDL Tutorial: V-B1 Example` page illustrates the
+language using the reduced specification for reproducing the V-B1
+vulnerability from the *Mind the Gap* paper. All TestDL pages are under the
+Starlight `Reference` submenu.
 Issue #15 has a detailed body and implementation comment and should be closed
 after these documentation changes are merged into `main`.
 
