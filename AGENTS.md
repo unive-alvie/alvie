@@ -767,7 +767,7 @@ gh issue list --repo unive-alvie/alvie --state open --limit 100
 
 ### Documentation branch audit (2026-07-13)
 
-`origin/documentation` points to `c1a4f88` and adds these documents:
+`origin/documentation` points to `132fe57` and adds these documents:
 
 - `docs/spec-tutorial.md`: practical attacker/victim TestDL authoring guide.
 - `docs/testdl-action-reference.md`: TestDL action semantics.
@@ -802,7 +802,7 @@ Markdown remains under `docs/`; `.github/workflows/pages.yml` copies those
 files into the Starlight content directory, builds, and deploys on every push
 to `documentation`. GitHub Pages is enabled with workflow builds at:
 `https://unive-alvie.github.io/alvie/`. The workflow was last verified
-successfully by run `29256257923`.
+successfully by run `29256702658`.
 
 The site has a dedicated `/alvie/getting-started/` tutorial and the shared
 Starlight CSS defines a brighter dark-theme accent so documentation links stay
@@ -819,6 +819,9 @@ Reference`; the new `TestDL Tutorial: V-B1 Example` page illustrates the
 language using the reduced specification for reproducing the V-B1
 vulnerability from the *Mind the Gap* paper. The tutorial and extension guide
 are under `Guides`; the language and action references are under `Reference`.
+The V-B1 tutorial links the paper PDF at
+`https://mici.hu/papers/bognar22gap.pdf` and the corresponding Sancus
+implementation at `https://github.com/martonbognar/sancus-core-gap`.
 Issue #15 has a detailed body and implementation comment and should be closed
 after these documentation changes are merged into `main`.
 
