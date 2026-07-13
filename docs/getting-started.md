@@ -62,7 +62,7 @@ The `linux/amd64` option is useful on ARM hosts because the mCRL2 package used
 by this project is not available for every ARM platform.
 
 For a native setup, install OCaml 4.13.1 with opam, Dune, the MSP430
-toolchain, Icarus Verilog, Python 3 with the `Verilog_VCD` package, mCRL2, and
+toolchain, Verilator, Python 3 with the `Verilog_VCD` package, mCRL2, and
 the tools required by the Sancus simulator. The Sancus checkout must be
 available as `sancus-core-gap/` at the repository root.
 

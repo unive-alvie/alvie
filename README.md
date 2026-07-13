@@ -83,7 +83,7 @@ sudo apt-get update
 sudo apt-get install -y \
     build-essential cmake git python3 python3-pip \
     binutils-msp430 gcc-msp430 msp430-libc msp430mcu \
-    iverilog tk expect-dev autoconf flex bison pkg-config \
+    tcl autoconf flex bison pkg-config \
     libffi-dev python3-dev wget libboost-dev opam
 
 # Install mCRL2
@@ -125,7 +125,7 @@ sudo apt-get update
 sudo apt-get install -y \
     build-essential cmake git python3 python3-pip \
     binutils-msp430 gcc-msp430 msp430-libc msp430mcu \
-    iverilog tk expect-dev autoconf flex bison pkg-config \
+    tcl autoconf flex bison pkg-config \
     libffi-dev python3-dev wget libboost-dev opam
 # ... rest of setup (mCRL2, Verilator, OCaml, ALVIE build)
 ```

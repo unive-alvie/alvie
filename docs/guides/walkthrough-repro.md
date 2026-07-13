@@ -18,7 +18,7 @@ docker run --rm -it alvie
 
 The `linux/amd64` platform is needed on ARM hosts because the mCRL2 package
 used by this project is not available for every ARM platform. Native users
-need OCaml 4.13.1, Dune, the MSP430 toolchain, Icarus Verilog, Python 3 with
+need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with
 `Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
 
 Verify the OCaml build:
