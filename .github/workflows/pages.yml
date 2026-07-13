@@ -10,6 +10,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  ASTRO_TELEMETRY_DISABLED: 1
+
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -42,6 +45,8 @@ jobs:
         run: npm run build
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
