@@ -1,0 +1,56 @@
+name: Verify documentation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/docs.yml'
+      - '.github/workflows/pages.yml'
+      - 'docs/**'
+      - 'site/**'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  documentation:
+    name: Build and check documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install dependencies
+        working-directory: site
+        run: npm ci
+      - name: Copy canonical documentation
+        run: |
+          rm -rf site/src/content/docs
+          mkdir -p site/src/content/docs
+          cp -R docs/. site/src/content/docs/
+      - name: Build Astro Starlight site
+        working-directory: site
+        run: npm run build
+      - name: Check generated internal links
+        working-directory: site
+        run: node scripts/check-links.mjs
+
+  getting-started:
+    name: Smoke-test published Docker setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull documented image
+        run: docker pull matteobusi/alvie:latest
+      - name: Verify documented tools and build
+        run: |
+          docker run --rm matteobusi/alvie:latest sh -lc \
+            'command -v dot && test -d /home/alvie/sancus-core-gap && eval "$(opam env)" && cd /home/alvie/alvie/code && dune build'

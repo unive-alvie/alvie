@@ -50,7 +50,7 @@ from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says
 
 ### Output
 
-A Mealy machine in `.dot` format written to `--res`. Each edge is labelled `input / output` where inputs and outputs use the symbolic alphabet defined in the specs. See the [Log and Output Reference](log-output-reference/) for output token meanings.
+A Mealy machine in `.dot` format written to `--res`. Each edge is labelled `input / output` where inputs and outputs use the symbolic alphabet defined in the specs. See the [Log and Output Reference](../log-output-reference/) for output token meanings.
 
 ### Quick example
 

@@ -5,7 +5,7 @@ description: Syntax and semantics of TestDL actions.
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
-It complements the [TestDL Language Reference](spec-tutorial/) (how to write specs) and the [Extending TestDL Actions](../guides/spec-extending-actions/) guide (how to extend the language).
+It complements the [TestDL Language Reference](../spec-tutorial/) (how to write specs) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide (how to extend the language).
 
 ## Reading notes
 
@@ -124,4 +124,4 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 ALVIE classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
 
-You usually do not need to reason at this level while authoring specs, but if you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../guides/spec-extending-actions/) guide for output/DFA updates.
+You usually do not need to reason at this level while authoring specs, but if you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.
