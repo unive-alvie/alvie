@@ -171,7 +171,43 @@ as enclave expressions. The [TestDL Language Reference](/alvie/reference/spec-tu
 describes their grammar, and the [TestDL Action Reference](/alvie/reference/testdl-action-reference/)
 defines the actions.
 
-## 4. Reproduce the checked-in V-B1 witness
+## 4. Learn one small model directly
+
+Before comparing V-B1, run ALVIE directly on the repository's small running
+example. This is a real simulator execution and produces one learned model in
+about half a minute on a typical development machine. It teaches the learner
+interface without presenting a short, bounded run as a V-B1 security verdict.
+
+```bash
+mkdir -p "$ALVIE_OUTPUT/example-learn"
+dune exec bin/learn.exe -- \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
+  --res "$ALVIE_OUTPUT/example-learn/secret-0.dot" \
+  --tmpdir "$ALVIE_OUTPUT/example-learn/tmp" \
+  --commit bf89c0b \
+  --sancus ../../sancus-core-gap \
+  --secret 0 \
+  --oracle randomwalk \
+  --step-limit 5000 \
+  --reset-probability 0.09 \
+  > "$ALVIE_OUTPUT/example-learn/learn.log" 2>&1
+```
+
+The two `--*-spec` arguments select the attacker and victim languages. `--res`
+chooses the learned-model file, and `--tmpdir` holds generated programs and
+simulator traces. `--sancus` points to the Sancus checkout. This command fixes
+the secret to `0` and uses final Sancus revision `bf89c0b`; it does not compare
+secrets and therefore cannot establish or rule out a vulnerability.
+
+`randomwalk` is a bounded equivalence oracle. `--step-limit 5000` caps its
+exploration work, while `--reset-probability 0.09` makes it restart some paths.
+The output model is `$ALVIE_OUTPUT/example-learn/secret-0.dot`; the complete
+learner output is in `learn.log`. The current example produces a small
+21-line DOT file. The full command-line reference is in the
+[Executables Reference](/alvie/reference/executables-reference/).
+
+## 5. Reproduce the checked-in V-B1 witness
 
 Learning V-B1 from scratch can take a long time, even with a bounded oracle.
 For this first session, use the four complete V-B1 models already tracked in
@@ -215,7 +251,7 @@ The arguments deliberately name all four models:
 
 For the complete comparison interface, see [Executables Reference](/alvie/reference/executables-reference/#2-faexe--find-flow-analysis-ni-violations-between-two-models).
 
-## 5. Render and inspect the witness
+## 6. Render and inspect the witness
 
 Render the resulting Graphviz file:
 
@@ -273,7 +309,7 @@ not a claim that every Sancus program leaks, nor does it automatically provide
 a code repair. The [Log and Output Reference](/alvie/reference/log-output-reference/)
 explains fields such as `k`, `gie`, `timerA_counter`, `PM`, and `UM`.
 
-## 6. Optional: learn the models yourself
+## 7. Optional: learn the models yourself
 
 The comparison above is complete and immediately reproducible. Run learning
 yourself only when you have time to let it finish and want to regenerate the
@@ -302,7 +338,7 @@ for the underlying commands.
 For the full paper profile, replace `fast` with a separate namespace and use
 the complete specifications. Expect it to take substantially longer.
 
-## 7. Make a small change
+## 8. Make a small change
 
 Copy a specification before experimenting so generated output stays separate:
 

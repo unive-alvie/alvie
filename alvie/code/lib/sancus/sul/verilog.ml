@@ -57,12 +57,17 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "Chosen temporary directory: %s" r_tmpdir);
-  (* Copy the sancus-core-gap in the directory *)
-  Logs.debug (fun m -> m "Copying: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
-  assert (Sys_unix.command (Format.sprintf "cp -a %s %s/sancus-core-gap" sancus_repo r_tmpdir) = 0);
+  (* Clone Sancus so a submodule source retains a valid Git directory. *)
+  Logs.debug (fun m -> m "Cloning: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
+  let cloned_repo = r_tmpdir ^ "/sancus-core-gap" in
+  if Sys_unix.command (Format.sprintf "git clone --local %s %s %s"
+      (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) <> 0 then
+    failwith (Format.sprintf "Could not clone Sancus repository from %s" sancus_repo);
   (* Use the required commit *)
   Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
-  assert (Sys_unix.command (Format.sprintf "cd %s/sancus-core-gap; git checkout %s %s" r_tmpdir commit (dbg_str ())) = 0);
+  if Sys_unix.command (Format.sprintf "cd %s; git checkout %s %s"
+      (Filename.quote cloned_repo) (Filename.quote commit) (dbg_str ())) <> 0 then
+    failwith (Format.sprintf "Could not check out Sancus commit %s" commit);
   (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
   Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
   let security = Int.max 20 (4 * String.length sancus_master_key) in
@@ -247,7 +252,7 @@ let fill_template template_code (cfg : cfg_t) =
 
 let addr_of_label cfg l =
   (* Logs.debug (fun p -> p "Verilog.addr_of_label %s %s" cfg.pmem_elf l); *)
-  Int.of_string ("0x" ^ (String.substr_replace_all ~pattern:"\n" ~with_:"" (Shexp_process.eval Shexp_process.(pipe (run "sh" [cfg.get_symbolpos; cfg.pmem_elf; l]) read_all))))
+  Int.of_string ("0x" ^ (String.substr_replace_all ~pattern:"\n" ~with_:"" (Shexp_process.eval Shexp_process.(pipe (run "bash" [cfg.get_symbolpos; cfg.pmem_elf; l]) read_all))))
 
 let run_simulator (cfg : cfg_t) =
   (* Call build_pmem to compile and link the code *)
