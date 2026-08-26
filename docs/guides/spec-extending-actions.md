@@ -4,6 +4,10 @@ description: Add a new attacker or enclave action to ALVIE/Sancus.
 ---
 
 This guide is for contributors who want to introduce a new action in TestDL and make it usable in ALVIE/Sancus.
+It uses `trace_marker` as a temporary exercise so that the complete extension path can be tested without proposing a real new Sancus capability.
+`trace_marker` is not part of the language on `main`.
+The completed exercise is available on the temporary [`feat/testdl-trace-marker-implementation`](https://github.com/unive-alvie/alvie/tree/feat/testdl-trace-marker-implementation) branch.
+Create a local branch from it before following the exercise, and discard the implementation afterwards unless the action has an independent product justification.
 For existing TestDL syntax and constraints, see the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/).
 This guide begins when the existing language is insufficient.
 
@@ -23,22 +27,22 @@ Most new instructions start as **Kind A**.
 
 ## Example target action
 
-In this tutorial we add a simple attacker action:
+In this exercise we add a temporary attacker action:
 
 ```text
 trace_marker
 ```
 
-The action compiles to one `nop` and has no security-observable effect.
+The temporary action compiles to one `nop` and has no security-observable effect.
 The simulator prints `🚨` when the action is submitted, making it easy to identify in a long trace.
 The marker is a debugging aid, not a new ALVIE observation used by learning or comparison.
 The same workflow applies to any new Kind A attacker action or enclave action.
 
 ## Files involved
 
-- Attacker action model and code generation: `alvie/code/lib/sancus/attacker.ml`
-- TestDL parser: `alvie/code/lib/sancus/testdl.ml`
-- Optional input/output glyph rendering (CLI trace readability): `alvie/code/lib/sancus/sul/verilog.ml`
+- Attacker action model and code generation: [`alvie/code/lib/sancus/attacker.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/attacker.ml)
+- TestDL parser: [`alvie/code/lib/sancus/testdl.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/testdl.ml)
+- Optional input/output glyph rendering (CLI trace readability): [`alvie/code/lib/sancus/sul/verilog.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/sul/verilog.ml)
 - Only if semantic outputs change:
   - output type definitions: `alvie/code/lib/sancus/output_internal.ml`
   - signal classification: `alvie/code/lib/sancus/sul/verilog.ml`
@@ -46,7 +50,7 @@ The same workflow applies to any new Kind A attacker action or enclave action.
 
 ## Step 1: Add a constructor in attacker atoms
 
-In `alvie/code/lib/sancus/attacker.ml`, extend `type atom_t` with your constructor:
+On the temporary branch, open [`attacker.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/attacker.ml) and extend `type atom_t` with your constructor:
 
 ```ocaml
 | CTraceMarker
@@ -71,7 +75,7 @@ Guidelines:
 
 ## Step 2: Parse the new token in TestDL
 
-In `alvie/code/lib/sancus/testdl.ml`:
+On the temporary branch, open [`testdl.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/testdl.ml):
 
 1. Add a parser for the action (for attacker):
 
@@ -89,7 +93,7 @@ Without all three, parsing may work in some syntactic contexts and fail in other
 
 ## Step 3: Extend the trace rendering (usually optional)
 
-In `alvie/code/lib/sancus/sul/verilog.ml`, update the input rendering in `step` so your action gets a short symbol.
+In [`verilog.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/sul/verilog.ml), update the input rendering in `step` so the temporary action gets a short symbol.
 
 For `CTraceMarker`, render a conspicuous `🚨` marker.
 
@@ -242,7 +246,8 @@ dot -Tpdf /tmp/trace-marker-run/trace-marker.dot \
   -o /tmp/trace-marker-run/trace-marker.pdf
 ```
 
-The repository includes a small [sample DOT model](/alvie/assets/trace-marker-model.dot) and its [rendered graph](/alvie/assets/trace-marker-model.png):
+The repository includes a small [sample DOT model](/alvie/assets/trace-marker-model.dot) and its [rendered graph](/alvie/assets/trace-marker-model.png).
+These artifacts were generated from the temporary validation branch and are illustrative only.
 
 ![A small learned model containing a trace_marker edge](/alvie/assets/trace-marker-model.png)
 
@@ -252,7 +257,8 @@ It is a smoke-test artifact, not a complete security assessment.
 
 ## Step 8: Run the focused tests
 
-Run the fast parser tests after making the code change:
+Run the fast parser tests after making the code change.
+The focused regression tests are in [`alvie/code/test/attack.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/test/attack.ml):
 
 ```bash
 cd alvie/code
@@ -277,8 +283,8 @@ dune exec test/attack.exe -- test --color=never testdl
 
 For enclave-side extensions, mirror the process in:
 
-- `alvie/code/lib/sancus/enclave.ml` (atom type + compile)
-- enclave parser branch in `alvie/code/lib/sancus/testdl.ml`
-- optional glyph update in `alvie/code/lib/sancus/sul/verilog.ml`
+- [`alvie/code/lib/sancus/enclave.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/enclave.ml) (atom type + compile)
+- enclave parser branch in [`alvie/code/lib/sancus/testdl.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/testdl.ml)
+- optional glyph update in [`alvie/code/lib/sancus/sul/verilog.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/sul/verilog.ml)
 
 Only touch outputs/DFA if the extension changes semantic observables.

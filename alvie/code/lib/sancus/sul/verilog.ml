@@ -547,7 +547,6 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
       | IAttacker (Attacker.CCreateEncl _) -> "\x1B[34m" ^ "C" ^ "\x1B[0m"
       | IAttacker (Attacker.CTimerEnable _) -> "\x1B[34m" ^ "T" ^ "\x1B[0m"
       | IAttacker (Attacker.CStartCounting _) -> "\x1B[34m" ^ "SC" ^ "\x1B[0m"
-      | IAttacker (Attacker.CTraceMarker) -> "\x1B[1;31m" ^ "🚨" ^ "\x1B[0m"
       | IAttacker (Attacker.CInst I_NOP) -> "\x1B[34m" ^ "N" ^ "\x1B[0m"
       | IAttacker (Attacker.CInst I_DINT) -> "\x1B[34m" ^ "D" ^ "\x1B[0m"
       | IAttacker (Attacker.CInst (I_MOV _)) -> "\x1B[34m" ^ "M" ^ "\x1B[0m"

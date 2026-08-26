@@ -95,19 +95,6 @@ let equal_public_element_t e e' =
 
 let element_t_testable = Alcotest.testable pp_element_t equal_public_element_t
 
-let test_trace_marker_parser () =
-  match Testdl.Parser.parse_attack_trace "att: trace_marker" with
-  | Ok [Input.IAttacker Sancus.Attacker.Attacker.CTraceMarker] -> ()
-  | Ok result ->
-      failwith (sprintf "unexpected trace_marker parse result: %s" (Sexp.to_string ([%sexp_of: Input.t list] result)))
-  | Error error -> failwith (sprintf "trace_marker did not parse: %s" error)
-
-let test_trace_marker_spec_parser () =
-  let spec = "enclave { nop }; isr { reti }; prepare { trace_marker }; cleanup { nop };" in
-  match Testdl.Parser.parse_spec spec with
-  | Ok _ -> ()
-  | Error error -> failwith (sprintf "trace_marker did not parse in a specification: %s" error)
-
 let exec ?(ignore_illegal=false) ?(n=1) ?(encl_spec_name="enclave-complete") ~att_spec_name ~input_str ~ignore_interrupts ~commit ~expected () =
   let enclave_spec_fn = specdir ^ "/" ^ encl_spec_name ^ ".etdl" in
   let attacker_spec_fn = specdir ^ "/" ^ att_spec_name ^ ".atdl" in
@@ -121,10 +108,6 @@ let exec ?(ignore_illegal=false) ?(n=1) ?(encl_spec_name="enclave-complete") ~at
 let () =
   let open Alcotest in
     run "verilog" [
-      "testdl", [
-        test_case "trace_marker parses as an attacker action" `Quick test_trace_marker_parser;
-        test_case "trace_marker parses in a specification" `Quick test_trace_marker_spec_parser;
-      ];
       "example", [
         test_case "(bugged enclave) w/o interrupts, example" `Slow (exec ~att_spec_name:"example/attacker" ~encl_spec_name:"example/enclave" ~input_str:input_attacker_encl ~ignore_interrupts:true ~commit:last_commit ~expected:[("0", output_attacker_encl0); ("1", output_attacker_encl1)]);
         test_case "(bugged enclave) w interrupts, example" `Slow (exec ~att_spec_name:"example/attacker" ~encl_spec_name:"example/enclave" ~input_str:input_attacker_encl ~ignore_interrupts:false ~commit:last_commit ~expected:[("0", output_attacker_encl0); ("1", output_attacker_encl1)]);
