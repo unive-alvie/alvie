@@ -1,8 +1,15 @@
 # ALVIE tool
 
+ALVIE is a security-analysis framework that combines active automata learning with model checking.
+Users describe the behaviors available to an adversary and a protected program.
+ALVIE queries the system under learning and constructs finite-state models of its observable behavior.
+It compares those models for information-flow differences and reports witness traces for the differences it finds.
+ALVIE is the general framework, while **ALVIE/Sancus** denotes its current Sancus-specific backend and workflow.
+
 This is the source code of the ALVIE tool, accompanying the paper:
 
-> ["Bridging the Gap: Automated Analysis of Sancus"](https://ieeexplore.ieee.org/abstract/document/10664425) by Matteo Busi, Riccardo Focardi, and Flaminia Luccio ([arXiv version](https://arxiv.org/abs/2404.09518))
+> ["Bridging the Gap: Automated Analysis of Sancus"](https://ieeexplore.ieee.org/abstract/document/10664425) by Matteo Busi, Riccardo Focardi, and Flaminia Luccio
+> ([arXiv version](https://arxiv.org/abs/2404.09518))
 
 
 The project was inspired by the paper
@@ -33,7 +40,8 @@ with the [Getting Started guide](docs/getting-started.md) or the
 
 * To improve the performance, for each attack in Table 1 we provide a specification that uses a strict subset of the capabilities of the advanced attacker A+ (Figure 9).
 
-* The enclave specification is kept equal to that in the paper except for the secret comparison instruction, which is performed between `?` (`s` in the paper) and `r4` (`#0` in the paper). This is equivalent for our purposes.
+* The enclave specification is kept equal to that in the paper except for the secret comparison instruction, which is performed between `?` (`s` in the paper) and `r4` (`#0` in the paper).
+  This is equivalent for our purposes.
 
 # Installation & Setup
 
@@ -138,7 +146,8 @@ sudo apt-get update
 
 # Running the found attacks
 
-Once the container is ready, you can run the following command to check that the attacks reported in the paper are synthesized correctly and actually break the security of the relevant Sancus versions (the full test requires a few minutes):
+Once the container is ready, you can run the following command to check that the attacks reported in the paper are synthesized correctly and break the security of the relevant Sancus versions.
+The full test requires a few minutes:
 ```
 $ cd alvie/code; dune exec tt_attack
 ```
