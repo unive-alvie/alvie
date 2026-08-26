@@ -79,6 +79,17 @@ See [Getting Started](/alvie/getting-started/) for the full environment setup.
 
 If the build fails, follow [Getting Started](/alvie/getting-started/) first.
 
+Set an output directory before running the direct commands below.
+In Docker, `/output` is the host bind mount created earlier.
+On a native host, any writable directory is suitable:
+
+```bash
+# Docker container:
+export ALVIE_OUTPUT=/output
+# Native host:
+# export ALVIE_OUTPUT=/tmp/alvie-output
+```
+
 ## 2. Read the enclave specification
 
 Open `spec-lib/fast/enclave-complete.etdl`.
@@ -165,7 +176,7 @@ dune exec bin/learn.exe -- \
   --res "$ALVIE_OUTPUT/example-learn/secret-0.dot" \
   --tmpdir "$ALVIE_OUTPUT/example-learn/tmp" \
   --commit bf89c0b \
-  --sancus ../../sancus-core-gap \
+  --sancus "$PWD/../../sancus-core-gap" \
   --secret 0 \
   --oracle randomwalk \
   --step-limit 5000 \
@@ -196,9 +207,6 @@ Run the same four-model comparison that ALVIE/Sancus uses for an attack assessme
 
 ```bash
 cd alvie/code
-# Docker container:
-export ALVIE_OUTPUT=/output
-# Native host: export ALVIE_OUTPUT=/tmp/alvie-output
 mkdir -p "$ALVIE_OUTPUT/vb1-fa"
 dune exec bin/fa.exe -- \
   --m1-int ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-int.dot \

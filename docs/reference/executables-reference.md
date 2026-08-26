@@ -3,13 +3,17 @@ title: Executables Reference
 description: Command-line reference for ALVIE/Sancus tools.
 ---
 
-All executables are built with `dune build` from inside `alvie/code/` and run as:
+All executables are built with `dune build` from inside `alvie/code/`.
+Run them through Dune or from the build directory:
 
 ```
+dune exec bin/<name>.exe -- [flags]
 _build/default/bin/<name>.exe [flags]
 ```
 
 from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
+For direct simulator commands, pass `--sancus` as an absolute path such as `"$PWD/../../sancus-core-gap"`.
+The simulator creates a temporary working directory before cloning that checkout.
 
 ---
 
@@ -25,15 +29,15 @@ This is the main experiment driver.
 |------|-------------|
 | `--att-spec <file>` | Path to attacker specification (`.atdl` file) |
 | `--encl-spec <file>` | Path to enclave specification (`.etdl` file) |
+| `--res <file>` | Output `.dot` file path for the learned model |
+| `--tmpdir <dir>` | Directory for temporary Verilog simulation files |
+| `--sancus <dir>` | Path to the Sancus simulator root |
 | `--oracle <mode>` | Query oracle mode: `randomwalk`, `pac`, or `exhaustive` |
 
 ### Other flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--res <file>` | required | Output `.dot` file path for the learned model |
-| `--tmpdir <dir>` | required | Directory for temporary Verilog simulation files |
-| `--sancus <dir>` | required | Path to the Sancus simulator root |
 | `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check |
 | `--secret <value>` | absent | Secret substituted into the enclave specification; required when the spec contains `?` |
 | `--epsilon <float>` | `0.001` | PAC epsilon parameter |
@@ -67,6 +71,8 @@ _build/default/bin/learn.exe \
   --secret    0 \
   --step-limit 100 \
   --res       /tmp/example-s0.dot \
+  --tmpdir    /tmp/alvie-example-s0 \
+  --sancus    "$PWD/../../sancus-core-gap" \
   --info
 ```
 
@@ -89,7 +95,7 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 | `--m1-nint <file>` | optional | secret=0 no-interrupt model (`.dot`) |
 | `--m2-nint <file>` | optional | secret=1 no-interrupt model (`.dot`) |
 | `--witness-file-basename <base>` | _(required)_ | Output path prefix; produces `<base>_int.dot` |
-| `--tmpdir <dir>` | `/tmp` | Directory for intermediate mCRL2 files |
+| `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files |
 | `--cex-limit <int>` | unlimited | Maximum number of counterexamples to enumerate |
 | `--debug` | false | Enable debug-level logging |
 
@@ -107,6 +113,7 @@ _build/default/bin/fa.exe \
   --m2-int    /tmp/example-orig-s1-int.dot \
   --m1-nint   /tmp/example-orig-s0-nint.dot \
   --m2-nint   /tmp/example-orig-s1-nint.dot \
+  --tmpdir /tmp/alvie-fa \
   --witness-file-basename /tmp/example-orig-witness \
   --cex-limit 3
 ```
@@ -116,14 +123,11 @@ The tool also reports the number of flow-analysis violations on stderr.
 
 ---
 
-## 3. `exec.exe` — Replay a fixed input sequence (debugging tool)
+## 3. `exec.exe` — Replay a supplied input sequence (debugging tool)
 
 **Purpose:** Developer/debugging utility.
-Sets up the Sancus simulator exactly like `learn.exe` but, instead of learning, replays a **hardcoded** input sequence and prints the observed outputs.
-It is useful for manually inspecting the simulator's response to a specific trace without writing a full specification or running the full learner.
-
-> **Note:** The input sequence to replay is currently hardcoded in `alvie/code/bin/exec.ml` (lines 137–144).
-> To test a different trace, edit that file and rebuild.
+Sets up the Sancus simulator exactly like `learn.exe` but, instead of learning, replays the input sequence passed through `--sexp-input` and prints the observed outputs.
+It is useful for manually inspecting the simulator's response to a specific trace without running the full learner.
 
 ### Flags
 
@@ -131,6 +135,7 @@ Same setup flags as `learn.exe` (minus oracle/learning flags):
 
 | Flag | Description |
 |------|-------------|
+| `--sexp-input <file>` | Required S-expression file containing a list of raw `Sancus.Input` values |
 | `--att-spec <file>` | Attacker specification (`.atdl`) |
 | `--encl-spec <file>` | Enclave specification (`.etdl`) |
 | `--tmpdir <dir>` | Temp directory for simulation files |
@@ -147,17 +152,31 @@ Prints one line per step to stdout: the input sent and the output received from 
 
 ### Quick example
 
+```text
+(
+  (IAttacker(CStartCounting 256))
+  (IAttacker(CCreateEncl(enc_s enc_e data_s data_e)))
+  (IAttacker(CJmpIn enc_s))
+)
+```
+
+Save that input sequence as `/tmp/alvie-input.sexp`, then run:
+
 ```bash
 cd alvie/code
-# Edit bin/exec.ml lines 137-144 to set the desired trace, then rebuild:
-dune build
-
-_build/default/bin/exec.exe \
-  --att-spec  ../../spec-lib/example/attacker.atdl \
+dune exec bin/exec.exe -- \
+  --sexp-input /tmp/alvie-input.sexp \
+  --att-spec ../../spec-lib/example/attacker.atdl \
   --encl-spec ../../spec-lib/example/enclave.etdl \
-  --secret    1 \
+  --tmpdir /tmp/alvie-exec \
+  --sancus "$PWD/../../sancus-core-gap" \
+  --commit bf89c0b \
+  --secret 0 \
   --debug
 ```
+
+The S-expression uses the constructor names defined by `Sancus.Input`.
+The supplied sequence must be compatible with the selected TestDL specifications.
 
 ---
 
@@ -167,7 +186,7 @@ _build/default/bin/exec.exe \
 For each randomly generated input sequence, it runs the simulator twice (with secret=0 and secret=1) and checks that the low-level outputs are indistinguishable to the attacker.
 Reports any counterexample found.
 
-This is faster than `learn.exe` for a quick sanity-check but less thorough (it cannot prove absence of violations).
+It is useful as a quick randomized sanity check, but it does not construct a learned model or prove absence of violations.
 
 ### Flags
 
@@ -176,11 +195,10 @@ This is faster than `learn.exe` for a quick sanity-check but less thorough (it c
 | `--att-spec1 <file>` | _(required)_ | Attacker spec for the first run (`.atdl`) |
 | `--att-spec2 <file>` | _(required)_ | Attacker spec for the second run (`.atdl`) |
 | `--encl-spec <file>` | _(required)_ | Enclave specification (`.etdl`) |
-| `--step-limit <int>` | `200` | Max steps per generated test case |
-| `--tmpdir <dir>` | `/tmp` | Temp directory |
-| `--sancus <dir>` | `../..` | Sancus simulator root |
-| `--commit <sha>` | _(HEAD)_ | Simulator git commit |
-| `--ignore-interrupts` | false | Collapse interrupt outputs |
+| `--step-limit <int>` | `500` | Number of generated test cases |
+| `--tmpdir <dir>` | _(required)_ | Temp directory |
+| `--sancus <dir>` | _(required)_ | Sancus simulator root |
+| `--commit <sha>` | `ef753b6` | Sancus simulator git commit |
 | `--sancus-master-key <hex>` | _(default)_ | Master key |
 | `--debug` | false | Debug logging |
 | `--info` | false | Info logging |
@@ -198,6 +216,8 @@ _build/default/bin/pbt.exe \
   --att-spec1 ../../spec-lib/example/attacker.atdl \
   --att-spec2 ../../spec-lib/example/attacker.atdl \
   --encl-spec ../../spec-lib/example/enclave.etdl \
+  --tmpdir /tmp/alvie-pbt \
+  --sancus "$PWD/../../sancus-core-gap" \
   --step-limit 50 \
   --info
 ```
@@ -210,5 +230,5 @@ _build/default/bin/pbt.exe \
 |------------|---------|-----------------|-------------|--------|
 | `learn.exe` | Learn Mealy machine via L# | Yes | No | `.dot` model |
 | `fa.exe` | Find NI violations between two models | No | Yes | `.dot` witness graph |
-| `exec.exe` | Replay hardcoded trace (debug) | Yes | No | stdout trace |
+| `exec.exe` | Replay supplied trace (debug) | Yes | No | stdout trace |
 | `pbt.exe` | Random NI testing (no model) | Yes | No | QCheck report |

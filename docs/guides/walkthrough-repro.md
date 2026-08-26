@@ -30,7 +30,8 @@ cd ../..
 
 ## Running the example
 
-The example wrapper learns secret 0 and secret 1 models for the final Sancus commit, both with and without interrupt handling:
+The example wrapper learns the interrupt-enabled secret 0 and secret 1 models for the final Sancus commit.
+It deliberately omits the no-interrupt baseline models required by a full four-model attack assessment:
 
 ```bash
 rm -rf results/example counterexamples/example logs/example tmp/example
@@ -38,7 +39,8 @@ rm -rf results/example counterexamples/example logs/example tmp/example
 ./check_example.sh
 ```
 
-The learned models are in `results/example/`; the witness graph is in `counterexamples/example/`.
+The learned models are in `results/example/`.
+The witness graph is in `counterexamples/example/`.
 The exact output filenames are visible with:
 
 ```bash
@@ -55,8 +57,10 @@ The example test suite can be run independently:
 
 ```bash
 cd alvie/code
-dune exec tt_attack
+dune exec test/attack.exe -- test --color=never
 ```
+
+This simulator regression suite requires a populated `sancus-core-gap/` checkout at the repository root.
 
 ## One attack
 
@@ -123,7 +127,7 @@ dune exec bin/learn.exe -- \
   --encl-spec ../../spec-lib/enclave-complete.etdl \
   --res /tmp/alvie-b6-s0.dot \
   --tmpdir /tmp/alvie-b6 \
-  --sancus ../../sancus-core-gap \
+  --sancus "$PWD/../../sancus-core-gap" \
   --commit ef753b6 \
   --secret 0 \
   --oracle pac
@@ -159,8 +163,9 @@ If the build fails, check the active OCaml switch and run `dune build` from `alv
 If the simulator cannot find a Sancus file, verify that the `sancus-core-gap` checkout exists at the repository root and that the requested commit is available in it.
 For slow or memory-heavy runs, start with B6 or a smaller specification and inspect the corresponding log under `logs/`.
 
-To remove generated artifacts for a namespace, use the project cleanup script only after checking that it does not contain results you want to keep:
+To remove generated artifacts for a namespace, first check that it does not contain results you want to keep.
+Then remove only that namespace:
 
 ```bash
-./clean.sh
+rm -rf results/b6-sim counterexamples/b6-sim logs/b6-sim tmp/b6-sim
 ```

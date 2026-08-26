@@ -95,13 +95,11 @@ From `alvie/code`:
 
 ```bash
 dune build
-dune exec tt_attack
-dune exec tt_derive
-dune exec tt_genall
+dune exec test/attack.exe -- test --color=never
 ```
 
+The simulator regression suite requires a populated `sancus-core-gap/` checkout at the repository root.
 The shell wrappers at repository root build first and place models, logs, and temporary simulator files under `results/`, `logs/`, and `tmp/`.
-The Sancus submodule/repository must be available at `sancus-core-gap` for simulator experiments.
 
 ## Generated files
 

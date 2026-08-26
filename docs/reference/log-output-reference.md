@@ -168,7 +168,7 @@ These values are what distinguish states in the learned Mealy machine and ultima
 
 ### Learning Completion
 
-When the PAC oracle declares the hypothesis equivalent to the SUL, the learning terminates and ALVIE/Sancus writes the model to the `.dot` result file.
+When the selected equivalence oracle accepts the hypothesis, learning terminates and ALVIE/Sancus writes the model to the `.dot` result file.
 No explicit "done" message appears in the stream; the process exits cleanly.
 
 ---
@@ -188,10 +188,10 @@ The `fa.exe` binary compares pairs of learned models (secret=0 vs secret=1) and 
 | `N` | Number of distinct witness traces found where the two models behave differently |
 | `_int.dot` | The counterexample graph for the interrupt-enabled models |
 
-- **`N = 0`**: The two models are indistinguishable — the attacker cannot tell secret=0 from secret=1.
-  The system is **secure** under the given threat model (up to the PAC guarantees).
-- **`N > 0`**: Distinguishing traces exist — the attacker **can** observe a difference.
-  An attack exists.
+- **`N = 0`**: No distinguishing trace was found in the supplied learned models.
+  This is not a universal security proof about Sancus or every program covered by the specifications.
+- **`N > 0`**: The supplied learned models contain a distinguishing trace.
+  The witness is evidence of an attack under the selected specifications and threat model.
 
 ### Counterexample Dot Files
 

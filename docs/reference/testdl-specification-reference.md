@@ -202,7 +202,7 @@ dune exec bin/learn.exe -- \
   --tmpdir /tmp/alvie-testdl-example \
   --secret 0 \
   --commit bf89c0b \
-  --sancus ../../sancus-core-gap \
+  --sancus "$PWD/../../sancus-core-gap" \
   --oracle randomwalk \
   --step-limit 500 \
   --reset-probability 0.09
