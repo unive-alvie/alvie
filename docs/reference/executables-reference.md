@@ -1,6 +1,6 @@
 ---
 title: Executables Reference
-description: Command-line reference for ALVIE/Sancus simulator tools.
+description: Command-line reference for ALVIE/Sancus tools.
 ---
 
 All executables are built with `dune build` from inside `alvie/code/` and run as:

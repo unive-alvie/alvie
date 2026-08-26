@@ -1,9 +1,9 @@
 ---
 title: Code Architecture
-description: The stable simulator-based ALVIE/Sancus implementation.
+description: The ALVIE/Sancus implementation.
 ---
 
-This document describes the stable, simulator-based ALVIE/Sancus implementation.
+This document describes the ALVIE/Sancus implementation.
 
 ## End-to-end pipeline
 
@@ -30,7 +30,7 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/sancus/attacker.ml` | Attacker actions, compilation, derivatives, and action sets |
 | `lib/sancus/enclave.ml` | Enclave actions, compilation, derivatives, and action sets |
 | `lib/sancus/inputgen.ml` | Specification-guided input generation and matchability |
-| `lib/sancus/sul/verilog.ml` | Simulator-backed SUL and VCD-to-observation conversion |
+| `lib/sancus/sul/verilog.ml` | Sancus SUL and VCD-to-observation conversion |
 | `lib/sancus/output_internal.ml` | Observable output and timing payload types |
 | `lib/lsharp/lsharp.ml` | L# learning loop |
 | `lib/lsharp/observationtree.ml` | Observation tree and basis/frontier operations |
