@@ -12,14 +12,13 @@ out there.
 The Dockerfile is the reference environment. Build and run it with:
 
 ```bash
-docker build --platform linux/amd64 -t alvie .
+docker build -t alvie .
 docker run --rm -it alvie
 ```
 
-The `linux/amd64` platform is needed on ARM hosts because the mCRL2 package
-used by this project is not available for every ARM platform. Native users
-need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with
-`Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
+The Dockerfile installs mCRL2 from its Ubuntu PPA on `amd64` and builds it from source on `arm64`, so the default build works natively on both architectures.
+Specify `--platform` only when intentionally cross-building for another architecture.
+Native users need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with `Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
 
 Verify the OCaml build:
 

@@ -5,11 +5,8 @@ description: Syntax and semantics of TestDL actions.
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
-It complements the [TestDL Language Reference](../spec-tutorial/) (how to
-write specs), the [V-B1 TestDL tutorial](../../guides/testdl-tutorial-vb1/)
-(a worked example), and the
-[Extending TestDL Actions](../../guides/spec-extending-actions/) guide (how to
-extend the language).
+It complements the [TestDL Language Reference](../spec-tutorial/) for writing specifications.
+It also complements the [V-B1 TestDL tutorial](../../guides/testdl-tutorial-vb1/) (a worked example) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide.
 
 ## Reading notes
 
@@ -27,7 +24,7 @@ extend the language).
 - `eps` - empty action.
 - `( ... )` - grouping.
 
-These do not emit instructions by themselves; they shape the language of accepted traces.
+These do not emit instructions by themselves but they shape the language of accepted traces.
 
 ## Attacker actions
 
@@ -45,9 +42,9 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 ### `create <ts, te, ds, de>`
 
-- Intuition: create/enable enclave with text/data boundaries.
+- Intuition: create/enable enclave with text/data boundaries (enclave text between addresses `[ts, te]` and enclave data between addresses `[ds, de]`); `ts` is the entry label of the enclave.
 - Typical use: setup in `prepare` before jumping in.
-- Common pattern: `create ...; jin enc_s`.
+- Common pattern: `create ...; jin ts`.
 
 ### `jin <label>`
 
@@ -99,7 +96,7 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 ### `ubr`
 
-- Intuition: model a branch-like divergence pattern that exits through `enc_e` with side effects.
+- Intuition: model a branch-like divergence pattern that exits through the enclave exit label with side effects.
 - Typical use: compactly represent observable divergence in enclave logic.
 
 ### `ifz (<atom-list>) (<atom-list>)`
@@ -138,4 +135,5 @@ not contain an unexpanded `?`.
 
 ALVIE classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
 
-You usually do not need to reason at this level while authoring specs, but if you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.
+You usually do not need to reason at this level while authoring specs.
+If you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.
