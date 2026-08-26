@@ -26,10 +26,13 @@ Most new instructions start as **Kind A**.
 In this tutorial we add a simple attacker action:
 
 ```text
-start_counting <n>
+trace_marker
 ```
 
-The same workflow applies to any new attacker action (or enclave action with the enclave-specific files).
+The action compiles to one `nop` and has no security-observable effect.
+The simulator prints `🚨` when the action is submitted, making it easy to identify in a long trace.
+The marker is a debugging aid, not a new ALVIE observation used by learning or comparison.
+The same workflow applies to any new Kind A attacker action or enclave action.
 
 ## Files involved
 
@@ -46,19 +49,17 @@ The same workflow applies to any new attacker action (or enclave action with the
 In `alvie/code/lib/sancus/attacker.ml`, extend `type atom_t` with your constructor (if not already present):
 
 ```ocaml
-| CStartCounting of ti_t
+| CTraceMarker
 ```
 
 Then implement its lowering in `atom_compile`.
 
-For `start_counting`, the current code emits:
+For `trace_marker`, the compiler emits:
 
 ```ocaml
-| CStartCounting ti ->
-    let ti_correct = ti - 2 in
+| CTraceMarker ->
     [
-      sprintf "mov #%d, &TACCR0" ti_correct;
-      "mov #0x214, &tactl_val";
+      "nop";
     ]
 ```
 
@@ -75,11 +76,8 @@ In `alvie/code/lib/sancus/testdl.ml`:
 1. Add a parser for the action (for attacker):
 
 ```ocaml
-let atstart_counting =
-  (string "start_counting" *> whitespace *> integer >>= (fun v ->
-    let v = int_of_string v in
-    if v >= 0 && v < 65536 then return (Attacker.Atom (CStartCounting v))
-    else fail "start_counting: delay is too long"))
+let atrace_marker =
+  (string "trace_marker" *> return (Attacker.Atom CTraceMarker)) <?> "atrace_marker"
 ```
 
 2. Include it in all attacker alternatives:
@@ -93,7 +91,7 @@ Without all three, parsing may work in some syntactic contexts and fail in other
 
 In `alvie/code/lib/sancus/sul/verilog.ml`, update the input rendering in `step` so your action gets a short symbol.
 
-For `CStartCounting`, current rendering is `SC`.
+For `CTraceMarker`, render a conspicuous `🚨` marker.
 
 This does not change semantics; it only improves debugging output.
 
@@ -108,6 +106,7 @@ If not, do this:
 3. Teach DFA progression how to consume it in `alvie/code/lib/sancus/inputgen.ml` (`transition_nomemo`).
 
 Failing to update all three can make a spec syntactically valid but semantically unusable.
+The output classifier should consume the execution trace and its surrounding state, not raw VCD data owned by an individual action.
 
 ## Step 5: Add a tiny spec to exercise the action
 
@@ -117,7 +116,7 @@ Create a local attacker file (example):
 isr { reti };
 
 prepare {
-  start_counting 8;
+  trace_marker;
   create <enc_s, enc_e, data_s, data_e>;
   jin enc_s
 };
@@ -142,7 +141,8 @@ _build/default/bin/learn.exe \
 - Parsing passes (`.atdl`/`.etdl` accepted).
 - Learning command starts and produces output graph.
 - No unexpected `OIllegal` caused by grammar/transition mismatches.
-- Trace rendering shows your new action symbol (if added).
+- Trace rendering shows the `🚨` marker.
+- Existing learned models are unchanged when the new action is not used.
 
 ## Common pitfalls
 

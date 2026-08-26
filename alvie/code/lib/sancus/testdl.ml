@@ -107,13 +107,16 @@ module ParserAttacker = struct
       (if v >= 0 && v < 65536 then return (Attacker.Atom (CStartCounting v))
       else (fail "start_counting: delay is too long")))) <?> "atstart_counting"
 
+  let atrace_marker =
+    (string "trace_marker" *> return (Attacker.Atom CTraceMarker)) <?> "atrace_marker"
+
   let atinst = inst >>= (fun i ->
     return (Attacker.Atom (CInst i))
   ) <?> "atinst"
 
   let atreti = (string "reti" *> return (Attacker.Atom (CReti))) <?> "atreti"
 
-  let single_atom = (atrst_nz <|> atrst <|> atjin <|> atcreate <|> attimer_enable <|> atstart_counting <|> atreti <|> atinst) <?> "single_atom"
+  let single_atom = (atrst_nz <|> atrst <|> atjin <|> atcreate <|> attimer_enable <|> atstart_counting <|> atrace_marker <|> atreti <|> atinst) <?> "single_atom"
 
   let list_atom = many (whitespace *> single_atom <* whitespace <* char ';') >>= (fun il -> whitespace *> single_atom <* whitespace >>= (fun i -> return (List.map ~f:(function Attacker.Atom a -> a | _ -> failwith "Parsing list_atom, this should never happen!") (il @ [i]) )))
 
@@ -125,7 +128,7 @@ module ParserAttacker = struct
       )
     ) <?> "atifz"
 
-  let all_atoms = (atrst_nz <|> atrst <|> atjin <|> atcreate <|> attimer_enable <|> atstart_counting <|> atreti <|> atinst <|> atifz) <?> "all_atoms_attacker"
+  let all_atoms = (atrst_nz <|> atrst <|> atjin <|> atcreate <|> attimer_enable <|> atstart_counting <|> atrace_marker <|> atreti <|> atinst <|> atifz) <?> "all_atoms_attacker"
 
   (* Components for body *)
   let bdchoice p p' = (both (p <* whitespace <* char '|' <* whitespace) p' >>| (fun (r, r') -> Attacker.Choice (r, r'))) <?> "bdchoice"
@@ -139,7 +142,7 @@ module ParserAttacker = struct
   let facstar p = ((p <* char '*') >>| (fun a -> Attacker.Star a)) <?> "facstar"
 
   (* All parsers are parametrized by body, otherwise we would have no way of having mutually recursive definitions *)
-  let atom body = (atifz <|> atrst_nz <|> atrst <|> atjin <|> atcreate <|> attimer_enable <|> atstart_counting <|> atreti <|> atinst <|> (parens body)) <?> "atom"
+  let atom body = (atifz <|> atrst_nz <|> atrst <|> atjin <|> atcreate <|> attimer_enable <|> atstart_counting <|> atrace_marker <|> atreti <|> atinst <|> (parens body)) <?> "atom"
 
   let factor body = ((facstar (atom body)) <|> (atom body)) <?> "factor"
 

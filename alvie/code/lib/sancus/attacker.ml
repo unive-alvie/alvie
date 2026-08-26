@@ -11,6 +11,7 @@ module Attacker : sig
     | CCreateEncl of enclave_layout_t
     | CTimerEnable of ti_t
     | CStartCounting of ti_t
+    | CTraceMarker
     | CReti
     | CIfZ of (atom_t list) * (atom_t list)
     | CInst of instruction_t [@@deriving hash,eq,ord,sexp,show { with_path = false }]
@@ -45,6 +46,7 @@ type atom_t =
   | CCreateEncl of enclave_layout_t
   | CTimerEnable of ti_t
   | CStartCounting of ti_t
+  | CTraceMarker
   | CReti
   | CIfZ of (atom_t list) * (atom_t list)
   | CInst of instruction_t [@@deriving hash,eq,ord,sexp,show { with_path = false }]
@@ -106,6 +108,10 @@ let rec atom_compile ~(ignore_interrupts : bool) (atom : atom_t) : string list =
       [
         sprintf "mov #%d, &TACCR0" ti_correct;
         "mov #0x214, &tactl_val"; (* Enables the timer, up mode, no interrupt *)
+      ]
+  | CTraceMarker ->
+      [
+        "nop";
       ]
   | CReti ->
       [

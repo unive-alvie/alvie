@@ -21,6 +21,7 @@ let rec human_att_atom a =
   | CCreateEncl _ -> "create"
   | CTimerEnable t -> sprintf "timer_enable %d" t
   | CStartCounting t -> sprintf "start_counting %d" t
+  | CTraceMarker -> "trace_marker"
   | CReti -> "reti"
   | CIfZ (l, r) -> sprintf "ifz [%s], [%s]"
     (List.fold l ~init:"" ~f:(fun acc i -> sprintf "%s %s;" acc (human_att_atom i)))
