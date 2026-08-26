@@ -3,8 +3,7 @@ title: Code Architecture
 description: The stable simulator-based ALVIE/Sancus implementation.
 ---
 
-This document describes the stable, simulator-based ALVIE/Sancus implementation in this branch.
-FPGA support is maintained separately and is intentionally outside this guide.
+This document describes the stable, simulator-based ALVIE/Sancus implementation.
 
 ## End-to-end pipeline
 
