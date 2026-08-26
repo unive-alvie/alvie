@@ -1,11 +1,12 @@
 ---
-title: TestDL Language Reference
-description: Atoms, combinators, semantics, and extension points in TestDL.
+title: TestDL Specification Reference
+description: Syntax, semantics, and constraints for existing TestDL specifications.
 ---
 
-This reference explains how to read and modify ALVIE/Sancus specifications without digging into the OCaml internals.
+This reference explains how to read, create, and modify ALVIE/Sancus specifications using the existing TestDL language.
 For a guided example, start with the [V-B1 TestDL tutorial](/alvie/guides/testdl-tutorial-vb1/).
 For the precise meaning of individual actions, use the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
+To add a language construct or a new observable behavior, use [Extending TestDL Actions](/alvie/guides/spec-extending-actions/) instead.
 
 A full ALVIE/Sancus run is built by combining:
 
@@ -31,7 +32,7 @@ dune exec bin/learn.exe -- \
   ...
 ```
 
-## 1) Victim (enclave) modeling
+## Enclave specifications
 
 An enclave file defines the `enclave { ... };` section.
 
@@ -43,7 +44,7 @@ enclave {
 };
 ```
 
-### Enclave atoms
+### Supported enclave atoms
 
 - `nop`, `dint`, `mov ...`, `add ...`, `cmp ...`, `jmp ...`, `push ...`
 - `rst`
@@ -51,7 +52,9 @@ enclave {
 - `ifz (<atom-list>) (<atom-list>)`
 - `balanced_ifz (<instruction-list>)`
 
-### Enclave combinators
+### TestDL combinators
+
+Attacker and enclave sections share these combinators:
 
 - sequencing: `a; b`
 - choice: `a | b`
@@ -74,7 +77,7 @@ cmp ?, r4;
 
 At runtime, `?` is replaced by the value passed through `--secret`.
 
-## 2) Attacker modeling
+## Attacker specifications
 
 An attacker file defines three sections:
 
@@ -90,7 +93,7 @@ The sections must appear in this order.
 - `prepare`: setup before interaction
 - `cleanup`: teardown/reset actions
 
-### Attacker atoms
+### Supported attacker atoms
 
 - `rst` / `rst_nz`
 - `jin <label>`
@@ -106,7 +109,7 @@ Attacker sections support the same combinators (`;`, `|`, `*`, `eps`, parenthese
 Both branches of attacker `ifz` must be non-empty lists of atoms.
 Nested `ifz` is not supported.
 
-## How specifications constrain learning inputs
+## How specifications guide learning
 
 TestDL expressions describe languages of permitted action sequences; they are not templates that ALVIE/Sancus emits all at once.
 During learning, ALVIE/Sancus replays the current input/output history and offers only actions that can still extend a sequence accepted by the active expression:
@@ -133,41 +136,7 @@ Re-entered enclave and ISR executions may also replay a previously observed acti
 Illegal or unsupported observations invalidate the current generated path; reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the active section as described above.
 This is how `.atdl` and `.etdl` files limit both the learner's alphabet and the order in which inputs can be queried.
 
-## 2b) Attacker modeling (2/2): extending observable actions in OCaml
-
-If you add a new attacker action, there are two different concerns:
-
-- syntax + generation (the action can be written in `.atdl` and compiled to code), and
-- observation semantics (ALVIE/Sancus can classify resulting behavior and keep DFA mode transitions consistent).
-
-Use this checklist.
-
-### A. Add the new action to attacker syntax and code generation
-
-1. Add a constructor in `alvie/code/lib/sancus/attacker.ml` (`type atom_t`).
-2. Extend `atom_compile` in `alvie/code/lib/sancus/attacker.ml` to emit assembly for that constructor.
-3. Add parser support in `alvie/code/lib/sancus/testdl.ml`:
-   - define parser for the new token,
-   - include it in `single_atom` and `all_atoms`,
-   - include it in `atom` parser alternatives.
-4. (Recommended) add a short glyph in `alvie/code/lib/sancus/sul/verilog.ml` (`step` pretty-print input branch), so interactive traces stay readable.
-
-### B. If the new action introduces a new kind of observed behavior
-
-If the action changes what ALVIE/Sancus should observe (not just how code is generated), also update:
-
-1. `alvie/code/lib/sancus/output_internal.ml`
-   - add a new `element_t` variant if needed.
-2. `alvie/code/lib/sancus/sul/verilog.ml`
-   - update `output_of_signals` / `analyse_dump` to emit the new output element,
-   - update output rendering in `step`.
-3. `alvie/code/lib/sancus/inputgen.ml`
-   - update `transition_nomemo` if the new output changes mode transitions (`Prepare`, `Enclave`, `ISR_toPM`, `ISR_toUM`, `Cleanup`).
-
-Rule of thumb: if your new action is only a different instruction sequence but maps to existing outcomes (`OTime`, `OJmpIn`, `OReti`, `OJmpOut`, ...), you usually do not need a new output type.
-If it creates a new semantic event, you do.
-
-## 3) Operands and registers
+## Operands and registers
 
 The parser accepts:
 
@@ -185,7 +154,7 @@ Examples:
 - `cmp ?, r4`
 - `jmp #enc_e`
 
-## 4) Practical workflow for a new assessment
+## Creating or modifying a specification
 
 1. Start from `spec-lib/example/attacker.atdl` and `spec-lib/example/enclave.etdl`.
 2. Encode victim behavior in `enclave { ... };` using choices and sequences.
@@ -245,27 +214,14 @@ dune exec bin/learn.exe -- \
 `--tmpdir` contains generated programs and simulator artifacts, and `--res` receives the learned DOT model.
 See the [Executables Reference](/alvie/reference/executables-reference/) for every learner option.
 
-## 5) Extending the DSL (for contributors)
-
-If you need a new attacker/enclave action not expressible with current atoms:
-
-1. Add the atom constructor in:
-   - attacker: `alvie/code/lib/sancus/attacker.ml`
-   - enclave: `alvie/code/lib/sancus/enclave.ml`
-2. Add parser support in `alvie/code/lib/sancus/testdl.ml`.
-3. Map the new atom to emitted low-level instructions in `atom_compile`.
-4. Rebuild and test with a small spec in `spec-lib/`.
-
-This keeps the language extension aligned across syntax, semantics, and code generation.
-
-## 6) Reference specs in this repository
+## Reference specifications in this repository
 
 - Complete attacker profile: `spec-lib/complete.atdl`
 - Attack-focused profiles: `spec-lib/b1.atdl`, `spec-lib/b2.atdl`, `spec-lib/b3.atdl`, `spec-lib/b4.atdl`, `spec-lib/b6.atdl`, `spec-lib/b7.atdl`, `spec-lib/b8.atdl`, `spec-lib/b9.atdl`
 - Enclave baseline: `spec-lib/enclave-complete.etdl`
 - Example pair: `spec-lib/example/attacker.atdl`, `spec-lib/example/enclave.etdl`
 
-## Troubleshooting quick notes
+## Troubleshooting
 
 - Parser errors usually come from missing `;`, missing section headers, or out-of-range registers.
 - `?` is valid in enclave instructions; ensure a secret is provided when needed.

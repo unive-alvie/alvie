@@ -4,6 +4,8 @@ description: Add a new attacker or enclave action to ALVIE/Sancus.
 ---
 
 This guide is for contributors who want to introduce a new action in TestDL and make it usable in ALVIE/Sancus.
+For existing TestDL syntax and constraints, see the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/).
+This guide begins when the existing language is insufficient.
 
 ## Scope
 

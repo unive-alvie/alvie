@@ -5,7 +5,7 @@ description: Syntax and semantics of TestDL actions.
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
-It complements the [TestDL Language Reference](../spec-tutorial/) for writing specifications.
+It complements the [TestDL Specification Reference](../testdl-specification-reference/) for writing specifications.
 It also complements the [V-B1 TestDL tutorial](../../guides/testdl-tutorial-vb1/) (a worked example) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide.
 
 ## Reading notes

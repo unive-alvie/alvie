@@ -157,7 +157,7 @@ Experiments are driven by two TestDL files:
 - an enclave specification (`.etdl`) describes the victim program and its actions.
 
 The included example specifications are under `spec-lib/example/`.
-Start with the [TestDL tutorial](/alvie/reference/spec-tutorial/) to understand their syntax.
+Start with the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) to understand their syntax.
 Then use the [action reference](/alvie/reference/testdl-action-reference/) when reading an existing specification.
 
 The attack-focused specifications intentionally restrict the attacker to keep learning tractable.

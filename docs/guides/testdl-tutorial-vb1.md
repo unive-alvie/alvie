@@ -148,7 +148,8 @@ In this example it schedules the next interrupt at one tick and returns with `re
 This example uses `nop`, so cleanup has no extra effect.
 
 These bodies use the same `; `, `|`, `eps`, repetition, and grouping operators as enclave expressions.
-The [TestDL Language Reference](/alvie/reference/spec-tutorial/) describes their grammar, and the [TestDL Action Reference](/alvie/reference/testdl-action-reference/) defines the actions.
+The [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) describes their grammar.
+The [TestDL Action Reference](/alvie/reference/testdl-action-reference/) defines the actions.
 
 ## 4. Learn one small model directly
 
