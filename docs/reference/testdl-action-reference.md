@@ -5,7 +5,11 @@ description: Syntax and semantics of TestDL actions.
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
-It complements the [TestDL Language Reference](../spec-tutorial/) (how to write specs) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide (how to extend the language).
+It complements the [TestDL Language Reference](../spec-tutorial/) (how to
+write specs), the [V-B1 TestDL tutorial](../../guides/testdl-tutorial-vb1/)
+(a worked example), and the
+[Extending TestDL Actions](../../guides/spec-extending-actions/) guide (how to
+extend the language).
 
 ## Reading notes
 
@@ -56,11 +60,13 @@ These do not emit instructions by themselves; they shape the language of accepte
 - Intuition: configure timer interrupt after `n` ticks.
 - Typical use: model interrupt scheduling during enclave execution.
 - Effect: helps generate handle/reti flows in traces.
+- Accepted range: decimal `n` in `0..65535`.
 
 ### `start_counting <n>`
 
 - Intuition: start timer counting without the interrupt-enabled mode used by `timer_enable`.
 - Typical use: finer control of timing behavior.
+- Accepted range: decimal `n` in `0..65535`.
 
 ### `reti`
 
@@ -72,6 +78,7 @@ These do not emit instructions by themselves; they shape the language of accepte
 - Intuition: attacker-side branch macro based on zero flag.
 - Typical use: conditional attack behavior encoded compactly.
 - Caveat: currently intended for non-nested `ifz` atoms.
+- Both branch lists must contain at least one atom.
 
 ### Instruction atoms (`nop`, `dint`, `mov`, `add`, `cmp`, `jmp`, `push`)
 
@@ -99,6 +106,9 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 - Intuition: enclave-side conditional based on zero flag.
 - Typical use: represent data/control-dependent behavior with explicit branch alternatives.
+- Both branch lists must contain at least one atom. Executable branches
+  currently support instruction atoms and `rst`; nested `ifz`, `ubr`, and
+  `balanced_ifz` are not supported inside them.
 
 ### `balanced_ifz (<instruction-list>)`
 
@@ -112,6 +122,10 @@ These do not emit instructions by themselves; they shape the language of accepte
 - `&label` - memory label/address form.
 - `#imm` - immediate value.
 - `?` - secret placeholder (typically in enclave spec), replaced by `--secret`.
+
+Labels and symbolic immediates may contain letters, digits, `_`, and `-`.
+Secret expansion is implemented for enclave actions; attacker actions should
+not contain an unexpanded `?`.
 
 ## Section intent quick map
 

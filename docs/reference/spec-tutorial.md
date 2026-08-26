@@ -3,7 +3,13 @@ title: TestDL Language Reference
 description: Atoms, combinators, semantics, and extension points in TestDL.
 ---
 
-This guide explains how to write ALVIE specifications without digging into the OCaml internals. A full ALVIE run is built by combining:
+This reference explains how to read and modify ALVIE specifications without
+digging into the OCaml internals. For a guided example, start with the
+[V-B1 TestDL tutorial](/alvie/guides/testdl-tutorial-vb1/). For the precise
+meaning of individual actions, use the
+[TestDL Action Reference](/alvie/reference/testdl-action-reference/).
+
+A full ALVIE run is built by combining:
 
 - one enclave (victim) spec file (`.etdl`)
 - one attacker spec file (`.atdl`)
@@ -17,10 +23,13 @@ The CLI merges both files and parses them as a single TestDL specification.
   - attacker: `spec-lib/example/attacker.atdl`
   - enclave: `spec-lib/example/enclave.etdl`
 
-You can pass your own files with:
+Commands in this reference run from `alvie/code/`. Pass specifications with:
 
 ```bash
-_build/default/bin/learn.exe --att-spec path/to/attacker.atdl --encl-spec path/to/enclave.etdl ...
+dune exec bin/learn.exe -- \
+  --att-spec path/to/attacker.atdl \
+  --encl-spec path/to/enclave.etdl \
+  ...
 ```
 
 ## 1) Victim (enclave) modeling
@@ -51,6 +60,12 @@ enclave {
 - epsilon (empty action): `eps`
 - grouping: `( ... )`
 
+`ifz` takes two non-empty, semicolon-separated branch lists. Executable
+enclave branches currently support instruction atoms and `rst`; nested `ifz`,
+`ubr`, and `balanced_ifz` inside an `ifz` branch are not supported.
+`balanced_ifz` accepts a non-empty instruction list, rather than an arbitrary
+TestDL expression.
+
 ### Secret placeholder
 
 Inside enclave instructions, `?` means "secret immediate value". Example:
@@ -71,6 +86,8 @@ prepare { ... };
 cleanup { ... };
 ```
 
+The sections must appear in this order.
+
 - `isr`: what the interrupt handler can do
 - `prepare`: setup before interaction
 - `cleanup`: teardown/reset actions
@@ -87,6 +104,43 @@ cleanup { ... };
 - conditional macro: `ifz (<atom-list>) (<atom-list>)`
 
 Attacker sections support the same combinators (`;`, `|`, `*`, `eps`, parentheses).
+
+Both branches of attacker `ifz` must be non-empty lists of atoms. Nested
+`ifz` is not supported.
+
+## How specifications constrain learning inputs
+
+TestDL expressions describe languages of permitted action sequences; they are
+not templates that ALVIE emits all at once. During learning, ALVIE replays the
+current input/output history and offers only actions that can still extend a
+sequence accepted by the active expression:
+
+- `a; b` requires `a` before `b`;
+- `a | b` permits either branch;
+- `a*` permits zero or more repetitions;
+- `eps` permits an empty body or choice branch;
+- parentheses control grouping.
+
+The observed Sancus behavior selects which section is active:
+
+| Active section | Inputs ALVIE may generate | Typical transition |
+| --- | --- | --- |
+| `prepare` | attacker actions from `prepare` | `jin`/jump-in enters `enclave` |
+| `enclave` | victim actions from `enclave` | an interrupt enters `isr`; jump-out/reset enters `cleanup` |
+| `isr` | attacker actions from `isr` | `reti` resumes `enclave` or enters `cleanup`, depending on the return mode |
+| `cleanup` | attacker actions from `cleanup` | reset starts a new `prepare` phase |
+
+An action written in another section is therefore not available merely because
+it occurs somewhere in the combined specification. Within the active section,
+ALVIE uses the derivative of the expression after the existing prefix and
+discards actions whose derivative has an empty language. Re-entered enclave
+and ISR executions may also replay a previously observed action path so that
+the same generated program remains consistent across repeated execution.
+
+Illegal or unsupported observations invalidate the current generated path;
+reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the
+active section as described above. This is how `.atdl` and `.etdl` files limit
+both the learner's alphabet and the order in which inputs can be queried.
 
 ## 2b) Attacker modeling (2/2): extending observable actions in OCaml
 
@@ -129,6 +183,11 @@ The parser accepts:
 - source operands: `rX`, `@rX`, `&label`, `#imm`, `?`
 - destination operands: `rX`, `&rX`, `&label`
 
+Labels and symbolic immediates use letters, digits, `_`, and `-`. Decimal
+timer arguments must be in `0..65535`. The `?` source operand is supported in
+enclave instructions, where `--secret` expands it before code generation; do
+not use an unexpanded `?` in attacker actions.
+
 Examples:
 
 - `mov #42, &data_s`
@@ -143,7 +202,7 @@ Examples:
 4. If enclave uses `?`, run with `--secret <value>`.
 5. Learn and verify with existing scripts (`learn_one.sh`, `check_one.sh`) or direct CLI commands.
 
-### Concrete example (minimal)
+### Concrete syntax example
 
 `enclave.etdl`:
 
@@ -173,17 +232,31 @@ cleanup {
 };
 ```
 
-Run:
+To run a small checked-in example using the same syntax, start in
+`alvie/code/` and execute:
 
 ```bash
-_build/default/bin/learn.exe \
-  --att-spec attacker.atdl \
-  --encl-spec enclave.etdl \
+dune exec bin/learn.exe -- \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
+  --res /tmp/alvie-testdl-example.dot \
+  --tmpdir /tmp/alvie-testdl-example \
   --secret 0 \
   --commit bf89c0b \
-  --sancus ./sancus-core-gap \
-  --res /tmp/tutorial.dot
+  --sancus ../../sancus-core-gap \
+  --oracle randomwalk \
+  --step-limit 500 \
+  --reset-probability 0.09
 ```
+
+`--att-spec` and `--encl-spec` select the two TestDL files. `--secret 0`
+expands their victim-side `?` operands, while `--oracle randomwalk` selects a
+bounded equivalence oracle; `--step-limit` bounds each equivalence search and
+`--reset-probability` controls how often it abandons the current exploration
+path. `--tmpdir` contains generated programs and simulator artifacts, and
+`--res` receives the learned DOT model. See the
+[Executables Reference](/alvie/reference/executables-reference/) for every
+learner option.
 
 ## 5) Extending the DSL (for contributors)
 
