@@ -1,9 +1,9 @@
 ---
 title: Getting Started
-description: A first-session tutorial for building ALVIE and learning a Sancus model.
+description: A first-session tutorial for building ALVIE/Sancus and learning a Sancus model.
 ---
 
-This tutorial is a guided first session with ALVIE.
+This tutorial is a guided first session with ALVIE/Sancus.
 In about one hour, you will build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
 
 The workflow described here uses [Verilator](https://www.veripool.org/verilator/) to translate Sancus's Verilog into an executable simulator.
@@ -49,10 +49,9 @@ docker run --rm -it \
 ```
 
 The container starts in its repository root.
-The image is published at [Docker Hub](https://hub.docker.com/r/matteobusi/alvie).
-`--rm` removes the container when you exit; the bind mount exposes `/output` as `./alvie-output` on the host.
-The ALVIE wrapper scripts write to the repository directories inside the container, so the commands below explicitly copy selected results into `/output` before the container exits.
-Mounting the host directory over `/home/alvie` is not appropriate because it would hide the ALVIE installation bundled in the image.
+The image is published at [Docker Hub](https://hub.docker.com/r/matteobusi/alvie). `--rm` removes the container when you exit; the bind mount exposes `/output` as `./alvie-output` on the host.
+The ALVIE/Sancus wrapper scripts write to the repository directories inside the container, so the commands below explicitly copy selected results into `/output` before the container exits.
+Mounting the host directory over `/home/alvie` is not appropriate because it would hide the ALVIE/Sancus installation bundled in the image.
 
 To build the same environment locally instead, use the repository Dockerfile:
 

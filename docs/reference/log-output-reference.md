@@ -1,15 +1,17 @@
 ---
 title: Log and Output Reference
-description: How to read ALVIE learning logs and model outputs.
+description: How to read ALVIE/Sancus learning logs and model outputs.
 ---
 
-This document explains how to read the live progress output and log files produced by ALVIE's learning (`learn.exe`) and comparison (`fa.exe`) phases.
+This document explains how to read the live progress output and log files produced by ALVIE/Sancus learning (`learn.exe`) and comparison (`fa.exe`) phases.
 
 ## Learning Phase Output (`learn.exe`)
 
 ### Live Progress Stream
 
-During learning, ALVIE prints a compact progress stream to stdout. Each character or bracketed token represents one interaction with the Sancus simulator. The stream is structured as repeated units of the form:
+During learning, ALVIE/Sancus prints a compact progress stream to stdout.
+Each character or bracketed token represents one interaction with the Sancus simulator.
+The stream is structured as repeated units of the form:
 
 ```
 .[INPUT][OUTPUT].[INPUT][OUTPUT]...
@@ -80,13 +82,15 @@ Inputs are colour-coded by actor:
 | `IfZ` | Enclave | `CIfZ` — conditional block |
 | `•` (green) | Enclave | `CRst` — enclave triggers a reset |
 
-> **Note:** The same letter can appear in both blue (attacker) and green (enclave). Colour distinguishes the actor.
+> **Note:** The same letter can appear in both blue (attacker) and green (enclave).
+> Colour distinguishes the actor.
 
 ---
 
 ### Output Symbols (inside `[...]`, after the input)
 
-Output symbols follow the input within the same bracket and describe what the simulator observed. They are colour-coded by category:
+Output symbols follow the input within the same bracket and describe what the simulator observed.
+They are colour-coded by category:
 
 **Yellow — anomalous/illegal**
 
@@ -128,7 +132,8 @@ Output symbols follow the input within the same bracket and describe what the si
 
 ### Reading a Log Line
 
-Each line of the learning log is one round of exploration. Example (colours stripped):
+Each line of the learning log is one round of exploration.
+Example (colours stripped):
 
 ```
 .[SC t][C t]
@@ -139,7 +144,8 @@ Decoded:
 - `[SC` — input: attacker `CStartCounting`; `t]` — output: `OTime` (timed observation, success)
 - `[C` — input: attacker `CCreateEncl`; `t]` — output: `OTime`
 
-A line ending with a newline (no more tokens) means the hypothesis was submitted to the equivalence oracle. If a counterexample is found, exploration resumes on the next line.
+A line ending with a newline (no more tokens) means the hypothesis was submitted to the equivalence oracle.
+If a counterexample is found, exploration resumes on the next line.
 
 ---
 
@@ -162,7 +168,8 @@ These values are what distinguish states in the learned Mealy machine and ultima
 
 ### Learning Completion
 
-When the PAC oracle declares the hypothesis equivalent to the SUL, the learning terminates and ALVIE writes the model to the `.dot` result file. No explicit "done" message appears in the stream; the process exits cleanly.
+When the PAC oracle declares the hypothesis equivalent to the SUL, the learning terminates and ALVIE/Sancus writes the model to the `.dot` result file.
+No explicit "done" message appears in the stream; the process exits cleanly.
 
 ---
 
@@ -181,8 +188,10 @@ The `fa.exe` binary compares pairs of learned models (secret=0 vs secret=1) and 
 | `N` | Number of distinct witness traces found where the two models behave differently |
 | `_int.dot` | The counterexample graph for the interrupt-enabled models |
 
-- **`N = 0`**: The two models are indistinguishable — the attacker cannot tell secret=0 from secret=1. The system is **secure** under the given threat model (up to the PAC guarantees).
-- **`N > 0`**: Distinguishing traces exist — the attacker **can** observe a difference. An attack exists.
+- **`N = 0`**: The two models are indistinguishable — the attacker cannot tell secret=0 from secret=1.
+  The system is **secure** under the given threat model (up to the PAC guarantees).
+- **`N > 0`**: Distinguishing traces exist — the attacker **can** observe a difference.
+  An attack exists.
 
 ### Counterexample Dot Files
 

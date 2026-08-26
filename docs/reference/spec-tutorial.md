@@ -3,13 +3,11 @@ title: TestDL Language Reference
 description: Atoms, combinators, semantics, and extension points in TestDL.
 ---
 
-This reference explains how to read and modify ALVIE specifications without
-digging into the OCaml internals. For a guided example, start with the
-[V-B1 TestDL tutorial](/alvie/guides/testdl-tutorial-vb1/). For the precise
-meaning of individual actions, use the
-[TestDL Action Reference](/alvie/reference/testdl-action-reference/).
+This reference explains how to read and modify ALVIE/Sancus specifications without digging into the OCaml internals.
+For a guided example, start with the [V-B1 TestDL tutorial](/alvie/guides/testdl-tutorial-vb1/).
+For the precise meaning of individual actions, use the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
 
-A full ALVIE run is built by combining:
+A full ALVIE/Sancus run is built by combining:
 
 - one enclave (victim) spec file (`.etdl`)
 - one attacker spec file (`.atdl`)
@@ -23,7 +21,8 @@ The CLI merges both files and parses them as a single TestDL specification.
   - attacker: `spec-lib/example/attacker.atdl`
   - enclave: `spec-lib/example/enclave.etdl`
 
-Commands in this reference run from `alvie/code/`. Pass specifications with:
+Commands in this reference run from `alvie/code/`.
+Pass specifications with:
 
 ```bash
 dune exec bin/learn.exe -- \
@@ -60,15 +59,14 @@ enclave {
 - epsilon (empty action): `eps`
 - grouping: `( ... )`
 
-`ifz` takes two non-empty, semicolon-separated branch lists. Executable
-enclave branches currently support instruction atoms and `rst`; nested `ifz`,
-`ubr`, and `balanced_ifz` inside an `ifz` branch are not supported.
-`balanced_ifz` accepts a non-empty instruction list, rather than an arbitrary
-TestDL expression.
+`ifz` takes two non-empty, semicolon-separated branch lists.
+Executable enclave branches currently support instruction atoms and `rst`; nested `ifz`, `ubr`, and `balanced_ifz` inside an `ifz` branch are not supported.
+`balanced_ifz` accepts a non-empty instruction list, rather than an arbitrary TestDL expression.
 
 ### Secret placeholder
 
-Inside enclave instructions, `?` means "secret immediate value". Example:
+Inside enclave instructions, `?` means "secret immediate value".
+Example:
 
 ```text
 cmp ?, r4;
@@ -105,15 +103,13 @@ The sections must appear in this order.
 
 Attacker sections support the same combinators (`;`, `|`, `*`, `eps`, parentheses).
 
-Both branches of attacker `ifz` must be non-empty lists of atoms. Nested
-`ifz` is not supported.
+Both branches of attacker `ifz` must be non-empty lists of atoms.
+Nested `ifz` is not supported.
 
 ## How specifications constrain learning inputs
 
-TestDL expressions describe languages of permitted action sequences; they are
-not templates that ALVIE emits all at once. During learning, ALVIE replays the
-current input/output history and offers only actions that can still extend a
-sequence accepted by the active expression:
+TestDL expressions describe languages of permitted action sequences; they are not templates that ALVIE/Sancus emits all at once.
+During learning, ALVIE/Sancus replays the current input/output history and offers only actions that can still extend a sequence accepted by the active expression:
 
 - `a; b` requires `a` before `b`;
 - `a | b` permits either branch;
@@ -123,31 +119,26 @@ sequence accepted by the active expression:
 
 The observed Sancus behavior selects which section is active:
 
-| Active section | Inputs ALVIE may generate | Typical transition |
+| Active section | Inputs ALVIE/Sancus may generate | Typical transition |
 | --- | --- | --- |
 | `prepare` | attacker actions from `prepare` | `jin`/jump-in enters `enclave` |
 | `enclave` | victim actions from `enclave` | an interrupt enters `isr`; jump-out/reset enters `cleanup` |
 | `isr` | attacker actions from `isr` | `reti` resumes `enclave` or enters `cleanup`, depending on the return mode |
 | `cleanup` | attacker actions from `cleanup` | reset starts a new `prepare` phase |
 
-An action written in another section is therefore not available merely because
-it occurs somewhere in the combined specification. Within the active section,
-ALVIE uses the derivative of the expression after the existing prefix and
-discards actions whose derivative has an empty language. Re-entered enclave
-and ISR executions may also replay a previously observed action path so that
-the same generated program remains consistent across repeated execution.
+An action written in another section is therefore not available merely because it occurs somewhere in the combined specification.
+Within the active section, ALVIE/Sancus uses the derivative of the expression after the existing prefix and discards actions whose derivative has an empty language.
+Re-entered enclave and ISR executions may also replay a previously observed action path so that the same generated program remains consistent across repeated execution.
 
-Illegal or unsupported observations invalidate the current generated path;
-reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the
-active section as described above. This is how `.atdl` and `.etdl` files limit
-both the learner's alphabet and the order in which inputs can be queried.
+Illegal or unsupported observations invalidate the current generated path; reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the active section as described above.
+This is how `.atdl` and `.etdl` files limit both the learner's alphabet and the order in which inputs can be queried.
 
 ## 2b) Attacker modeling (2/2): extending observable actions in OCaml
 
 If you add a new attacker action, there are two different concerns:
 
 - syntax + generation (the action can be written in `.atdl` and compiled to code), and
-- observation semantics (ALVIE can classify resulting behavior and keep DFA mode transitions consistent).
+- observation semantics (ALVIE/Sancus can classify resulting behavior and keep DFA mode transitions consistent).
 
 Use this checklist.
 
@@ -163,7 +154,7 @@ Use this checklist.
 
 ### B. If the new action introduces a new kind of observed behavior
 
-If the action changes what ALVIE should observe (not just how code is generated), also update:
+If the action changes what ALVIE/Sancus should observe (not just how code is generated), also update:
 
 1. `alvie/code/lib/sancus/output_internal.ml`
    - add a new `element_t` variant if needed.
@@ -173,7 +164,8 @@ If the action changes what ALVIE should observe (not just how code is generated)
 3. `alvie/code/lib/sancus/inputgen.ml`
    - update `transition_nomemo` if the new output changes mode transitions (`Prepare`, `Enclave`, `ISR_toPM`, `ISR_toUM`, `Cleanup`).
 
-Rule of thumb: if your new action is only a different instruction sequence but maps to existing outcomes (`OTime`, `OJmpIn`, `OReti`, `OJmpOut`, ...), you usually do not need a new output type. If it creates a new semantic event, you do.
+Rule of thumb: if your new action is only a different instruction sequence but maps to existing outcomes (`OTime`, `OJmpIn`, `OReti`, `OJmpOut`, ...), you usually do not need a new output type.
+If it creates a new semantic event, you do.
 
 ## 3) Operands and registers
 
@@ -183,10 +175,9 @@ The parser accepts:
 - source operands: `rX`, `@rX`, `&label`, `#imm`, `?`
 - destination operands: `rX`, `&rX`, `&label`
 
-Labels and symbolic immediates use letters, digits, `_`, and `-`. Decimal
-timer arguments must be in `0..65535`. The `?` source operand is supported in
-enclave instructions, where `--secret` expands it before code generation; do
-not use an unexpanded `?` in attacker actions.
+Labels and symbolic immediates use letters, digits, `_`, and `-`.
+Decimal timer arguments must be in `0..65535`.
+The `?` source operand is supported in enclave instructions, where `--secret` expands it before code generation; do not use an unexpanded `?` in attacker actions.
 
 Examples:
 
@@ -232,8 +223,7 @@ cleanup {
 };
 ```
 
-To run a small checked-in example using the same syntax, start in
-`alvie/code/` and execute:
+To run a small checked-in example using the same syntax, start in `alvie/code/` and execute:
 
 ```bash
 dune exec bin/learn.exe -- \
@@ -249,14 +239,11 @@ dune exec bin/learn.exe -- \
   --reset-probability 0.09
 ```
 
-`--att-spec` and `--encl-spec` select the two TestDL files. `--secret 0`
-expands their victim-side `?` operands, while `--oracle randomwalk` selects a
-bounded equivalence oracle; `--step-limit` bounds each equivalence search and
-`--reset-probability` controls how often it abandons the current exploration
-path. `--tmpdir` contains generated programs and simulator artifacts, and
-`--res` receives the learned DOT model. See the
-[Executables Reference](/alvie/reference/executables-reference/) for every
-learner option.
+`--att-spec` and `--encl-spec` select the two TestDL files.
+`--secret 0` expands their victim-side `?` operands, while `--oracle randomwalk` selects a bounded equivalence oracle.
+`--step-limit` bounds each equivalence search, and `--reset-probability` controls how often it abandons the current exploration path.
+`--tmpdir` contains generated programs and simulator artifacts, and `--res` receives the learned DOT model.
+See the [Executables Reference](/alvie/reference/executables-reference/) for every learner option.
 
 ## 5) Extending the DSL (for contributors)
 

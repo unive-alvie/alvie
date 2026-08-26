@@ -103,9 +103,8 @@ These do not emit instructions by themselves but they shape the language of acce
 
 - Intuition: enclave-side conditional based on zero flag.
 - Typical use: represent data/control-dependent behavior with explicit branch alternatives.
-- Both branch lists must contain at least one atom. Executable branches
-  currently support instruction atoms and `rst`; nested `ifz`, `ubr`, and
-  `balanced_ifz` are not supported inside them.
+- Both branch lists must contain at least one atom.
+  Executable branches currently support instruction atoms and `rst`; nested `ifz`, `ubr`, and `balanced_ifz` are not supported inside them.
 
 ### `balanced_ifz (<instruction-list>)`
 
@@ -121,8 +120,7 @@ These do not emit instructions by themselves but they shape the language of acce
 - `?` - secret placeholder (typically in enclave spec), replaced by `--secret`.
 
 Labels and symbolic immediates may contain letters, digits, `_`, and `-`.
-Secret expansion is implemented for enclave actions; attacker actions should
-not contain an unexpanded `?`.
+Secret expansion is implemented for enclave actions; attacker actions should not contain an unexpanded `?`.
 
 ## Section intent quick map
 
@@ -133,7 +131,7 @@ not contain an unexpanded `?`.
 
 ## Observable-effect intuition (high level)
 
-ALVIE classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
+ALVIE/Sancus classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
 
 You usually do not need to reason at this level while authoring specs.
 If you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.
