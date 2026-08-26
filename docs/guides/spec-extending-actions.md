@@ -1,9 +1,11 @@
 ---
 title: Extending TestDL Actions
-description: Add a new attacker or enclave action to ALVIE.
+description: Add a new attacker or enclave action to ALVIE/Sancus.
 ---
 
-This guide is for contributors who want to introduce a new action in TestDL and make it usable in ALVIE.
+This guide is for contributors who want to introduce a new action in TestDL and make it usable in ALVIE/Sancus.
+For existing TestDL syntax and constraints, see the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/).
+This guide begins when the existing language is insufficient.
 
 ## Scope
 
@@ -14,7 +16,7 @@ When you add an action, decide which kind of change it is:
   - New action compiles to low-level instruction sequence
   - Observability semantics stay expressible with existing output kinds
 - **Kind B: new observation semantics**
-  - New action also requires ALVIE to emit or track a new semantic event
+  - New action also requires ALVIE/Sancus to emit or track a new semantic event
   - You must touch output classification and DFA transitions
 
 Most new instructions start as **Kind A**.

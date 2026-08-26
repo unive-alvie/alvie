@@ -5,7 +5,8 @@ description: Syntax and semantics of TestDL actions.
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
-It complements the [TestDL Language Reference](../spec-tutorial/) (how to write specs) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide (how to extend the language).
+It complements the [TestDL Specification Reference](../testdl-specification-reference/) for writing specifications.
+It also complements the [V-B1 TestDL tutorial](../../guides/testdl-tutorial-vb1/) (a worked example) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide.
 
 ## Reading notes
 
@@ -23,7 +24,7 @@ It complements the [TestDL Language Reference](../spec-tutorial/) (how to write 
 - `eps` - empty action.
 - `( ... )` - grouping.
 
-These do not emit instructions by themselves; they shape the language of accepted traces.
+These do not emit instructions by themselves but they shape the language of accepted traces.
 
 ## Attacker actions
 
@@ -41,9 +42,9 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 ### `create <ts, te, ds, de>`
 
-- Intuition: create/enable enclave with text/data boundaries.
+- Intuition: create/enable enclave with text/data boundaries (enclave text between addresses `[ts, te]` and enclave data between addresses `[ds, de]`); `ts` is the entry label of the enclave.
 - Typical use: setup in `prepare` before jumping in.
-- Common pattern: `create ...; jin enc_s`.
+- Common pattern: `create ...; jin ts`.
 
 ### `jin <label>`
 
@@ -56,11 +57,13 @@ These do not emit instructions by themselves; they shape the language of accepte
 - Intuition: configure timer interrupt after `n` ticks.
 - Typical use: model interrupt scheduling during enclave execution.
 - Effect: helps generate handle/reti flows in traces.
+- Accepted range: decimal `n` in `0..65535`.
 
 ### `start_counting <n>`
 
 - Intuition: start timer counting without the interrupt-enabled mode used by `timer_enable`.
 - Typical use: finer control of timing behavior.
+- Accepted range: decimal `n` in `0..65535`.
 
 ### `reti`
 
@@ -72,6 +75,7 @@ These do not emit instructions by themselves; they shape the language of accepte
 - Intuition: attacker-side branch macro based on zero flag.
 - Typical use: conditional attack behavior encoded compactly.
 - Caveat: currently intended for non-nested `ifz` atoms.
+- Both branch lists must contain at least one atom.
 
 ### Instruction atoms (`nop`, `dint`, `mov`, `add`, `cmp`, `jmp`, `push`)
 
@@ -92,13 +96,15 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 ### `ubr`
 
-- Intuition: model a branch-like divergence pattern that exits through `enc_e` with side effects.
+- Intuition: model a branch-like divergence pattern that exits through the enclave exit label with side effects.
 - Typical use: compactly represent observable divergence in enclave logic.
 
 ### `ifz (<atom-list>) (<atom-list>)`
 
 - Intuition: enclave-side conditional based on zero flag.
 - Typical use: represent data/control-dependent behavior with explicit branch alternatives.
+- Both branch lists must contain at least one atom.
+  Executable branches currently support instruction atoms and `rst`; nested `ifz`, `ubr`, and `balanced_ifz` are not supported inside them.
 
 ### `balanced_ifz (<instruction-list>)`
 
@@ -113,6 +119,9 @@ These do not emit instructions by themselves; they shape the language of accepte
 - `#imm` - immediate value.
 - `?` - secret placeholder (typically in enclave spec), replaced by `--secret`.
 
+Labels and symbolic immediates may contain letters, digits, `_`, and `-`.
+Secret expansion is implemented for enclave actions; attacker actions should not contain an unexpanded `?`.
+
 ## Section intent quick map
 
 - `prepare` - establish preconditions and enter enclave (`create`, timers, `jin`).
@@ -122,6 +131,7 @@ These do not emit instructions by themselves; they shape the language of accepte
 
 ## Observable-effect intuition (high level)
 
-ALVIE classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
+ALVIE/Sancus classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
 
-You usually do not need to reason at this level while authoring specs, but if you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.
+You usually do not need to reason at this level while authoring specs.
+If you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.

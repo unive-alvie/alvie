@@ -1,6 +1,6 @@
 ---
 title: Executables Reference
-description: Command-line reference for ALVIE's simulator tools.
+description: Command-line reference for ALVIE/Sancus tools.
 ---
 
 All executables are built with `dune build` from inside `alvie/code/` and run as:
@@ -15,7 +15,9 @@ from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says
 
 ## 1. `learn.exe` — Learn a Mealy machine model
 
-**Purpose:** Runs the L# active automata learning algorithm against a Sancus Verilog simulation. Produces a `.dot` file representing the learned Mealy machine (the attacker's observable behaviour of the enclave). This is the main experiment driver.
+**Purpose:** Runs the L# active automata learning algorithm against a Sancus Verilog simulation.
+Produces a `.dot` file representing the learned Mealy machine: the attacker's observable behavior of the enclave.
+This is the main experiment driver.
 
 ### Required flags
 
@@ -50,7 +52,9 @@ from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says
 
 ### Output
 
-A Mealy machine in `.dot` format written to `--res`. Each edge is labelled `input / output` where inputs and outputs use the symbolic alphabet defined in the specs. See the [Log and Output Reference](../log-output-reference/) for output token meanings.
+A Mealy machine in `.dot` format is written to `--res`.
+Each edge is labelled `input / output`, where inputs and outputs use the symbolic alphabet defined in the specifications.
+See the [Log and Output Reference](../log-output-reference/) for output token meanings.
 
 ### Quick example
 
@@ -72,7 +76,9 @@ This learns a model for the `example` attack with secret=0 using random-walk equ
 
 ## 2. `fa.exe` — Find flow-analysis (NI) violations between two models
 
-**Purpose:** Takes two interrupt-enabled `.dot` Mealy machines and optionally their two no-interrupt counterparts. It uses mCRL2 model checking to find distinguishing traces. Supplying the no-interrupt models removes witnesses that already exist without interrupt scheduling.
+**Purpose:** Takes two interrupt-enabled `.dot` Mealy machines and optionally their two no-interrupt counterparts.
+It uses mCRL2 model checking to find distinguishing traces.
+Supplying the no-interrupt models removes witnesses that already exist without interrupt scheduling.
 
 ### Flags
 
@@ -89,7 +95,8 @@ This learns a model for the `example` attack with secret=0 using random-walk equ
 
 ### Output
 
-`<witness-file-basename>_int.dot` — a `.dot` graph whose paths are distinguishing traces (attack witnesses). If no counterexample exists (the models are equivalent), the file is empty.
+`<witness-file-basename>_int.dot` — a `.dot` graph whose paths are distinguishing traces (attack witnesses).
+If no counterexample exists (the models are equivalent), the file is empty.
 
 ### Quick example
 
@@ -104,15 +111,19 @@ _build/default/bin/fa.exe \
   --cex-limit 3
 ```
 
-Produces `/tmp/example-orig-witness_int.dot` containing up to 3 distinguishing attack traces. The tool also reports the number of flow-analysis violations on stderr.
+Produces `/tmp/example-orig-witness_int.dot` containing up to 3 distinguishing attack traces.
+The tool also reports the number of flow-analysis violations on stderr.
 
 ---
 
 ## 3. `exec.exe` — Replay a fixed input sequence (debugging tool)
 
-**Purpose:** Developer/debugging utility. Sets up the Sancus simulator exactly like `learn.exe` but instead of learning, it replays a **hardcoded** input sequence and prints the observed outputs. Useful for manually inspecting the simulator's response to a specific trace without writing a full spec or running the full learner.
+**Purpose:** Developer/debugging utility.
+Sets up the Sancus simulator exactly like `learn.exe` but, instead of learning, replays a **hardcoded** input sequence and prints the observed outputs.
+It is useful for manually inspecting the simulator's response to a specific trace without writing a full specification or running the full learner.
 
-> **Note:** The input sequence to replay is currently hardcoded in `alvie/code/bin/exec.ml` (lines 137–144). To test a different trace, edit that file and rebuild.
+> **Note:** The input sequence to replay is currently hardcoded in `alvie/code/bin/exec.ml` (lines 137–144).
+> To test a different trace, edit that file and rebuild.
 
 ### Flags
 
@@ -152,7 +163,9 @@ _build/default/bin/exec.exe \
 
 ## 4. `pbt.exe` — Property-based testing (no model learning)
 
-**Purpose:** Tests non-interference (NI) directly on the Sancus simulator using QCheck random input generation, **without** learning a Mealy machine. For each randomly generated input sequence, it runs the simulator twice (with secret=0 and secret=1) and checks that the low-level outputs are indistinguishable to the attacker. Reports any counterexample found.
+**Purpose:** Tests non-interference (NI) directly on the Sancus simulator using QCheck random input generation, **without** learning a Mealy machine.
+For each randomly generated input sequence, it runs the simulator twice (with secret=0 and secret=1) and checks that the low-level outputs are indistinguishable to the attacker.
+Reports any counterexample found.
 
 This is faster than `learn.exe` for a quick sanity-check but less thorough (it cannot prove absence of violations).
 
@@ -174,7 +187,8 @@ This is faster than `learn.exe` for a quick sanity-check but less thorough (it c
 
 ### Output
 
-QCheck test results printed to stdout. On failure, prints the shortest counterexample trace found (a sequence of inputs that produces distinguishable outputs for secret=0 vs secret=1).
+QCheck test results printed to stdout.
+On failure, prints the shortest counterexample trace found (a sequence of inputs that produces distinguishable outputs for secret=0 vs secret=1).
 
 ### Quick example
 
