@@ -46,7 +46,7 @@ The same workflow applies to any new Kind A attacker action or enclave action.
 
 ## Step 1: Add a constructor in attacker atoms
 
-In `alvie/code/lib/sancus/attacker.ml`, extend `type atom_t` with your constructor (if not already present):
+In `alvie/code/lib/sancus/attacker.ml`, extend `type atom_t` with your constructor:
 
 ```ocaml
 | CTraceMarker
@@ -87,7 +87,7 @@ let atrace_marker =
 
 Without all three, parsing may work in some syntactic contexts and fail in others.
 
-## Step 3: Keep trace rendering readable (optional but recommended)
+## Step 3: Extend the trace rendering (usually optional)
 
 In `alvie/code/lib/sancus/sul/verilog.ml`, update the input rendering in `step` so your action gets a short symbol.
 
@@ -136,7 +136,129 @@ _build/default/bin/learn.exe \
   --res /tmp/new-action.dot
 ```
 
-## Step 6: Quick validation checklist
+The `--att-spec` and `--encl-spec` options select the two TestDL files.
+The `--secret 0` option supplies the value used for `?` in the enclave specification.
+The `--commit bf89c0b` option selects the Sancus implementation revision.
+The `--sancus` option points to the local `sancus-core-gap` checkout.
+The `--tmpdir` option stores generated assembly, ELF, memory images, and VCD files.
+The `--res` option names the learned Graphviz model.
+
+For a short contributor smoke test, use a small random-walk limit and preserve the terminal output:
+
+```bash
+cd alvie/code
+mkdir -p /tmp/trace-marker-run
+dune exec bin/learn.exe -- \
+  --att-spec /path/to/attacker.atdl \
+  --encl-spec /path/to/enclave.etdl \
+  --secret 0 \
+  --commit bf89c0b \
+  --sancus /path/to/sancus-core-gap \
+  --tmpdir /tmp/trace-marker-run/tmp \
+  --res /tmp/trace-marker-run/trace-marker.dot \
+  --oracle randomwalk \
+  --step-limit 5 \
+  --reset-probability 0.09 \
+  2>&1 | tee /tmp/trace-marker-run/learning.log
+```
+
+The short limit is for validating the extension path, not for making a statistically strong security claim.
+The command still parses the specifications, generates a program, runs the simulator, analyses its trace, and writes a DOT model.
+
+## Step 6: Inspect the generated files
+
+The temporary directory contains one randomly named directory for the execution.
+List the useful files with:
+
+```bash
+find /tmp/trace-marker-run/tmp -maxdepth 2 -type f \
+  \( -name 'pmem.s43' -o -name 'pmem.elf' -o -name '*.vcd' \) -print
+```
+
+Inspect the generated assembly and confirm that the action is represented by a comment followed by one `nop`:
+
+```bash
+rg -n -C2 'CTraceMarker|nop' /tmp/trace-marker-run/tmp/.tmp.*/pmem.s43
+```
+
+The relevant output looks like this:
+
+```text
+S_0:
+        ; CTraceMarker
+E_0:
+S_1:
+        nop
+E_1:
+```
+
+`S_0` and `E_0` delimit the abstract action.
+`S_1` and `E_1` delimit the generated processor instruction.
+The comment is useful when reading generated assembly, but it is not executed by the processor.
+
+The learner prints a compact trace to the terminal and to `learning.log`.
+The marker is visible between the square brackets, for example:
+
+```text
+.[_†].[C†].[🚨t].[R†].[=†].[I†].[U†]
+```
+
+The colored symbols identify the submitted inputs and the symbols with `†` identify returned observations.
+The exact sequence depends on the specification and random-walk seed.
+To remove ANSI color codes before searching a saved log, use:
+
+```bash
+sed -E 's/\x1B\[[0-9;]*m//g' /tmp/trace-marker-run/learning.log | rg '🚨|CTraceMarker|Results'
+```
+
+The action marker proves that the new input reached the trace printer.
+It does not prove that the SUL returned a new observation.
+For that distinction, inspect the edge labels in the learned model.
+
+## Step 7: Inspect the DOT model
+
+The `--res` file is a Graphviz representation of the learned Mealy machine.
+Print its first lines:
+
+```bash
+sed -n '1,30p' /tmp/trace-marker-run/trace-marker.dot
+```
+
+A representative model contains an edge such as:
+
+```text
+0 -> 3 [label="((IAttacker CTraceMarker)...)"];
+```
+
+The input label contains `CTraceMarker` because the model records the abstract action.
+The output label remains an existing output such as `OTime` because `trace_marker` has no semantic effect.
+
+Render the model as a PNG or PDF:
+
+```bash
+dot -Tpng /tmp/trace-marker-run/trace-marker.dot \
+  -o /tmp/trace-marker-run/trace-marker.png
+dot -Tpdf /tmp/trace-marker-run/trace-marker.dot \
+  -o /tmp/trace-marker-run/trace-marker.pdf
+```
+
+The repository includes a small [sample DOT model](/alvie/assets/trace-marker-model.dot) and its [rendered graph](/alvie/assets/trace-marker-model.png):
+
+![A small learned model containing a trace_marker edge](/alvie/assets/trace-marker-model.png)
+
+Follow the arrows from state `0` to see the input/output sequence.
+The model is intentionally small because the command uses only five random-walk steps.
+It is a smoke-test artifact, not a complete security assessment.
+
+## Step 8: Run the focused tests
+
+Run the fast parser tests after making the code change:
+
+```bash
+cd alvie/code
+dune build
+dune exec test/attack.exe -- test --color=never testdl
+```
 
 - Parsing passes (`.atdl`/`.etdl` accepted).
 - Learning command starts and produces output graph.
