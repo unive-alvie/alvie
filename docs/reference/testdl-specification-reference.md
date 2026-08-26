@@ -156,7 +156,7 @@ Examples:
 
 ## Creating or modifying a specification
 
-1. Start from `spec-lib/example/attacker.atdl` and `spec-lib/example/enclave.etdl`.
+1. Start from `spec-lib/example/attacker.atdl` and `spec-lib/example/enclave.etdl` (or another existing attacker/enclave pair in `spec-lib/`).
 2. Encode victim behavior in `enclave { ... };` using choices and sequences.
 3. Encode attacker setup in `prepare`, interrupt behavior in `isr`, cleanup in `cleanup`.
 4. If enclave uses `?`, run with `--secret <value>`.
