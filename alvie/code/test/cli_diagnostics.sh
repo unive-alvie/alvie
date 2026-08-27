@@ -29,6 +29,7 @@ expect_status() {
 
 cd "$CODE_DIR"
 dune build
+dune exec test/diagnostics.exe -- --color=never
 
 expect_status 2 'Unknown --oracle value' \
   _build/default/bin/learn.exe \
@@ -42,6 +43,18 @@ expect_status 2 'Unknown --oracle value' \
   --oracle invalid-oracle
 
 mkdir "$TMP_DIR/sancus"
+printf 'enclave { nop;\n' >"$TMP_DIR/invalid.etdl"
+expect_status 2 'Could not parse the TestDL specifications' \
+  _build/default/bin/learn.exe \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec "$TMP_DIR/invalid.etdl" \
+  --res "$TMP_DIR/model.dot" \
+  --tmpdir "$TMP_DIR/invalid-spec" \
+  --sancus "$TMP_DIR/sancus" \
+  --commit bf89c0b \
+  --secret 0 \
+  --oracle randomwalk
+
 expect_status 2 '--step-limit must be greater than zero' \
   _build/default/bin/pbt.exe \
   --encl-spec ../../spec-lib/example/enclave.etdl \
