@@ -1,0 +1,45 @@
+name: Test ALVIE
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/alvie-tests.yml'
+      - 'alvie/**'
+      - 'check_one.sh'
+      - 'script_helpers.sh'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/alvie-tests.yml'
+      - 'alvie/**'
+      - 'check_one.sh'
+      - 'script_helpers.sh'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-tests:
+    name: Run isolated ALVIE tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 4.13.1
+      - name: Install OCaml dependencies
+        run: >-
+          opam install -y dune py core alcotest angstrom core_kernel core_unix
+          logs fmt ocamlgraph shexp ppx_deriving qcheck
+      - name: Build ALVIE
+        working-directory: alvie/code
+        run: dune build
+      - name: Run isolated feature suite
+        working-directory: alvie/code
+        run: dune exec tt_features -- test --color=never
+      - name: Run CLI diagnostics
+        working-directory: alvie/code
+        run: bash test/cli_diagnostics.sh
