@@ -97,18 +97,23 @@ let command =
         ~doc:"limit Maximum number of counterexamples to extract before giving up (default: no limit)"
       in
       fun () ->
+        Cli_diagnostics.protect ~debug:dbg (fun () ->
         (if dbg then Logs.set_level (Some Logs.Debug)
         else Logs.set_level (Some Logs.App));
         Logs.set_reporter (Logs_fmt.reporter ());
         (* Create tmpdir if not present *)
         (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
-        let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
-        (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
+        let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
         (* Create res directory, if not present *)
-        let cex_dir =
-          String.drop_suffix cex_file (String.length (List.last_exn (String.split cex_file ~on:'/'))) in
+        let cex_dir = Filename.dirname cex_file in
         Logs.info (fun m -> m "Result directory: %s" cex_dir);
-        (match Sys_unix.file_exists cex_dir with | `No -> Core_unix.mkdir_p cex_dir | _ -> ());
+        ignore (Cli_diagnostics.prepare_directory ~option:"parent directory of --witness-file-basename" cex_dir);
+        ignore (Cli_diagnostics.require_file ~option:"--m1-int" m1_int_file);
+        ignore (Cli_diagnostics.require_file ~option:"--m2-int" m2_int_file);
+        Cli_diagnostics.require_optional_pair ~first_option:"--m1-nint" m1_nint_file ~second_option:"--m2-nint" m2_nint_file;
+        Option.iter m1_nint_file ~f:(fun path -> ignore (Cli_diagnostics.require_file ~option:"--m1-nint" path));
+        Option.iter m2_nint_file ~f:(fun path -> ignore (Cli_diagnostics.require_file ~option:"--m2-nint" path));
+        Option.iter limit ~f:(fun value -> Cli_diagnostics.validate_positive ~option:"--cex-limit" value);
         let m1_int, m1_int_name = i_lts_of_mealy (load_and_convert (sprintf "%s" m1_int_file)), filename m1_int_file in
         let m2_int, m2_int_name = i_lts_of_mealy (load_and_convert (sprintf "%s" m2_int_file)), filename m2_int_file in
         let cex_nint_witnesses = (
@@ -131,6 +136,7 @@ let command =
         ILTS.Dot.output_graph (Stdlib.open_out_bin (sprintf "%s_nint.dot" cex_file)) graph_nint; *)
         (* Logs.info (fun m -> m "\n\n=== Results: found %d RNI violations (of which %d also in non-interrupt enabled models). See %s_{int,nint}.dot for details." cex_int_cnt cex_nint_cnt cex_file) *)
         Logs.info (fun m -> m "\n\n=== Results: found %d FA violations. See %s_int.dot for details." cex_int_cnt cex_file)
+        )
     )
 
 let () = Command_unix.run command

@@ -71,16 +71,42 @@ let require_secret_if_needed enclave secret =
   if Option.is_none secret && Sancus.Enclave.Enclave.has_secret enclave then
     fail "The enclave specification uses ?. Supply --secret <value>."
 
+let require_optional_pair ~first_option first ~second_option second =
+  match first, second with
+  | None, None | Some _, Some _ -> ()
+  | Some _, None -> fail "%s requires %s." first_option second_option
+  | None, Some _ -> fail "%s requires %s." second_option first_option
+
+let report ~heading ~message ~status =
+  eprintf "%s: %s\n" heading message;
+  eprintf "For help or a bug report, see %s\n" bug_report_url;
+  Stdlib.exit status
+
+let classify_failure message =
+  if String.is_substring message ~substring:"Stimulus did not complete" then
+    Some ("ALVIE incomplete", "the simulator did not finish. Inspect the run log and retry in a fresh namespace.", 3)
+  else if String.is_substring message ~substring:"Could not clone Sancus repository"
+       || String.is_substring message ~substring:"Could not check out Sancus commit"
+       || String.is_substring message ~substring:"returned" then
+    Some ("ALVIE backend error", message, 1)
+  else
+    None
+
 let protect ~debug f =
+  if debug then Printexc.record_backtrace true;
   try f () with
   | User_error message ->
-    eprintf "ALVIE error: %s\n" message;
-    eprintf "For help or a bug report, see %s\n" bug_report_url;
-    Stdlib.exit 2
+    report ~heading:"ALVIE error" ~message ~status:2
   | Sys_error message ->
-    eprintf "ALVIE error: %s\n" message;
-    eprintf "For help or a bug report, see %s\n" bug_report_url;
-    Stdlib.exit 2
+    report ~heading:"ALVIE error" ~message ~status:2
+  | Failure message ->
+    (match classify_failure message with
+     | Some (heading, message, status) -> report ~heading ~message ~status
+     | None ->
+       eprintf "ALVIE failed unexpectedly: %s\n" message;
+       if debug then Printexc.print_backtrace stderr;
+       eprintf "Re-run with --debug and report the command, specifications, and logs at %s\n" bug_report_url;
+       Stdlib.exit 1)
   | exn ->
     eprintf "ALVIE failed unexpectedly: %s\n" (Exn.to_string exn);
     if debug then Printexc.print_backtrace stderr;

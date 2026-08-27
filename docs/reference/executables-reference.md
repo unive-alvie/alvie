@@ -74,8 +74,10 @@ This learns a model for the `example` attack with secret=0 using random-walk equ
 
 ### Failures and diagnostics
 
-`learn.exe` validates the oracle, relevant numeric options, input files, output directory, Sancus checkout, and secret placeholder before simulator setup.
+`learn.exe`, `fa.exe`, and `pbt.exe` validate their input files and output directories before running a simulator, model comparison, or property-based test.
+`learn.exe` also validates the oracle, relevant numeric options, Sancus checkout, and secret placeholder before simulator setup.
 It exits with status 2 for those user-correctable errors.
+An incomplete simulator run exits with status 3 and must not be interpreted as a learned model or security result.
 For an unexpected failure, rerun with `--debug` and file a [bug report](https://github.com/unive-alvie/alvie/issues/new?template=bug-report.yml) with the command and sanitized diagnostics.
 
 ---
