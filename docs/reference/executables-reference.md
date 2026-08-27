@@ -191,7 +191,7 @@ This is faster than `learn.exe` for a quick sanity-check but less thorough (it c
 | `--att-spec1 <file>` | _(required)_ | Attacker spec for the first run (`.atdl`) |
 | `--att-spec2 <file>` | _(required)_ | Attacker spec for the second run (`.atdl`) |
 | `--encl-spec <file>` | _(required)_ | Enclave specification (`.etdl`) |
-| `--step-limit <int>` | `500` | Max steps per generated test case |
+| `--step-limit <int>` | `500` | Number of generated test cases |
 | `--tmpdir <dir>` | _(required)_ | Temp directory |
 | `--sancus <dir>` | _(required)_ | Sancus simulator root |
 | `--commit <sha>` | `ef753b6` | Simulator git commit |
