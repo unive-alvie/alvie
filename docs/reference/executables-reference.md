@@ -72,6 +72,12 @@ _build/default/bin/learn.exe \
 
 This learns a model for the `example` attack with secret=0 using random-walk equivalence queries, writing the result to `/tmp/example-s0.dot`.
 
+### Failures and diagnostics
+
+`learn.exe` validates the oracle, relevant numeric options, input files, output directory, Sancus checkout, and secret placeholder before simulator setup.
+It exits with status 2 for those user-correctable errors.
+For an unexpected failure, rerun with `--debug` and file a [bug report](https://github.com/unive-alvie/alvie/issues/new?template=bug-report.yml) with the command and sanitized diagnostics.
+
 ---
 
 ## 2. `fa.exe` — Find flow-analysis (NI) violations between two models

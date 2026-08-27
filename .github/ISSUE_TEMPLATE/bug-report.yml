@@ -1,0 +1,62 @@
+name: Bug report
+description: Report an unexpected ALVIE failure or incorrect result.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include secrets, proprietary specifications, or restricted logs.
+        Replace them with a minimal reproducible input where possible.
+  - type: input
+    id: version
+    attributes:
+      label: ALVIE version
+      description: Provide the commit SHA or Docker image tag.
+    validations:
+      required: true
+  - type: dropdown
+    id: backend
+    attributes:
+      label: Backend
+      options:
+        - Simulator
+        - FPGA
+        - Model comparison only
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and configuration
+      description: Include the command, flags, operating system, and tool versions.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: List the shortest sequence of commands that reproduces the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and diagnostics
+      description: Include the concise error, and the relevant --debug output or log excerpts.
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Safe artifacts
+      description: Attach or link sanitized specifications, logs, learned models, and witnesses when they are safe to share.

@@ -20,11 +20,6 @@ module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.
 module IncrementalOracle = Learninglib.Incrementalexhoracle.IncrementalExhOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
 (* module HybridOracle = Learninglib.Hybridoracle.HybridOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) *)
 
-let spec_parse_or_fail spec =
-  match Testdl.Parser.parse_spec spec with
-  | Result.Ok r -> r
-  | Result.Error e -> failwith e
-
 let filter_model (m : IOInteropInternal.IIOMealy.t) =
   let _filtered_transition = Map.filteri
     m.transition
@@ -156,6 +151,7 @@ let command =
       ~doc:"Tries to compute all the spec strings beforehand, so filling the observation tree and speeding up the learning (WARNING: may take a long time or fail to terminate!)" *)
     in
     fun () ->
+      Cli_diagnostics.protect ~debug:dbg (fun () ->
         (* Random.self_init (); *)
         Random.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
@@ -168,24 +164,25 @@ let command =
         (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
         (* Create tmpdir if not present *)
         (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
-        let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
-        (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
+        let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
         (* Create resultdir if not present *)
-        let resdir = String.drop_suffix resfile (String.length (List.last_exn (String.split resfile ~on:'/'))) in
+        let resdir = Filename.dirname resfile in
         (* Logs.debug (fun m -> m "Result directory: %s" resdir); *)
-        (match Sys_unix.file_exists resdir with | `No -> Core_unix.mkdir_p resdir | _ -> ());
+        ignore (Cli_diagnostics.prepare_directory ~option:"parent directory of --res" resdir);
+        Cli_diagnostics.validate_learning_options ~oracle:oracle_name ~epsilon ~delta ~step_limit
+          ~reset_probability:reset_prob ~bad_probability:bad_prob ~round_limit;
         (* Basic sanity checks on the repo *)
-        assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
-        assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
+        ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
         (* (1) load the spec *)
-        let enclave_spec_str = In_channel.read_all enclave_spec_fn in
-        let attacker_spec_str = In_channel.read_all attacker_spec_fn in
+        let enclave_spec_str = Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
+        let attacker_spec_str = Cli_diagnostics.read_file ~option:"--att-spec" attacker_spec_fn in
         Logs.debug (fun m -> m "Enclave spec: %s" enclave_spec_str);
         Logs.debug (fun m -> m "Attacker spec: %s" attacker_spec_str);
-        let spec_w_secret = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec_str) in
+        let spec_w_secret = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec_str in
         let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
         (* Secret must be expanded *)
-        let enclave = match secret with | None -> assert (not (Enclave.has_secret enclave)); enclave | Some secret -> Enclave.expand_secret secret enclave in
+        Cli_diagnostics.require_secret_if_needed enclave secret;
+        let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
         let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
         let spec_dfa = Inputgen.build_spec_dfa complete_spec in
         (* (2) initialize the interface with the processor's implementation *)
@@ -464,7 +461,7 @@ let command =
             HybridOracle.get_stats oracle,
             Time_now.nanoseconds_since_unix_epoch () - start,
             learned *)
-          else failwith "Unknown oracle!"
+          else assert false
         in
         (* and, finally, (5) to produce the output *)
         if report then
@@ -508,6 +505,7 @@ let command =
         let dot_dest = basename in
         IOInteropInternal.Dot.output_graph (Stdlib.open_out_bin dot_dest) graph;
           Logs.debug (fun m -> m "\n=== Graph written to %s\n" basename)
+      )
     )
 
 let () = Command_unix.run command

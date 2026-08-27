@@ -75,7 +75,7 @@ cd ../..
 
 If this command fails, we fix the build before starting an experiment.
 Most setup problems are an incomplete opam switch, a missing simulator dependency, or a Sancus checkout in the wrong location.
-If the build continues to fail, we open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) with the setup details and the steps we followed.
+If the build continues to fail, we use the [bug-report form](https://github.com/unive-alvie/alvie/issues/new?template=bug-report.yml) with the setup details and the steps we followed.
 
 ## 3. Run the included example
 
