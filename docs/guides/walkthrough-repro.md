@@ -152,15 +152,3 @@ A nonzero violation count means the comparison found distinguishing traces under
 - `tmp/<namespace>/`: generated assembly, binaries, simulator files, and VCDs.
 
 The model filename contains the Sancus commit, attacker and enclave names, secret, PAC parameters, and either `int` or `nint`.
-
-## Troubleshooting
-
-If the build fails, we check the active OCaml switch and run `dune build` from `alvie/code`.
-If the simulator cannot find a Sancus file, we verify that the `sancus-core-gap` checkout exists at the repository root and that the requested commit is available in it.
-For slow or memory-heavy runs, we start with B6 or a smaller specification and inspect the corresponding log under `logs/`.
-
-To remove generated artifacts for a namespace, we use the project cleanup script only after checking that it does not contain results we want to keep:
-
-```bash
-./clean.sh
-```

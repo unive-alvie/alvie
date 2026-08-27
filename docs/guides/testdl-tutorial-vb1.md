@@ -72,8 +72,6 @@ cd ../..
 `dune build` compiles the executables used later in this tutorial; the `cd` commands enter and leave the ALVIE/Sancus OCaml project directory.
 See [Getting Started](/alvie/getting-started/) for the full environment setup.
 
-If the build fails, follow [Getting Started](/alvie/getting-started/) first.
-
 ## 2. Read the enclave specification
 
 Open `spec-lib/fast/enclave-complete.etdl`.
@@ -173,7 +171,7 @@ The two `--*-spec` arguments select the attacker and victim languages.
 This command fixes the secret to `0` and uses final Sancus revision `bf89c0b`; it does not compare secrets and therefore cannot establish or rule out a vulnerability.
 
 `randomwalk` is a bounded equivalence oracle.
-`--step-limit 5000` caps its exploration work, while `--reset-probability 0.09` makes it restart some paths.
+`--step-limit 5000` caps its exploration work, while `--reset-probability 0.09` makes it randomly restart on some paths.
 The output model is `$ALVIE_OUTPUT/example-learn/secret-0.dot`, and the complete learner output is in `learn.log`.
 The current example produces a small 21-line DOT file.
 The full command-line reference is in the [Executables Reference](/alvie/reference/executables-reference/).
