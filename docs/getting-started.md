@@ -6,8 +6,6 @@ description: A first-session tutorial for building ALVIE/Sancus and learning a S
 This one-hour tutorial is our first guided session with ALVIE/Sancus.
 Together, we build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
 
-The workflow described here uses [Verilator](https://www.veripool.org/verilator/) to translate Sancus's Verilog into an executable simulator.
-
 ## A quick introduction to ALVIE
 
 ALVIE is a security-analysis tool that combines **active automata learning** with model checking.
@@ -18,7 +16,7 @@ Finally, the [mCRL2 model checker](https://www.mcrl2.org/) checks those learned 
 
 ALVIE was initially designed for [Sancus](https://github.com/sancus-tee), a lightweight trusted execution environment for secure IoT devices, and this tutorial focuses on that target.
 As part of the [CCAT project](https://ccat.fi.muni.cz/), ALVIE is being extended to other architectures.
-We use **ALVIE/Sancus** for the Sancus-specific backend and workflow, and **ALVIE** for the general framework.
+We call **ALVIE/Sancus** the Sancus-specific backend and workflow, while **ALVIE** refers to the general framework.
 
 ALVIE/Sancus experiments assess whether families of Sancus enclaves, which are hardware-protected memory regions for code and data, protect their secrets from timing and interrupt-capable attackers.
 A standard experiment uses the same attacker and victim specifications to learn four models: secret 0 and secret 1, each with interrupts enabled and ignored.
@@ -61,8 +59,6 @@ docker run --rm -it alvie
 ```
 
 The Dockerfile builds for the host architecture by default.
-It installs mCRL2 from its Ubuntu PPA on `amd64` and builds mCRL2 from source on `arm64`, so `--platform linux/amd64` is no longer required on ARM hosts.
-We specify `--platform` only when intentionally cross-building for another architecture.
 
 For a native setup, we install OCaml 4.13.1 with opam, Dune, the MSP430 toolchain, Verilator, Python 3 with the `Verilog_VCD` package, mCRL2, and the tools required by the Sancus simulator.
 The Sancus checkout must be available as `sancus-core-gap/` at the repository root.
