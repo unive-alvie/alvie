@@ -1,9 +1,9 @@
 (executables
-  (names genall derive attack)
-  (public_names tt_genall tt_derive tt_attack)
+  (names genall derive attack diagnostics)
+  (public_names tt_genall tt_derive tt_attack tt_diagnostics)
   (modes byte exe)
-  (modules interop genall derive attack attacklib)
-  (libraries alcotest sancus learninglib core core_unix core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscomparator)
+  (modules interop genall derive attack attacklib diagnostics)
+  (libraries alcotest alvie_cli_diagnostics sancus learninglib core core_unix core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscomparator)
   (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
 )
 
