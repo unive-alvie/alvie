@@ -3,20 +3,20 @@ title: Getting Started
 description: A first-session tutorial for building ALVIE/Sancus and learning a Sancus model.
 ---
 
-This one-hour tutorial is our first guided session with ALVIE/Sancus.
+This one-hour tutorial is a first guided session with ALVIE/Sancus.
 Together, we build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
 
 ## A quick introduction to ALVIE
 
 ALVIE is a security-analysis tool that combines **active automata learning** with model checking.
 It is designed to find timing side-channel attacks on processor implementations, which ALVIE treats as **systems under learning** (SULs).
-A typical ALVIE run, called an *experiment* in this tutorial, starts when we specify a threat model and a family of relevant victim programs.
+A typical ALVIE run, called an *experiment* in this tutorial, starts with a threat model and a family of relevant victim programs.
 ALVIE then uses the L# active automata learning algorithm to query the SUL with sequences of attacker and victim actions, records the resulting observations, and constructs finite-state Mealy-machine models.
 Finally, the [mCRL2 model checker](https://www.mcrl2.org/) checks those learned models for security-relevant behavioral differences.
 
 ALVIE was initially designed for [Sancus](https://github.com/sancus-tee), a lightweight trusted execution environment for secure IoT devices, and this tutorial focuses on that target.
 As part of the [CCAT project](https://ccat.fi.muni.cz/), ALVIE is being extended to other architectures.
-We call **ALVIE/Sancus** the Sancus-specific backend and workflow, while **ALVIE** refers to the general framework.
+**ALVIE/Sancus** denotes the Sancus-specific backend and workflow, while **ALVIE** refers to the general framework.
 
 ALVIE/Sancus experiments assess whether families of Sancus enclaves, which are hardware-protected memory regions for code and data, protect their secrets from timing and interrupt-capable attackers.
 A standard experiment uses the same attacker and victim specifications to learn four models: secret 0 and secret 1, each with interrupts enabled and ignored.
@@ -45,7 +45,7 @@ docker run --rm -it \
 ```
 
 The container starts in its repository root.
-The image is published at [Docker Hub](https://hub.docker.com/r/matteobusi/alvie), and `--rm` removes the container when we exit.
+The image is published at [Docker Hub](https://hub.docker.com/r/matteobusi/alvie), and `--rm` removes the container when it exits.
 The bind mount exposes `/output` as `./alvie-output` on the host.
 The ALVIE/Sancus wrapper scripts write to repository directories inside the container, so we explicitly copy selected results into `/output` before the container exits.
 We keep custom specifications under `/output` as well when we want to edit or reuse them on the host.
@@ -73,9 +73,9 @@ dune build
 cd ../..
 ```
 
-If this command fails, we fix the build before starting an experiment.
+If this command fails, fix the build before starting an experiment.
 Most setup problems are an incomplete opam switch, a missing simulator dependency, or a Sancus checkout in the wrong location.
-If the build continues to fail, we use the [bug-report form](https://github.com/unive-alvie/alvie/issues/new?template=bug-report.yml) with the setup details and the steps we followed.
+If the build continues to fail, open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) with the setup details and completed steps.
 
 ## 3. Run the included example
 
@@ -89,7 +89,7 @@ rm -rf results/example counterexamples/example logs/example tmp/example
 ```
 
 The first command removes only existing results, counterexamples, logs, and temporary files in the `example` namespace.
-We run it only when we no longer need an earlier example run.
+Run it only when an earlier example run is no longer needed.
 The learning wrapper creates output under:
 
 ```text
@@ -148,15 +148,15 @@ For the four-model comparison and its command-line arguments, see [`Executables 
 
 ## When a run does not finish
 
-Before we interpret an experiment, we distinguish a completed result from an incomplete one:
+Before interpreting an experiment, distinguish a completed result from an incomplete one:
 
 - A completed comparison with a witness is a **finding** under the learned models and selected threat model.
 - A completed comparison without a witness is **no finding under that configuration**.
   It does not establish that every Sancus program is secure.
 - A timeout, an interrupted command, or a wrapper that stops before learning all required models is **incomplete**.
-  It provides no result to interpret, so we keep its logs and rerun it in a fresh namespace when ready.
+  It provides no result to interpret, so keep its logs and rerun it in a fresh namespace when ready.
 - A build, setup, or command-line error is also **incomplete**.
-  We read the error and the corresponding log first, then use the [bug-report form](https://github.com/unive-alvie/alvie/issues/new?template=bug-report.yml) when the documented setup cannot proceed.
+  Read the error and corresponding log first, then if you believe there's a bug, please open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) when the documented setup cannot proceed.
 
 For any long run, the matching `logs/<namespace>/` directory records the command output, while `results/<namespace>/` and `counterexamples/<namespace>/` show which artifacts were actually produced.
 
@@ -189,7 +189,7 @@ A standard attack run learns four models for each relevant Sancus commit: secret
 The final comparison needs all four models.
 When using Docker, preserve this namespace with `cp -a results/b6-sim /output/results/`, `cp -a counterexamples/b6-sim /output/counterexamples/`, and `cp -a logs/b6-sim /output/logs/` before exiting.
 
-For a quicker development run, we use the smaller specifications in `spec-lib/fast/`:
+For a quicker development run, use the smaller specifications in `spec-lib/fast/`:
 
 ```bash
 ./learn_one.sh d54f031 b6 fast
@@ -198,7 +198,7 @@ For a quicker development run, we use the smaller specifications in `spec-lib/fa
 Fast specifications are useful for checking code changes and timing, but they are not equivalent to the complete attacker profiles.
 
 Learning time depends strongly on the machine, oracle settings, and selected specification.
-We use a separate namespace for every run and keep the generated logs when diagnosing a slow or failed experiment.
+Use a separate namespace for every run and keep the generated logs when diagnosing a slow or failed experiment.
 
 ## Where to go next
 
