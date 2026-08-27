@@ -6,6 +6,7 @@ description: A one-hour introduction to the TestDL languages through a worked V-
 This one-hour tutorial is our first practical session with the two small languages used by ALVIE/Sancus.
 We learn them through the specification used to reproduce the V-B1 vulnerability from the [*Mind the Gap* paper](https://mici.hu/papers/bognar22gap.pdf), using its corresponding [Sancus implementation](https://github.com/martonbognar/sancus-core-gap).
 We use a reduced fast profile while reading the languages, then reproduce the real attack from the complete V-B1 models tracked in the repository.
+V-B1 is used as the second case study because it is a published vulnerability whose checked-in models let a new user reproduce and inspect a genuine witness without waiting for full learning.
 
 The complete syntax and semantics are in the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
 We use that page when we need details.
