@@ -15,11 +15,6 @@ module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
 module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
 module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
 
-let spec_parse_or_fail spec =
-  match Testdl.Parser.parse_spec spec with
-  | Result.Ok r -> r
-  | Result.Error e -> failwith e
-
 let command =
   Command.basic
     ~summary:"Test NI on Sancus with the specified attacker and enclave spec"
@@ -76,6 +71,7 @@ let command =
         ~doc:"limit (Only for randomwalk oracle) Maximum number of steps for the equivalence oracle before giving up looking for a counterexample (default: 500)"
     in
     fun () ->
+        Cli_diagnostics.protect ~debug:dbg (fun () ->
         (* Random.self_init (); *)
         Random.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
@@ -86,19 +82,15 @@ let command =
 
         let cwd = Sys_unix.getcwd () in
         (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
-        (* Create tmpdir if not present *)
-        (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
-        let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
-        (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
-        (* Basic sanity checks on the repo *)
-        assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
-        assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
+        let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
+        ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
+        Cli_diagnostics.validate_positive ~option:"--step-limit" step_limit;
         (* (1) load the spec *)
-        let enclave_spec_str = In_channel.read_all enclave_spec_fn in
-        let attacker_spec1_str = In_channel.read_all attacker_spec1_fn in
-        let attacker_spec2_str = In_channel.read_all attacker_spec2_fn in
-        let complete_spec1 = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec1_str) in
-        let complete_spec2 = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec2_str) in
+        let enclave_spec_str = Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
+        let attacker_spec1_str = Cli_diagnostics.read_file ~option:"--att-spec1" attacker_spec1_fn in
+        let attacker_spec2_str = Cli_diagnostics.read_file ~option:"--att-spec2" attacker_spec2_fn in
+        let complete_spec1 = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec1_str in
+        let complete_spec2 = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec2_str in
         (* let (Enclave enclave1, ISR isr1, Prepare prepare1, Cleanup cleanup1) = complete_spec1 in
         let (Enclave enclave2, ISR isr2, Prepare prepare2, Cleanup cleanup2) = complete_spec2 in *)
         let spec_dfa1 = Inputgen.build_spec_dfa complete_spec1 in
@@ -228,6 +220,7 @@ let command =
                   assume (valid res_p');
                   low_equiv res_p res_p'
               ) in
-          ignore (QCheck_runner.run_tests ~verbose:true [test_ni]))
+          ignore (QCheck_runner.run_tests ~verbose:true [test_ni])
+        ))
 
 let () = Command_unix.run command

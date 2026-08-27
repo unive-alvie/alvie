@@ -156,7 +156,7 @@ Before interpreting an experiment, distinguish a completed result from an incomp
 - A timeout, an interrupted command, or a wrapper that stops before learning all required models is **incomplete**.
   It provides no result to interpret, so keep its logs and rerun it in a fresh namespace when ready.
 - A build, setup, or command-line error is also **incomplete**.
-  Read the error and corresponding log first, then open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) when the documented setup cannot proceed.
+  Read the error and corresponding log first, then if you believe there's a bug, please open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) when the documented setup cannot proceed.
 
 For any long run, the matching `logs/<namespace>/` directory records the command output, while `results/<namespace>/` and `counterexamples/<namespace>/` show which artifacts were actually produced.
 
