@@ -60,8 +60,65 @@ docker run --rm -it alvie
 
 The Dockerfile builds for the host architecture by default.
 
-For a native setup, we install OCaml 4.13.1 with opam, Dune, the MSP430 toolchain, Verilator, Python 3 with the `Verilog_VCD` package, mCRL2, and the tools required by the Sancus simulator.
-The Sancus checkout must be available as `sancus-core-gap/` at the repository root.
+For a native setup on Ubuntu 22.04 and x86_64, follow [Native installation](#native-installation-on-ubuntu-2204-x86_64).
+Docker remains the recommended option on other operating systems and architectures because the native setup includes a source build of Verilator and architecture-specific mCRL2 installation.
+
+### Native installation on Ubuntu 22.04 (x86_64)
+
+These commands install the toolchains used by the Docker image and clone the two source repositories beside each other.
+They require a fresh Ubuntu 22.04 x86_64 environment with `sudo` access.
+
+Install the system dependencies and mCRL2:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  software-properties-common build-essential cmake graphviz \
+  binutils-msp430 gcc-msp430 msp430-libc msp430mcu tcl \
+  git autoconf python3 python3-pip python3-dev flex bison pkg-config libffi-dev
+sudo add-apt-repository -y ppa:mcrl2/release-ppa
+sudo apt-get update
+sudo apt-get install -y mcrl2 opam
+```
+
+Build the Verilator version used by ALVIE/Sancus:
+
+```bash
+git clone https://github.com/verilator/verilator /tmp/verilator
+cd /tmp/verilator
+git checkout v5.002
+autoconf
+./configure
+make -j"$(nproc)"
+sudo make install
+cd -
+rm -rf /tmp/verilator
+```
+
+Set up the OCaml switch and Python VCD parser:
+
+```bash
+python3 -m pip install --user Verilog_VCD
+opam init --disable-sandboxing -y
+eval "$(opam env)"
+opam switch create 4.13.1 -y
+eval "$(opam env)"
+opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
+```
+
+Clone ALVIE/Sancus and the Sancus simulator checkout:
+
+```bash
+git clone https://github.com/unive-alvie/alvie.git
+cd alvie
+git clone https://github.com/martonbognar/sancus-core-gap.git
+cd alvie/code
+dune build
+cd ../..
+```
+
+The final `dune build` verifies the ALVIE/Sancus OCaml dependencies.
+The next section runs the included example from the repository root.
 
 ## 2. Compile ALVIE/Sancus
 
