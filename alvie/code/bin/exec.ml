@@ -3,11 +3,6 @@ open Sancus
 
 open Enclave
 
-let spec_parse_or_fail spec =
-  match Testdl.Parser.parse_spec spec with
-  | Result.Ok r -> r
-  | Result.Error e -> failwith e
-
 let command =
   Command.basic
     ~summary:"Runs the given raw input on the specified version of Sancus with the given SUL configuration"
@@ -64,6 +59,7 @@ let command =
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
       in
      fun () ->
+       Cli_diagnostics.protect ~debug:dbg (fun () ->
         Random.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
         (if dbg then Logs.set_level (Some Logs.Debug)
@@ -72,20 +68,19 @@ let command =
         Logs.info (fun m -> m "Current directory: %s" cwd);
         (* Create tmpdir if not present *)
         (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
-        let tmpdir = if Char.equal tmpdir.[String.length tmpdir - 1] '/' then String.drop_suffix tmpdir 1 else tmpdir in
-        (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
+        let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
         (* Basic sanity checks on the repo *)
-        assert (Sys_unix.file_exists_exn sancus_core_gap_dir);
-        assert (Sys_unix.is_directory_exn sancus_core_gap_dir);
+        ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
         (* We are now ready to load the spec *)
-        let enclave_spec_str = In_channel.read_all enclave_spec_fn in
-        let attacker_spec_str = In_channel.read_all attacker_spec_fn in
+        let enclave_spec_str = Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
+        let attacker_spec_str = Cli_diagnostics.read_file ~option:"--att-spec" attacker_spec_fn in
         Logs.info (fun m -> m "Enclave spec: %s" enclave_spec_str);
         Logs.info (fun m -> m "Attacker spec: %s" attacker_spec_str);
-        let spec_w_secret = spec_parse_or_fail (enclave_spec_str ^ " " ^ attacker_spec_str) in
+        let spec_w_secret = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec_str in
         let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
         (* Secret must be expanded *)
-        let enclave = match secret with | None -> assert (not (Enclave.has_secret enclave)); enclave | Some secret -> Enclave.expand_secret secret enclave in
+        Cli_diagnostics.require_secret_if_needed enclave secret;
+        let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
         let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
         let spec_dfa = Inputgen.build_spec_dfa complete_spec in
         let tmp = Input.IEnclave (Enclave.CIfZ ([CRst; CInst (I_NOP)], [CInst (I_NOP); CRst])) in
@@ -216,8 +211,8 @@ let command =
               ignore (Sys_unix.command cmd);
               List.iter input_sequence ~f:(fun i -> let o = Sancus.Verilog.step sul i in
               Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)));
+       )
   )
 
 let () = Command_unix.run command
-
 

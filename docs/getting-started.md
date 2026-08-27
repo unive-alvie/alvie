@@ -3,24 +3,20 @@ title: Getting Started
 description: A first-session tutorial for building ALVIE/Sancus and learning a Sancus model.
 ---
 
-This tutorial is a guided first session with ALVIE/Sancus.
-In about one hour, you will build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
-
-The workflow described here uses [Verilator](https://www.veripool.org/verilator/) to translate Sancus's Verilog into an executable simulator.
+This one-hour tutorial is a first guided session with ALVIE/Sancus.
+Together, we build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
 
 ## A quick introduction to ALVIE
 
 ALVIE is a security-analysis tool that combines **active automata learning** with model checking.
 It is designed to find timing side-channel attacks on processor implementations, which ALVIE treats as **systems under learning** (SULs).
-A typical ALVIE run, called an *experiment* in this tutorial, proceeds as follows.
-First, the user specifies a threat model and a family of relevant victim programs.
-ALVIE then uses the L# active automata learning algorithm to query the SUL with sequences of attacker and victim actions and records the resulting observations.
-From those observations, it constructs finite-state Mealy-machine models.
-Finally, the [mCRL2 model checker](https://www.mcrl2.org/) checks the learned models for security-relevant behavioral differences.
+A typical ALVIE run, called an *experiment* in this tutorial, starts with a threat model and a family of relevant victim programs.
+ALVIE then uses the L# active automata learning algorithm to query the SUL with sequences of attacker and victim actions, records the resulting observations, and constructs finite-state Mealy-machine models.
+Finally, the [mCRL2 model checker](https://www.mcrl2.org/) checks those learned models for security-relevant behavioral differences.
 
 ALVIE was initially designed for [Sancus](https://github.com/sancus-tee), a lightweight trusted execution environment for secure IoT devices, and this tutorial focuses on that target.
 As part of the [CCAT project](https://ccat.fi.muni.cz/), ALVIE is being extended to other architectures.
-We use **ALVIE/Sancus** for the Sancus-specific backend and workflow, and **ALVIE** for the general framework.
+**ALVIE/Sancus** denotes the Sancus-specific backend and workflow, while **ALVIE** refers to the general framework.
 
 ALVIE/Sancus experiments assess whether families of Sancus enclaves, which are hardware-protected memory regions for code and data, protect their secrets from timing and interrupt-capable attackers.
 A standard experiment uses the same attacker and victim specifications to learn four models: secret 0 and secret 1, each with interrupts enabled and ignored.
@@ -37,8 +33,8 @@ The important distinction is:
 
 ## 1. Prepare the environment
 
-The fastest first setup is the published Docker image, which includes the reference ALVIE environment and the required Sancus checkout.
-Create a host directory first, then mount it into the container so PDFs, witness graphs, and other outputs remain available after the container exits:
+The fastest first setup uses the published Docker image, which includes the reference ALVIE environment and the required Sancus checkout.
+We first create a host directory, then mount it into the container so PDFs, witness graphs, custom specifications, and other outputs remain available after the container exits:
 
 ```bash
 mkdir -p "$PWD/alvie-output"
@@ -49,9 +45,11 @@ docker run --rm -it \
 ```
 
 The container starts in its repository root.
-The image is published at [Docker Hub](https://hub.docker.com/r/matteobusi/alvie). `--rm` removes the container when you exit; the bind mount exposes `/output` as `./alvie-output` on the host.
-The ALVIE/Sancus wrapper scripts write to the repository directories inside the container, so the commands below explicitly copy selected results into `/output` before the container exits.
-Mounting the host directory over `/home/alvie` is not appropriate because it would hide the ALVIE/Sancus installation bundled in the image.
+The image is published at [Docker Hub](https://hub.docker.com/r/matteobusi/alvie), and `--rm` removes the container when it exits.
+The bind mount exposes `/output` as `./alvie-output` on the host.
+The ALVIE/Sancus wrapper scripts write to repository directories inside the container, so we explicitly copy selected results into `/output` before the container exits.
+We keep custom specifications under `/output` as well when we want to edit or reuse them on the host.
+We do not mount a host directory over `/home/alvie`, because that would hide the ALVIE/Sancus installation bundled in the image.
 
 To build the same environment locally instead, use the repository Dockerfile:
 
@@ -61,11 +59,66 @@ docker run --rm -it alvie
 ```
 
 The Dockerfile builds for the host architecture by default.
-It installs mCRL2 from its Ubuntu PPA on `amd64` and builds mCRL2 from source on `arm64`, so `--platform linux/amd64` is no longer required on ARM hosts.
-Specify `--platform` only when you intentionally want to cross-build for another architecture.
 
-For a native setup, install OCaml 4.13.1 with opam, Dune, the MSP430 toolchain, Verilator, Python 3 with the `Verilog_VCD` package, mCRL2, and the tools required by the Sancus simulator.
-The Sancus checkout must be available as `sancus-core-gap/` at the repository root.
+For a native setup on Ubuntu 22.04 and x86_64, follow [Native installation](#native-installation-on-ubuntu-2204-x86_64).
+Docker remains the recommended option on other operating systems and architectures because the native setup includes a source build of Verilator and architecture-specific mCRL2 installation.
+
+### Native installation on Ubuntu 22.04 (x86_64)
+
+These commands install the toolchains used by the Docker image and clone the two source repositories beside each other.
+They require a fresh Ubuntu 22.04 x86_64 environment with `sudo` access.
+
+Install the system dependencies and mCRL2:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  software-properties-common build-essential cmake graphviz \
+  binutils-msp430 gcc-msp430 msp430-libc msp430mcu tcl \
+  git autoconf python3 python3-pip python3-dev flex bison pkg-config libffi-dev
+sudo add-apt-repository -y ppa:mcrl2/release-ppa
+sudo apt-get update
+sudo apt-get install -y mcrl2 opam
+```
+
+Build the Verilator version used by ALVIE/Sancus:
+
+```bash
+git clone https://github.com/verilator/verilator /tmp/verilator
+cd /tmp/verilator
+git checkout v5.002
+autoconf
+./configure
+make -j"$(nproc)"
+sudo make install
+cd -
+rm -rf /tmp/verilator
+```
+
+Set up the OCaml switch and Python VCD parser:
+
+```bash
+python3 -m pip install --user Verilog_VCD
+opam init --disable-sandboxing -y
+eval "$(opam env)"
+opam switch create 4.13.1 -y
+eval "$(opam env)"
+opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
+```
+
+Clone ALVIE/Sancus and the Sancus simulator checkout:
+
+```bash
+git clone https://github.com/unive-alvie/alvie.git
+cd alvie
+git clone https://github.com/martonbognar/sancus-core-gap.git
+cd alvie/code
+dune build
+cd ../..
+```
+
+The final `dune build` verifies the ALVIE/Sancus OCaml dependencies.
+The next section runs the included example from the repository root.
 
 ## 2. Compile ALVIE/Sancus
 
@@ -79,7 +132,7 @@ cd ../..
 
 If this command fails, fix the build before starting an experiment.
 Most setup problems are an incomplete opam switch, a missing simulator dependency, or a Sancus checkout in the wrong location.
-If the build continues to fail, open a GitHub issue with details about your setup and the steps you followed.
+If the build continues to fail, open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) with the setup details and completed steps.
 
 ## 3. Run the included example
 
@@ -92,7 +145,8 @@ rm -rf results/example counterexamples/example logs/example tmp/example
 ./check_example.sh
 ```
 
-The first command removes existing results, counterexamples, logs, and temporary files in the example namespace.
+The first command removes only existing results, counterexamples, logs, and temporary files in the `example` namespace.
+Run it only when an earlier example run is no longer needed.
 The learning wrapper creates output under:
 
 ```text
@@ -121,7 +175,7 @@ List the files after the run:
 find results/example counterexamples/example -name '*.dot' -print
 ```
 
-The comparison wrapper should report its flow-analysis result and create a witness graph when the example has a distinguishing behavior.
+The comparison wrapper reports its flow-analysis result and creates a witness graph when the example has a distinguishing behavior.
 A successful command means the workflow completed; it does not mean that no attack exists.
 
 ## 4. Read the result
@@ -149,6 +203,20 @@ The graph records a distinguishing trace, so it is usually more useful to read a
 For the meaning of output tokens and timing payloads, see [`Logs and outputs`](/alvie/reference/log-output-reference/).
 For the four-model comparison and its command-line arguments, see [`Executables reference`](/alvie/reference/executables-reference/).
 
+## When a run does not finish
+
+Before interpreting an experiment, distinguish a completed result from an incomplete one:
+
+- A completed comparison with a witness is a **finding** under the learned models and selected threat model.
+- A completed comparison without a witness is **no finding under that configuration**.
+  It does not establish that every Sancus program is secure.
+- A timeout, an interrupted command, or a wrapper that stops before learning all required models is **incomplete**.
+  It provides no result to interpret, so keep its logs and rerun it in a fresh namespace when ready.
+- A build, setup, or command-line error is also **incomplete**.
+  Read the error and corresponding log first, then if you believe there's a bug, please open a [GitHub issue](https://github.com/unive-alvie/alvie/issues) when the documented setup cannot proceed.
+
+For any long run, the matching `logs/<namespace>/` directory records the command output, while `results/<namespace>/` and `counterexamples/<namespace>/` show which artifacts were actually produced.
+
 ## 5. Understand the specifications
 
 Experiments are driven by two TestDL files:
@@ -165,7 +233,7 @@ They are not a complete model of every possible attacker capability.
 
 ## 6. Try one attack
 
-Once the example works, run one attack in its own namespace.
+Once the example works, we run one attack in its own namespace.
 B6 is a useful first experiment because it is smaller than some of the other complete attacks:
 
 ```bash

@@ -10,6 +10,7 @@ DELTA=0.01
 
 # Useful paths
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+source "$SCRIPT_DIR/script_helpers.sh"
 
 LOGS_DIR=$SCRIPT_DIR/logs/example
 RES_DIR=$SCRIPT_DIR/results/example
@@ -33,21 +34,7 @@ declare -a EXPERIMENTS=(
 cd $MM_DIR
 
 # Compile the project
-dune build
-
-run() {
-  local status=0
-
-  echo $2
-
-  (eval $2 & wait $!;
-  status=$?;
-  if [[ $status -ne 0 ]]; then
-    echo -e "$1 ... [KO - $3]"
-  else
-    echo "$1 ... [OK - $3]"
-  fi) &
-}
+alvie_build_or_exit
 
 # Then, iterate over all the possible combinations and learn
 echo -e "\nLearning started: refer to files in $LOGS_DIR for details"
@@ -69,11 +56,13 @@ do
       echo "$name/$name ... [OK - Done before]"
     else
       # Invoke the learning process in background and send the stderr/stdout to the log file
-      run "$name" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > $logfile 2>&1" "$logfile"
+      alvie_run_background "$name" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > \"$logfile\" 2>&1" "$logfile"
     fi
 done
 
-# wait_and_report
-wait
+if ! alvie_wait_for_jobs; then
+  echo "Learning incomplete: one or more models failed. See $LOGS_DIR." >&2
+  exit 1
+fi
 
 echo ""

@@ -1,10 +1,17 @@
+(library
+ (name alvie_cli_diagnostics)
+ (wrapped false)
+ (modules cli_diagnostics)
+ (libraries sancus core core_unix)
+)
+
 (executables
  (names pbt learn fa exec)
  (public_names mm_pbt mm_learn mm_fa mm_exec)
  (modes byte exe)
  (modules pbt interop fa learn exec)
  (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
- (libraries sancus learninglib core core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscomparator qcheck)
+ (libraries alvie_cli_diagnostics sancus learninglib core core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscomparator qcheck)
 )
 
 (env
