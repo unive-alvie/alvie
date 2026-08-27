@@ -95,13 +95,20 @@ From `alvie/code`:
 
 ```bash
 dune build
-dune exec tt_attack
-dune exec tt_derive
-dune exec tt_genall
+bash test/cli_diagnostics.sh
+```
+
+`test/cli_diagnostics.sh` runs the ALVIE-only diagnostic suite, including TestDL parsing and command-line validation.
+It does not require the Sancus simulator or mCRL2.
+
+The simulator integration suite requires the external Sancus checkout and its simulator toolchain:
+
+```bash
+dune exec tt_attack -- test --color=never
 ```
 
 The shell wrappers at repository root build first and place models, logs, and temporary simulator files under `results/`, `logs/`, and `tmp/`.
-The Sancus submodule/repository must be available at `sancus-core-gap` for simulator experiments.
+The `sancus-core-gap` checkout must be available at the repository root for simulator experiments.
 
 ## Generated files
 

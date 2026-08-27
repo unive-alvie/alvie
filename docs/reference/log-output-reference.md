@@ -168,8 +168,9 @@ These values are what distinguish states in the learned Mealy machine and ultima
 
 ### Learning Completion
 
-When the PAC oracle declares the hypothesis equivalent to the SUL, the learning terminates and ALVIE/Sancus writes the model to the `.dot` result file.
-No explicit "done" message appears in the stream; the process exits cleanly.
+Learning ends when the selected equivalence oracle accepts the current hypothesis or reaches its configured limit.
+ALVIE/Sancus writes the model to the `.dot` result file when learning completes.
+No explicit "done" message appears in the stream; check the process status and expected output file.
 
 ---
 
@@ -188,14 +189,14 @@ The `fa.exe` binary compares pairs of learned models (secret=0 vs secret=1) and 
 | `N` | Number of distinct witness traces found where the two models behave differently |
 | `_int.dot` | The counterexample graph for the interrupt-enabled models |
 
-- **`N = 0`**: The two models are indistinguishable — the attacker cannot tell secret=0 from secret=1.
-  The system is **secure** under the given threat model (up to the PAC guarantees).
-- **`N > 0`**: Distinguishing traces exist — the attacker **can** observe a difference.
-  An attack exists.
+- **`N = 0`**: The comparison found no distinguishing trace in the selected learned models and configuration.
+  This is no finding under that threat model, not a universal proof that Sancus is secure.
+- **`N > 0`**: The comparison found distinguishing traces in the selected learned models and configuration.
+  Inspect and validate the corresponding witness before treating it as an implementation-level attack.
 
 ### Counterexample Dot Files
 
-`counterexamples/<attack>/<commit>-<attack>_int.dot` is a Graphviz LTS (Labelled Transition System) graph where:
+`counterexamples/<namespace>/<attack>/<commit>-<attack>_int.dot` is a Graphviz LTS (Labelled Transition System) graph where:
 
 - Each **node** represents a step in the distinguishing scenario.
 - Each **edge** is labelled with the input taken at that step.
@@ -203,7 +204,7 @@ The `fa.exe` binary compares pairs of learned models (secret=0 vs secret=1) and 
 
 Convert to PDF for inspection:
 ```bash
-dot -Tpdf counterexamples/b6/d54f031-b6_int.dot -o attack_b6.pdf
+dot -Tpdf counterexamples/b6-sim/b6/d54f031-b6_int.dot -o attack_b6.pdf
 ```
 
 ---
@@ -214,14 +215,14 @@ Log files mirror the terminal stream and are written per experiment.
 
 ### Learning logs
 
-`logs/<attack>/learn-<name>.log` — full learning progress for one model.
+`logs/<namespace>/learn-<name>.log` — full learning progress for one model.
 
 - Contains the same symbol stream as the terminal output.
 - Use `cat` or a terminal that handles ANSI escape codes to read with colours; use `sed 's/\x1B\[[0-9;]*m//g'` to strip them.
 
 ### Comparison logs
 
-`logs/<attack>/compare-<commit>-<attack>.log` — output of `fa.exe` for one model pair.
+`logs/<namespace>/compare-<commit>-<attack>.log` — output of `fa.exe` for one model pair.
 
 - Contains the final `=== Results: found N FA violations` line and any debug info if `--debug` was passed.
 
