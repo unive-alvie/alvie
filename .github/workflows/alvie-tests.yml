@@ -36,10 +36,10 @@ jobs:
           logs fmt ocamlgraph shexp ppx_deriving qcheck
       - name: Build ALVIE
         working-directory: alvie/code
-        run: dune build
+        run: opam exec -- dune build
       - name: Run isolated feature suite
         working-directory: alvie/code
-        run: dune exec tt_features -- test --color=never
+        run: opam exec -- dune exec tt_features -- test --color=never
       - name: Run CLI diagnostics
         working-directory: alvie/code
-        run: bash test/cli_diagnostics.sh
+        run: opam exec -- bash test/cli_diagnostics.sh
