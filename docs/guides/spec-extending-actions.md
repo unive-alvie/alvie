@@ -3,160 +3,224 @@ title: Extending TestDL Actions
 description: Add a new attacker or enclave action to ALVIE/Sancus.
 ---
 
-This guide is for contributors who want to introduce a new action in TestDL and make it usable in ALVIE/Sancus.
-For existing TestDL syntax and constraints, see the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/).
-This guide begins when the existing language is insufficient.
+In this tutorial, we add a TestDL action called `trace_marker` and verify that ALVIE/Sancus accepts, compiles, and displays it.
+Together, we follow it from the TestDL token we write in a specification, through the instruction generated for it, to the simulator trace and learned model we inspect at the end.
+The completed exercise lives on the [`feat/testdl-trace-marker-implementation`](https://github.com/unive-alvie/alvie/tree/feat/testdl-trace-marker-implementation) branch, which we use only as a reference while we work from `main`.
+For TestDL syntax outside this exercise, we use the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/).
 
-## Scope
+## What We Change
 
-When you add an action, decide which kind of change it is:
+`trace_marker` is an attacker action that compiles to one `nop`.
+The simulator prints `🚨` when we submit it.
+The marker helps us read a long trace, but it does not create a new observation for learning or comparison.
 
-- **Kind A: syntax/generation only**
-  - New action parses from `.atdl`/`.etdl`
-  - New action compiles to low-level instruction sequence
-  - Observability semantics stay expressible with existing output kinds
-- **Kind B: new observation semantics**
-  - New action also requires ALVIE/Sancus to emit or track a new semantic event
-  - You must touch output classification and DFA transitions
+For this action, we change three files:
 
-Most new instructions start as **Kind A**.
+- [`attacker.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/attacker.ml) defines and compiles the action.
+- [`testdl.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/testdl.ml) accepts the `trace_marker` token in an attacker specification.
+- [`verilog.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/sul/verilog.ml) prints the `🚨` marker.
 
-## Example target action
+## Step 1: Start from main
 
-In this tutorial we add a simple attacker action:
+From the repository root, switch to an up-to-date `main` branch:
 
-```text
-start_counting <n>
+```bash
+git switch main
+git pull --ff-only
 ```
 
-The same workflow applies to any new attacker action (or enclave action with the enclave-specific files).
+We make the changes in this tutorial ourselves.
+The implementation branch is available only when we want to compare a completed file with our work.
 
-## Files involved
+## Step 2: Add the action and its instruction
 
-- Attacker action model and code generation: `alvie/code/lib/sancus/attacker.ml`
-- TestDL parser: `alvie/code/lib/sancus/testdl.ml`
-- Optional input/output glyph rendering (CLI trace readability): `alvie/code/lib/sancus/sul/verilog.ml`
-- Only if semantic outputs change:
-  - output type definitions: `alvie/code/lib/sancus/output_internal.ml`
-  - signal classification: `alvie/code/lib/sancus/sul/verilog.ml`
-  - mode transitions: `alvie/code/lib/sancus/inputgen.ml`
-
-## Step 1: Add a constructor in attacker atoms
-
-In `alvie/code/lib/sancus/attacker.ml`, extend `type atom_t` with your constructor (if not already present):
+Our first change will be to extend `type atom_t` with our constructor.
+For that, open [`attacker.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/attacker.ml) (the linked file shows the completed version for comparison) and add the new action to `atom_t`:
 
 ```ocaml
-| CStartCounting of ti_t
+| CTraceMarker
 ```
 
 Then implement its lowering in `atom_compile`.
 
-For `start_counting`, the current code emits:
+For `trace_marker`, the compiler emits:
 
 ```ocaml
-| CStartCounting ti ->
-    let ti_correct = ti - 2 in
+| CTraceMarker ->
     [
-      sprintf "mov #%d, &TACCR0" ti_correct;
-      "mov #0x214, &tactl_val";
+      "nop";
     ]
 ```
 
-Guidelines:
+The constructor records the new TestDL action.
+The compiler case gives it the one-instruction implementation used in this exercise.
 
-- Keep emitted assembly deterministic and side effects explicit.
-- If you rely on labels, follow existing naming conventions.
-- Ensure the emitted sequence still makes sense under `ignore_interrupts` where applicable.
+## Step 3: Accept the TestDL token
 
-## Step 2: Parse the new token in TestDL
-
-In `alvie/code/lib/sancus/testdl.ml`:
+Open [`testdl.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/testdl.ml) and use the linked completed version for comparison.
 
 1. Add a parser for the action (for attacker):
 
 ```ocaml
-let atstart_counting =
-  (string "start_counting" *> whitespace *> integer >>= (fun v ->
-    let v = int_of_string v in
-    if v >= 0 && v < 65536 then return (Attacker.Atom (CStartCounting v))
-    else fail "start_counting: delay is too long"))
+let atrace_marker =
+  (string "trace_marker" *> return (Attacker.Atom CTraceMarker)) <?> "atrace_marker"
 ```
 
-2. Include it in all attacker alternatives:
+2. Include it in all three attacker alternatives:
    - `single_atom`
    - `all_atoms`
    - `atom body`
 
-Without all three, parsing may work in some syntactic contexts and fail in others.
+This makes `trace_marker` valid wherever an attacker action is valid.
 
-## Step 3: Keep trace rendering readable (optional but recommended)
+## Step 4: Display the marker in the trace
 
-In `alvie/code/lib/sancus/sul/verilog.ml`, update the input rendering in `step` so your action gets a short symbol.
+In [`verilog.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/sul/verilog.ml), update the input rendering in `step` so the temporary action gets a short symbol.
 
-For `CStartCounting`, current rendering is `SC`.
+For `CTraceMarker`, render a conspicuous `🚨` marker.
 
-This does not change semantics; it only improves debugging output.
+This changes only the printed trace.
 
-## Step 4: Decide whether outputs and DFA transitions must change
+## When We Need a New Observation
 
-If your new action can be understood via existing outputs (`OTime`, `OJmpIn`, `OReti`, `OJmpOut`, `OReset`, ...), stop here.
+For `trace_marker`, existing observations are enough, so we do not change output handling.
 
-If not, do this:
+When a new action needs a genuinely new observation, we also:
 
 1. Add a new output variant in `alvie/code/lib/sancus/output_internal.ml`.
 2. Emit that variant in `alvie/code/lib/sancus/sul/verilog.ml` (`output_of_signals` / `analyse_dump`).
 3. Teach DFA progression how to consume it in `alvie/code/lib/sancus/inputgen.ml` (`transition_nomemo`).
 
-Failing to update all three can make a spec syntactically valid but semantically unusable.
+Without these three changes, the action may parse but cannot be learned correctly.
 
-## Step 5: Add a tiny spec to exercise the action
+## Step 5: Run the exercise
 
-Create a local attacker file (example):
+Assuming ALVIE is set up correctly (see [Getting Started](/alvie/getting-started/)), we can now experiment with the new action.
+We write a minimal attacker specification in a dedicated folder:
 
-```text
+```bash
+mkdir -p /tmp/trace-marker-run
+cat > /tmp/trace-marker-run/trace-marker.atdl <<'EOF'
 isr { reti };
 
 prepare {
-  start_counting 8;
+  trace_marker;
   create <enc_s, enc_e, data_s, data_e>;
   jin enc_s
 };
 
 cleanup { nop };
+EOF
 ```
-
-Pair it with a minimal enclave spec (e.g. from `spec-lib/example/enclave.etdl` or a reduced one), then run:
-
+We then run a small learning test and save the generated artifacts under `/tmp/trace-marker-run`:
 ```bash
-_build/default/bin/learn.exe \
-  --att-spec /path/to/attacker.atdl \
-  --encl-spec /path/to/enclave.etdl \
+cd alvie/code
+dune build
+dune exec bin/learn.exe -- \
+  --att-spec /tmp/trace-marker-run/trace-marker.atdl \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
   --secret 0 \
   --commit bf89c0b \
-  --sancus ./sancus-core-gap \
-  --res /tmp/new-action.dot
+  --sancus ../../sancus-core-gap \
+  --tmpdir /tmp/trace-marker-run/tmp \
+  --res /tmp/trace-marker-run/trace-marker.dot \
+  --oracle randomwalk \
+  --step-limit 5 \
+  --reset-probability 0.09 \
+  2>&1 | tee /tmp/trace-marker-run/learning.log
+```
+The command uses our attacker file and the checked-in example enclave specification.
+It writes the learned model, generated files, and terminal output under `/tmp/trace-marker-run`.
+The small step limit keeps this exercise short.
+
+## Step 6: Inspect the generated files
+
+The temporary directory we created in the last step contains one randomly named directory for the execution.
+List it first:
+
+```bash
+ls /tmp/trace-marker-run/tmp
 ```
 
-## Step 6: Quick validation checklist
+Then inspect the generated assembly.
+The `*` stands for the one temporary directory that the command created.
 
-- Parsing passes (`.atdl`/`.etdl` accepted).
-- Learning command starts and produces output graph.
-- No unexpected `OIllegal` caused by grammar/transition mismatches.
-- Trace rendering shows your new action symbol (if added).
+```bash
+less /tmp/trace-marker-run/tmp/.tmp.*/pmem.s43
+```
 
-## Common pitfalls
+The relevant output looks like this:
 
-- Updating only `single_atom` but not `atom body` in parser.
-- Adding code generation but forgetting to include atom in parser alternatives.
-- Introducing a truly new semantic event but not updating `output_internal` + `verilog` + `inputgen` consistently.
-- Assuming all new actions need new output kinds (often false).
+```text
+S_0:
+        ; CTraceMarker
+E_0:
+S_1:
+        nop
+E_1:
+```
+
+`S_0` and `E_0` delimit the abstract action.
+`S_1` and `E_1` delimit the generated processor instruction.
+This confirms that `trace_marker` becomes one `nop` instruction.
+
+The learner prints a compact trace to the terminal and saves the same output in `learning.log`.
+Open the saved log and look for the `🚨` marker between square brackets:
+
+```bash
+less /tmp/trace-marker-run/learning.log
+```
+
+It looks like this:
+
+```text
+.[_†].[C†].[🚨t].[R†].[=†].[I†].[U†]
+```
+
+The action marker proves that the new input reached the trace printer.
+It does not prove that the SUL returned a new observation.
+We inspect the learned model next to confirm that the marker did not add a new observation.
+
+## Step 7: Inspect the DOT model
+
+The `--res` file is a Graphviz representation of the learned Mealy machine.
+Open it directly:
+
+```bash
+less /tmp/trace-marker-run/trace-marker.dot
+```
+
+A representative model contains an edge such as:
+
+```text
+0 -> 3 [label="((IAttacker CTraceMarker)...)"];
+```
+
+The input label contains `CTraceMarker` because the model records the abstract action.
+The output label remains an existing output such as `OTime` because `trace_marker` has no semantic effect.
+
+Render the model as a PNG or PDF:
+
+```bash
+dot -Tpng /tmp/trace-marker-run/trace-marker.dot \
+  -o /tmp/trace-marker-run/trace-marker.png
+dot -Tpdf /tmp/trace-marker-run/trace-marker.dot \
+  -o /tmp/trace-marker-run/trace-marker.pdf
+```
+
+The repository includes a small [sample DOT model](/alvie/assets/trace-marker-model.dot) and its [rendered graph](/alvie/assets/trace-marker-model.png).
+
+![A small learned model containing a trace_marker edge](/alvie/assets/trace-marker-model.png)
+
+Follow the arrows from state `0` to see the input/output sequence.
+The model is intentionally small because the command uses only five random-walk steps.
 
 ## Enclave actions: same idea, different files
 
-For enclave-side extensions, mirror the process in:
+For an enclave action, we use the same process in:
 
-- `alvie/code/lib/sancus/enclave.ml` (atom type + compile)
-- enclave parser branch in `alvie/code/lib/sancus/testdl.ml`
-- optional glyph update in `alvie/code/lib/sancus/sul/verilog.ml`
+- [`alvie/code/lib/sancus/enclave.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/enclave.ml) (atom type + compile)
+- enclave parser branch in [`alvie/code/lib/sancus/testdl.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/testdl.ml)
+- optional glyph update in [`alvie/code/lib/sancus/sul/verilog.ml`](https://github.com/unive-alvie/alvie/blob/feat/testdl-trace-marker-implementation/alvie/code/lib/sancus/sul/verilog.ml)
 
-Only touch outputs/DFA if the extension changes semantic observables.
+We change outputs and DFA handling only when the action needs a new observation.
