@@ -3,13 +3,13 @@ title: Reproducing the Simulation Experiments
 description: Build ALVIE/Sancus and reproduce the paper experiments.
 ---
 
-This walkthrough covers ALVIE/Sancus.
-It assumes the repository root is the current directory and that `sancus-core-gap` is checked out there.
+In this guide, we build ALVIE/Sancus, run its checked-in example, and then reproduce an attack experiment.
+We assume that the repository root is the current directory and that `sancus-core-gap` is checked out there.
 
-## Prerequisites
+## Set Up the Environment
 
-The Dockerfile is the reference environment.
-Build and run it with:
+The Dockerfile is the reference environment, so it is the shortest path to a reproducible setup.
+With Docker installed, we build and start it with:
 
 ```bash
 docker build -t alvie .
@@ -17,10 +17,10 @@ docker run --rm -it alvie
 ```
 
 The Dockerfile installs mCRL2 from its Ubuntu PPA on `amd64` and builds it from source on `arm64`, so the default build works natively on both architectures.
-Specify `--platform` only when intentionally cross-building for another architecture.
-Native users need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with `Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
+We specify `--platform` only when intentionally cross-building for another architecture.
+For a native setup, we need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with `Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
 
-Verify the OCaml build:
+For either setup, we verify the OCaml build before running an experiment:
 
 ```bash
 cd alvie/code
@@ -30,7 +30,7 @@ cd ../..
 
 ## Running the example
 
-The example wrapper learns secret 0 and secret 1 models for the final Sancus commit, both with and without interrupt handling:
+We begin with the checked-in example, which learns models for secret `0` and secret `1` at the final Sancus commit, both with and without interrupt handling:
 
 ```bash
 rm -rf results/example counterexamples/example logs/example tmp/example
@@ -38,20 +38,20 @@ rm -rf results/example counterexamples/example logs/example tmp/example
 ./check_example.sh
 ```
 
-The learned models are in `results/example/`; the witness graph is in `counterexamples/example/`.
-The exact output filenames are visible with:
+The learned models are in `results/example/`, while the witness graph is in `counterexamples/example/`.
+We can list the exact output filenames with:
 
 ```bash
 find results/example counterexamples/example -name '*.dot' -print
 ```
 
-Render a graph with Graphviz:
+To inspect the witness visually, render it with Graphviz:
 
 ```bash
 dot -Tpdf counterexamples/example/bf89c0b-attacker_int.dot -o example.pdf
 ```
 
-The example test suite can be run independently:
+The example test suite also runs independently:
 
 ```bash
 cd alvie/code
@@ -60,8 +60,8 @@ dune exec tt_attack
 
 ## One attack
 
-Use a namespace for each run.
-The third argument selects the output namespace; when no matching directory exists under `spec-lib/`, the wrapper uses the root specifications.
+For an attack experiment, we use a distinct namespace so that its models, logs, and temporary files remain together.
+The third argument selects that namespace; when it does not name a directory under `spec-lib/`, the wrapper reads the root specifications.
 B6 is a practical first experiment:
 
 ```bash
@@ -88,9 +88,9 @@ For B8 and B9:
 ./check_one.sh b8 b8-sim
 ```
 
-Each standard ALVIE/Sancus attack run learns four models per relevant commit: secret 0 and secret 1, with interrupts enabled and disabled.
+Each standard ALVIE/Sancus attack run learns four models per relevant commit: secret `0` and secret `1`, with interrupts enabled and disabled.
 The comparison uses all four models and writes a witness graph under `counterexamples/<namespace>/<attack>/`.
-Learning time varies substantially with the machine and specification.
+Learning time varies substantially with the machine and specification, so we keep the generated namespace when comparing runs.
 
 ## All attacks
 
@@ -100,22 +100,22 @@ Learning time varies substantially with the machine and specification.
 ```
 
 The learning wrapper launches simulator jobs in parallel.
-Use a machine with enough memory and disk space for the temporary VCD/program files.
+We use a machine with enough memory and disk space for the temporary VCD and program files.
 
 ## Fast specifications
 
-`spec-lib/fast/` contains deliberately smaller attacker/enclave specifications.
-Pass `fast` as the namespace to select them:
+`spec-lib/fast/` contains deliberately smaller attacker and enclave specifications.
+We pass `fast` as the namespace to select them:
 
 ```bash
 ./learn_one.sh d54f031 b6 fast
 ```
 
-Fast specifications are useful for development and timing experiments; they are not equivalent to the complete attacker profiles.
+Fast specifications are useful for development and timing experiments, but they are not equivalent to the complete attacker profiles.
 
 ## Direct commands
 
-From `alvie/code`, a single model can be learned directly:
+When we need to learn a single model rather than use the wrappers, we run `learn.exe` directly from `alvie/code`:
 
 ```bash
 dune exec bin/learn.exe -- \
@@ -129,7 +129,7 @@ dune exec bin/learn.exe -- \
   --oracle pac
 ```
 
-Compare four models with:
+We compare four models with:
 
 ```bash
 dune exec bin/fa.exe -- \
@@ -142,7 +142,7 @@ dune exec bin/fa.exe -- \
 ```
 
 This writes `/tmp/alvie-witness_int.dot`.
-A nonzero violation count means the comparison found distinguishing traces; it is evidence of an attack under the learned models and selected threat model, not a universal proof about Sancus.
+A nonzero violation count means the comparison found distinguishing traces under the learned models and selected threat model.
 
 ## Output layout
 
@@ -155,11 +155,11 @@ The model filename contains the Sancus commit, attacker and enclave names, secre
 
 ## Troubleshooting
 
-If the build fails, check the active OCaml switch and run `dune build` from `alvie/code`.
-If the simulator cannot find a Sancus file, verify that the `sancus-core-gap` checkout exists at the repository root and that the requested commit is available in it.
-For slow or memory-heavy runs, start with B6 or a smaller specification and inspect the corresponding log under `logs/`.
+If the build fails, we check the active OCaml switch and run `dune build` from `alvie/code`.
+If the simulator cannot find a Sancus file, we verify that the `sancus-core-gap` checkout exists at the repository root and that the requested commit is available in it.
+For slow or memory-heavy runs, we start with B6 or a smaller specification and inspect the corresponding log under `logs/`.
 
-To remove generated artifacts for a namespace, use the project cleanup script only after checking that it does not contain results you want to keep:
+To remove generated artifacts for a namespace, we use the project cleanup script only after checking that it does not contain results we want to keep:
 
 ```bash
 ./clean.sh

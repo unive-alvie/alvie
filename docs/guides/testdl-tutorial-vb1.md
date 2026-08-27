@@ -3,18 +3,15 @@ title: 'TestDL Tutorial: V-B1 Example'
 description: A one-hour introduction to the TestDL languages through a worked V-B1 example.
 ---
 
-This tutorial is a first practical session with the two small languages used by ALVIE/Sancus.
-In about one hour, we illustrate the TestDL languages through a worked example: the specification used to reproduce the V-B1 vulnerability.
-The vulnerability is described in the [*Mind the Gap* paper](https://mici.hu/papers/bognar22gap.pdf).
-It uses the corresponding [Sancus implementation](https://github.com/martonbognar/sancus-core-gap).
-The language walkthrough uses a reduced fast profile.
-The attack reproduction uses the complete, checked-in V-B1 models, so it remains a real result rather than a made-up teaching example.
+This one-hour tutorial is our first practical session with the two small languages used by ALVIE/Sancus.
+We learn them through the specification used to reproduce the V-B1 vulnerability from the [*Mind the Gap* paper](https://mici.hu/papers/bognar22gap.pdf), using its corresponding [Sancus implementation](https://github.com/martonbognar/sancus-core-gap).
+We use a reduced fast profile while reading the languages, then reproduce the real attack from the complete V-B1 models tracked in the repository.
 
 The complete syntax and semantics are in the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
-Use that page when you need details; this tutorial focuses on where to start and what each part is doing.
+We use that page when we need details.
+This tutorial focuses on where to start and what each part is doing.
 
-For the quickest setup, use the published Docker image described in [Getting Started](/alvie/getting-started/).
-Mount a host directory so the witness PDF produced later survives after the container exits:
+For the quickest setup, we use the published Docker image described in [Getting Started](/alvie/getting-started/) and mount a host directory for the witness we produce later:
 
 ```bash
 mkdir -p "$PWD/alvie-output"
@@ -24,14 +21,12 @@ docker run --rm -it \
   matteobusi/alvie
 ```
 
-The image already contains ALVIE/Sancus, its dependencies, and `sancus-core-gap`; it starts in the repository root, so the paths below work unchanged.
-The Docker Hub image is [matteobusi/alvie](https://hub.docker.com/r/matteobusi/alvie).
-Inside the container, use `/output` for files you want to keep; on the host, they appear in `./alvie-output`.
-The repository Dockerfile installs Graphviz for the rendering command below.
-Rebuild the image locally if the published image predates that update.
-Use the native setup instructions in [Getting Started](/alvie/getting-started/) only when you need a local development environment.
+The image already contains ALVIE/Sancus, its dependencies, and `sancus-core-gap`, and starts in the repository root so the paths below work unchanged.
+Inside the container, files written to `/output` appear in `./alvie-output` on the host.
+The Docker Hub image is [matteobusi/alvie](https://hub.docker.com/r/matteobusi/alvie), and its Dockerfile installs Graphviz for the rendering command below.
+We use the native setup instructions in [Getting Started](/alvie/getting-started/) only when we need a local development environment.
 
-## What you will build
+## What We Will Build
 
 An ALVIE/Sancus experiment combines two files:
 
@@ -64,7 +59,7 @@ This is the workflow described in the [ALVIE paper](https://arxiv.org/abs/2404.0
 
 ## 1. Prepare the checkout
 
-If you are using a native checkout rather than the Docker image, check that the required Sancus repository is present and build the OCaml project:
+For a native checkout rather than the Docker image, we check that the required Sancus repository is present and build the OCaml project:
 
 ```bash
 test -d sancus-core-gap
@@ -140,11 +135,10 @@ prepare {
 cleanup { nop };
 ```
 
-`prepare` is the attacker-controlled setup executed before the interaction being learned.
+`prepare` is the attacker-controlled setup executed before the interaction we learn.
 Here it configures a timer, enables the enclave with its memory boundaries, and transfers control to the enclave entry point.
-`isr` describes the code run when the timer interrupts execution.
-In this example it schedules the next interrupt at one tick and returns with `reti`, making closely spaced interrupts part of the threat model.
-`cleanup` is the attacker-controlled suffix after an interaction; it is where a specification can model teardown, reset, or follow-up actions.
+`isr` describes the code that runs when the timer interrupts execution; in this example it schedules the next interrupt one tick later and returns with `reti`, making closely spaced interrupts part of the threat model.
+`cleanup` is the attacker-controlled suffix after an interaction, where a specification can model teardown, reset, or follow-up actions.
 This example uses `nop`, so cleanup has no extra effect.
 
 These bodies use the same `; `, `|`, `eps`, repetition, and grouping operators as enclave expressions.
@@ -178,8 +172,9 @@ The two `--*-spec` arguments select the attacker and victim languages.
 `--sancus` points to the Sancus checkout.
 This command fixes the secret to `0` and uses final Sancus revision `bf89c0b`; it does not compare secrets and therefore cannot establish or rule out a vulnerability.
 
-`randomwalk` is a bounded equivalence oracle. `--step-limit 5000` caps its exploration work, while `--reset-probability 0.09` makes it restart some paths.
-The output model is `$ALVIE_OUTPUT/example-learn/secret-0.dot`; the complete learner output is in `learn.log`.
+`randomwalk` is a bounded equivalence oracle.
+`--step-limit 5000` caps its exploration work, while `--reset-probability 0.09` makes it restart some paths.
+The output model is `$ALVIE_OUTPUT/example-learn/secret-0.dot`, and the complete learner output is in `learn.log`.
 The current example produces a small 21-line DOT file.
 The full command-line reference is in the [Executables Reference](/alvie/reference/executables-reference/).
 
@@ -210,13 +205,14 @@ dune exec bin/fa.exe -- \
   --cex-limit 1
 ```
 
-The arguments deliberately name all four models:
+The four model arguments are what make this a security comparison rather than a simple comparison between two runs:
 
 - `--m1-int` and `--m2-int` are the interrupt-enabled models for secret `0` and secret `1`.
 - `--m1-nint` and `--m2-nint` are their no-interrupt counterparts.
   ALVIE/Sancus subtracts differences already present without interrupts, leaving behavior attributable to the interrupt-enabled threat model.
 - `ALVIE_OUTPUT=/output` selects the Docker bind mount.
-  Native users can set it to `/tmp/alvie-output` instead. `--tmpdir` is a disposable work directory for mCRL2 intermediate files.
+  For native use, we can set it to `/tmp/alvie-output` instead.
+  `--tmpdir` is a disposable work directory for mCRL2 intermediate files.
 - `--witness-file-basename` chooses the output prefix; ALVIE/Sancus writes `$ALVIE_OUTPUT/vb1-fa/witness_int.dot`.
 - `--cex-limit 1` asks for one witness, which keeps this introductory result focused and fast.
 
@@ -234,7 +230,7 @@ dot -Tpdf "$ALVIE_OUTPUT/vb1-fa/witness_int.dot" \
 `dot -Tpdf` turns the witness graph into a PDF; `-o` gives that PDF its name.
 Open it with a local PDF viewer.
 In the Docker workflow, the PDF is now on the host under `./alvie-output/vb1-fa/`.
-If you are using an older published image without Graphviz, copy the checked-in rendering instead:
+For an older published image without Graphviz, we copy the checked-in rendering instead:
 
 ```bash
 cp ../../counterexamples/b1/pdf/ef753b6-b1_int.pdf \
@@ -275,8 +271,8 @@ The [Log and Output Reference](/alvie/reference/log-output-reference/) explains 
 ## 7. Optional: learn the models yourself
 
 The comparison above is complete and immediately reproducible.
-Run learning yourself only when you have time to let it finish and want to regenerate the models.
-The repository wrapper runs the full V-B1 experiment:
+We run learning ourselves only when we want to regenerate the models and have time to let the complete experiment finish.
+The repository wrapper then runs the full V-B1 experiment:
 
 ```bash
 cd ../..
@@ -290,7 +286,7 @@ The wrapper learns secret 0/1 models with and without interrupts for the vulnera
 `check_one.sh b1 fast` compares the secret pairs and subtracts no-interrupt witnesses.
 
 Results, logs, and temporary files are placed under `results/fast/`, `logs/fast/`, and `tmp/fast/`.
-This can take many hours; it is not a required step in the one-hour tutorial.
+This can take many hours, so it is not part of the one-hour tutorial.
 See [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/) for wrapper behavior and [Executables Reference](/alvie/reference/executables-reference/) for the underlying commands.
 
 For the full paper profile, replace `fast` with a separate namespace and use the complete specifications.
@@ -307,9 +303,9 @@ cp spec-lib/fast/b1.atdl /tmp/my-b1.atdl
 This copies the original fast attacker specification to a disposable path.
 Keep the original under `spec-lib/` unchanged, then pass `/tmp/my-b1.atdl` as `--att-spec` and choose new `--res` and `--tmpdir` paths when rerunning the direct learner command.
 
-Change one timer, choice, or action and rerun the direct command with a new `--res` and `--tmpdir`.
+We can now change one timer, choice, or action and rerun the direct command with a new `--res` and `--tmpdir`.
 Parser errors usually come from a missing semicolon, unmatched parenthesis, unknown action, or invalid register.
-Consult the [action reference](/alvie/reference/testdl-action-reference/) for exact syntax and [Extending TestDL Actions](/alvie/guides/spec-extending-actions/) when adding a new language construct.
+For exact syntax, consult the [action reference](/alvie/reference/testdl-action-reference/), and use [Extending TestDL Actions](/alvie/guides/spec-extending-actions/) when adding a new language construct.
 
 ## Related files
 
