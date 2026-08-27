@@ -101,7 +101,15 @@ bash test/cli_diagnostics.sh
 `test/cli_diagnostics.sh` runs the ALVIE-only diagnostic suite, including TestDL parsing and command-line validation.
 It does not require the Sancus simulator or mCRL2.
 
-The simulator integration suite requires the external Sancus checkout and its simulator toolchain:
+The isolated feature suite exercises TestDL parsing and derivatives, code generation, specification-guided input generation, observation-tree algorithms, and serialization without external target tooling:
+
+```bash
+dune exec tt_features -- test --color=never
+```
+
+`tt_attack` is the simulator-backed regression suite.
+It replays the supplied attack traces against expected observations for the relevant Sancus commits, secrets, and interrupt modes.
+It requires the external Sancus checkout and its simulator toolchain:
 
 ```bash
 dune exec tt_attack -- test --color=never
