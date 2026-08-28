@@ -55,14 +55,35 @@ expect_status 2 'Could not parse the TestDL specifications' \
   --secret 0 \
   --oracle randomwalk
 
-expect_status 2 '--step-limit must be greater than zero' \
+expect_status 2 '--test-count must be greater than zero' \
   _build/default/bin/pbt.exe \
   --encl-spec ../../spec-lib/example/enclave.etdl \
   --att-spec1 ../../spec-lib/example/attacker.atdl \
   --att-spec2 ../../spec-lib/example/attacker.atdl \
   --tmpdir "$TMP_DIR/pbt" \
   --sancus "$TMP_DIR/sancus" \
-  --step-limit 0
+  --test-count 0
+
+expect_status 2 'Use either --test-count or deprecated --step-limit, not both' \
+  _build/default/bin/pbt.exe \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
+  --att-spec1 ../../spec-lib/example/attacker.atdl \
+  --att-spec2 ../../spec-lib/example/attacker.atdl \
+  --tmpdir "$TMP_DIR/pbt-both-options" \
+  --sancus "$TMP_DIR/sancus" \
+  --test-count 1 \
+  --step-limit 1
+
+expect_status 0 'Deprecated alias for --test-count' \
+  _build/default/bin/pbt.exe --help
+
+expect_status 0 'Equivalence oracle:' \
+  _build/default/bin/learn.exe --help
+
+if _build/default/bin/learn.exe --help 2>&1 | grep -q -- 'pacprefix'; then
+  echo 'learn.exe --help still advertises the removed pacprefix oracle' >&2
+  exit 1
+fi
 
 expect_status 2 'names a file that does not exist' \
   _build/default/bin/fa.exe \

@@ -1,23 +1,14 @@
 open Core
-open Learninglib.Lsharp
 open Sancus
-open Interop
 (*
 open Attacker
 open Enclave *)
 
 open QCheck
 
-module IIBLSharpRW = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Randomwalkoracle.RandomWalkOracle)
-module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Pacoracle.PACOracle)
-module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
-
-module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-
 let command =
   Command.basic
-    ~summary:"Test NI on Sancus with the specified attacker and enclave spec"
+    ~summary:"Run randomized reset-equivalence checks for two Sancus attacker specifications"
     (let%map_open.Command
     dbg =
       flag
@@ -63,12 +54,17 @@ let command =
       flag
         "--commit"
         (optional_with_default "ef753b6" string)
-        ~doc:"checksum/label Checksum/label of the commit for which we want to learn the Mealy model (default: ef753b6, i.e., the version w/o Mind the Gap mitigations)"
-    and step_limit =
+        ~doc:"checksum/label Checksum/label of the Sancus commit to execute (default: ef753b6)"
+    and test_count =
+      flag
+        "--test-count"
+        (optional int)
+        ~doc:"count Number of generated property tests to run (default: 500)"
+    and legacy_step_limit =
       flag
         "--step-limit"
-        (optional_with_default 500 int)
-        ~doc:"limit (Only for randomwalk oracle) Maximum number of steps for the equivalence oracle before giving up looking for a counterexample (default: 500)"
+        (optional int)
+        ~doc:"count Deprecated alias for --test-count"
     in
     fun () ->
         Cli_diagnostics.protect ~debug:dbg (fun () ->
@@ -84,7 +80,17 @@ let command =
         (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
         let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
         ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
-        Cli_diagnostics.validate_positive ~option:"--step-limit" step_limit;
+        let test_count =
+          match test_count, legacy_step_limit with
+          | Some _, Some _ ->
+            Cli_diagnostics.fail "Use either --test-count or deprecated --step-limit, not both."
+          | Some count, None -> count
+          | None, Some count ->
+            eprintf "Warning: --step-limit is deprecated; use --test-count.\n";
+            count
+          | None, None -> 500
+        in
+        Cli_diagnostics.validate_positive ~option:"--test-count" test_count;
         (* (1) load the spec *)
         let enclave_spec_str = Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
         let attacker_spec1_str = Cli_diagnostics.read_file ~option:"--att-spec1" attacker_spec1_fn in
@@ -206,7 +212,7 @@ let command =
           QCheck.Test.make
             ~if_assumptions_fail:(`Warning, 1.0)
             ~name:"non-interference"
-            ~count:step_limit
+            ~count:test_count
             arbitrary_p
             (fun (p, p') ->
                 assume (same_encl  (fst p) (fst p'));

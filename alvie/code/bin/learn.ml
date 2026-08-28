@@ -98,22 +98,22 @@ let command =
     flag
       "--oracle"
       (required string)
-      ~doc:"oracle Oracle that must be used for equivalence check, choose among: randomwalk, pac, pacprefix"
+      ~doc:"oracle Equivalence oracle: randomwalk, pac, or exhaustive"
     and epsilon =
       flag
         "--epsilon"
         (optional_with_default 0.001 float)
-        ~doc:"bound (Only for pac_bound and pac_unbound oracles) Upper bound on the probability we find a defect in the model (default: 0.001)"
+        ~doc:"probability PAC error bound used by the pac oracle (default: 0.001)"
     and pac_bound =
       flag
         "--pac-bound"
         (optional_with_default 1 int)
-        ~doc:"bound (Only for pac_bound and pac_unbound oracles) Maximum number of resets before stopping (default: 1)"
+        ~doc:"count Included in --report output only; does not limit the current PAC oracle (default: 1)"
     and delta =
       flag
         "--delta"
         (optional_with_default 0.001 float)
-        ~doc:"bound (Only for pac_bound and pac_unbound oracles) 1-delta is the upper bound on the confidence we want on the fact we find a defect with probability epsilon (default: 0.001)"
+        ~doc:"probability PAC confidence parameter used by the pac oracle (default: 0.001)"
     and step_limit =
       flag
         "--step-limit"
