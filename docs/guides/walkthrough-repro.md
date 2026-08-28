@@ -55,7 +55,7 @@ The example test suite also runs independently:
 
 ```bash
 cd alvie/code
-dune exec tt_attack
+dune exec tt_attack -- test --color=never
 ```
 
 ## One attack

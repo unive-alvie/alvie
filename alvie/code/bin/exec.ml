@@ -16,7 +16,7 @@ let command =
       flag
       "--sexp-input"
       (required string)
-      ~doc:"filename S-exp representing the raw input for the simulator"
+      ~doc:"filename S-expression file containing the raw input sequence"
       and enclave_spec_fn =
       flag
          "--encl-spec"
@@ -46,7 +46,7 @@ let command =
       flag
         "--commit"
         (optional_with_default "ef753b6" string)
-        ~doc:"checksum/label Checksum/label of the commit for which we want to learn the Mealy model (default: ef753b6, i.e., the version w/o the Mind the Gap mitigations)"
+        ~doc:"checksum/label Checksum/label of the Sancus commit to execute (default: ef753b6)"
     and secret =
       flag
         "--secret"
@@ -215,4 +215,3 @@ let command =
   )
 
 let () = Command_unix.run command
-

@@ -36,9 +36,9 @@ This is the main experiment driver.
 |------|---------|-------------|
 | `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check |
 | `--secret <value>` | absent | Secret substituted into the enclave specification; required when the spec contains `?` |
-| `--epsilon <float>` | `0.001` | PAC epsilon parameter |
-| `--delta <float>` | `0.001` | PAC delta parameter |
-| `--pac-bound <int>` | `1` | PAC reset bound |
+| `--epsilon <float>` | `0.001` | PAC error bound, used only by `pac` |
+| `--delta <float>` | `0.001` | PAC confidence parameter, used only by `pac` |
+| `--pac-bound <int>` | `1` | Included in `--report` output only; does not limit the current PAC oracle |
 | `--step-limit <int>` | `500` | Max steps for a random-walk equivalence query |
 | `--round-limit <int>` | unlimited | Max rounds for a PAC equivalence query |
 | `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
@@ -176,13 +176,15 @@ _build/default/bin/exec.exe \
 
 ---
 
-## 4. `pbt.exe` — Property-based testing (no model learning)
+## 4. `pbt.exe` — Property-based reset-equivalence testing
 
-**Purpose:** Tests non-interference (NI) directly on the Sancus simulator using QCheck random input generation, **without** learning a Mealy machine.
-For each randomly generated input sequence, it runs the simulator twice (with secret=0 and secret=1) and checks that the low-level outputs are indistinguishable to the attacker.
-Reports any counterexample found.
+**Purpose:** Uses QCheck to generate two input traces without learning a Mealy machine.
+The first trace follows `--att-spec1`.
+The second follows `--att-spec2` while reusing the first trace's enclave actions.
+It runs both traces on the selected simulator configuration and checks whether they agree on the occurrence of a reset.
 
-This is faster than `learn.exe` for a quick sanity-check but less thorough (it cannot prove absence of violations).
+`pbt.exe` does not substitute secret values or compare the complete attacker-visible output.
+It is therefore a focused randomized reset-equivalence smoke test, not a replacement for `learn.exe` followed by `fa.exe`.
 
 ### Flags
 
@@ -191,7 +193,8 @@ This is faster than `learn.exe` for a quick sanity-check but less thorough (it c
 | `--att-spec1 <file>` | _(required)_ | Attacker spec for the first run (`.atdl`) |
 | `--att-spec2 <file>` | _(required)_ | Attacker spec for the second run (`.atdl`) |
 | `--encl-spec <file>` | _(required)_ | Enclave specification (`.etdl`) |
-| `--step-limit <int>` | `500` | Number of generated test cases |
+| `--test-count <int>` | `500` | Number of generated property tests to run |
+| `--step-limit <int>` | deprecated | Compatibility alias for `--test-count` |
 | `--tmpdir <dir>` | _(required)_ | Temp directory |
 | `--sancus <dir>` | _(required)_ | Sancus simulator root |
 | `--commit <sha>` | `ef753b6` | Simulator git commit |
@@ -201,8 +204,8 @@ This is faster than `learn.exe` for a quick sanity-check but less thorough (it c
 
 ### Output
 
-QCheck test results printed to stdout.
-On failure, prints the shortest counterexample trace found (a sequence of inputs that produces distinguishable outputs for secret=0 vs secret=1).
+QCheck test results are printed to stdout.
+On failure, the reported pair of traces differs in whether execution resets.
 
 ### Quick example
 
@@ -214,7 +217,7 @@ _build/default/bin/pbt.exe \
   --encl-spec ../../spec-lib/example/enclave.etdl \
   --tmpdir /tmp/alvie-pbt \
   --sancus "$PWD/../../sancus-core-gap" \
-  --step-limit 50 \
+  --test-count 50 \
   --info
 ```
 
