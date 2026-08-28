@@ -11,8 +11,22 @@ tags: [
   "automata learning" "formal verification" "sancus" "side-channels" "alvie"
 ]
 depends: [
-  "ocaml"
   "dune" {>= "3.1"}
+  "ocaml" {>= "4.13"}
+  "alcotest"
+  "angstrom"
+  "core"
+  "core_unix"
+  "fmt"
+  "logs"
+  "ocamlgraph"
+  "ppx_deriving"
+  "ppx_hash"
+  "ppx_jane"
+  "ppx_sexp_conv"
+  "py"
+  "qcheck"
+  "shexp"
   "odoc" {with-doc}
 ]
 build: [

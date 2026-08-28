@@ -29,11 +29,16 @@ jobs:
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: 4.13.1
+          ocaml-compiler: "4.13.1"
+          dune-cache: true
+      - name: Restore OCaml dependency cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.opam/4.13.1
+          key: ${{ runner.os }}-ocaml-4.13.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/alvie.opam') }}
       - name: Install OCaml dependencies
-        run: >-
-          opam install -y dune py core alcotest angstrom core_kernel core_unix
-          logs fmt ocamlgraph shexp ppx_deriving qcheck
+        working-directory: alvie/code
+        run: opam install -y . --deps-only --with-test
       - name: Build ALVIE
         working-directory: alvie/code
         run: opam exec -- dune build
