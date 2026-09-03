@@ -42,31 +42,12 @@ ROOT_DIR=$(cd "$CODE_DIR/../.." && pwd)
 # recorded benchmarks in AGENTS.md both use, so a regression there is the most
 # informative; the FPGA subset adds the paper example because it is quick and
 # has committed reference models under results/example-fpga/.
-#
-# Entries are either a group name, which runs every case in it, or group:index
-# to run a single case.
-#
-# The simulator default names cases 0-2 rather than the whole b6 group, because
-# case 3 is a known failure tracked in issue #38: on the fixed commit with
-# secret 1 it reports OReset where the fixture expects OTime_Handle. That is a
-# structural difference rather than a payload shift, so it was left alone rather
-# than recalibrated, and excluding it keeps this usable as a gate. Run the whole
-# group with SMOKE_SIM_GROUPS=b6 to see it.
-SMOKE_SIM_GROUPS="${SMOKE_SIM_GROUPS:-b6:0 b6:1 b6:2}"
+SMOKE_SIM_GROUPS="${SMOKE_SIM_GROUPS:-b6}"
 SMOKE_FPGA_GROUPS="${SMOKE_FPGA_GROUPS:-example b6}"
 
 FPGA_PORT="${FPGA_PORT:-/dev/ttyUSB1}"
 
 fail () { echo "$@" >&2; exit 2; }
-
-# "b6" -> "b6";  "b6:2" -> "b6 2".  Alcotest takes an optional case index after
-# the group name.
-split_entry () {
-  case "$1" in
-    *:*) echo "${1%%:*} ${1#*:}" ;;
-    *)   echo "$1" ;;
-  esac
-}
 
 # Both suites assemble MSP430 programs, so they need the Debian-style binutils
 # (msp430-as, msp430-ld), not just TI's msp430-elf-* toolchain.
@@ -99,11 +80,10 @@ if [ "$RUN_SIM" -eq 1 ]; then
   [ -d "$ROOT_DIR/sancus-core-gap" ] || fail "Missing $ROOT_DIR/sancus-core-gap checkout."
 
   echo "== simulator smoke: $SMOKE_SIM_GROUPS =="
-  for entry in $SMOKE_SIM_GROUPS; do
-    echo "-- tt_attack $entry"
-    # shellcheck disable=SC2086
-    if ! dune exec test/attack.exe -- test --color=never $(split_entry "$entry"); then
-      echo "simulator smoke FAILED for $entry" >&2
+  for group in $SMOKE_SIM_GROUPS; do
+    echo "-- tt_attack $group"
+    if ! dune exec test/attack.exe -- test --color=never "$group"; then
+      echo "simulator smoke FAILED for group $group" >&2
       status=1
     fi
   done
@@ -128,11 +108,10 @@ if [ "$RUN_FPGA" -eq 1 ]; then
   fi
 
   echo "== FPGA smoke: $SMOKE_FPGA_GROUPS =="
-  for entry in $SMOKE_FPGA_GROUPS; do
-    echo "-- tt_attack_fpga $entry"
-    # shellcheck disable=SC2086
-    if ! dune exec test/attack_fpga.exe -- test --color=never $(split_entry "$entry"); then
-      echo "FPGA smoke FAILED for $entry" >&2
+  for group in $SMOKE_FPGA_GROUPS; do
+    echo "-- tt_attack_fpga $group"
+    if ! dune exec test/attack_fpga.exe -- test --color=never "$group"; then
+      echo "FPGA smoke FAILED for group $group" >&2
       status=1
     fi
   done

@@ -21,11 +21,11 @@ open Attacklib
 let output_attacker_encl0 = [
   [
     (OTime   { k = 7; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 10; mode = PM });
-    (OJmpOut { k = 2; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 12; mode = UM })
+    (OJmpOut { k = 2; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 10; mode = UM })
   ]
 ]
 let output_attacker_encl1 = [
-  [ (OJmpOut { k = 2; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 5; mode = UM }) ]
+  [ (OJmpOut { k = 2; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 3; mode = UM }) ]
 ]
 
 (* ── b1 ───────────────────────────────────────────────────────────────────── *)
@@ -93,22 +93,18 @@ let output_b4_encl_int_orig_fpga = [ [ OJmpOut { k = 2; gie = false; umem_val = 
 
 (* ── b6 ───────────────────────────────────────────────────────────────────── *)
 (* orig commit noint: ef753b6 faster → enc:jmp falls inside 50-cycle window *)
-let output_b6_encl_noint = [ [ OJmpOut { k = 2; gie = true; umem_val = 42; reg_val = 0; timerA_counter = 3; mode = UM } ] ]
+let output_b6_encl_noint = [ [ OJmpOut { k = 2; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 1; mode = UM } ] ]
 (* orig commit int: timerA differs per secret — secrets 0 and 1 have distinct UM timing *)
-(* NOTE: the PM payload reports umem_val = 0 here while the simulator reports
-   0x2a for the same step. That FPGA/simulator discrepancy is still open; this
-   fixture records current FPGA behaviour so the suite can act as a regression
-   gate, it does not assert that the value is right. *)
 let output_b6_encl0_int_orig = [
   [ OTime_Handle (
-      { k = 7; gie = true;  umem_val = 0;  reg_val = 0; timerA_counter = 4; mode = PM },
-      { k = 5; gie = false; umem_val = 42; reg_val = 0; timerA_counter = 3; mode = UM }
+      { k = 7; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 5; mode = PM },
+      { k = 5; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 4; mode = UM }
     ) ]
 ]
 let output_b6_encl1_int_orig = [
   [ OTime_Handle (
-      { k = 8; gie = true;  umem_val = 0;  reg_val = 0; timerA_counter = 5; mode = PM },
-      { k = 4; gie = false; umem_val = 42; reg_val = 0; timerA_counter = 3; mode = UM }
+      { k = 8; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = PM },
+      { k = 4; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 5; mode = UM }
     ) ]
 ]
 

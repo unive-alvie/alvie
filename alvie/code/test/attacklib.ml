@@ -234,31 +234,27 @@ enc: ifz (mov #42, &unprot_mem; nop) (nop; mov #42, &unprot_mem)"
 let input_b6_encl_int = input_b6_encl_noint_last
 let input_b6_encl_int_last = input_b6_encl_noint_last
 
-(* This payload now matches the FPGA backend exactly, see test/attack_fpga.ml. *)
 let output_b6_encl_noint = [
-  [(OJmpOut { k = 2; gie = true; umem_val = 42; reg_val = 0; timerA_counter = 0x3; mode = UM })]
+  [(OJmpOut { k = 3; gie = true; umem_val = 42; reg_val = 0; timerA_counter = 0x4; mode = UM })]
 ]
 
 let output_b6_encl0_int_orig = [
   [
     (
       OTime_Handle (
-        { k = 7; gie = true; umem_val = 0x2a; reg_val = 0; timerA_counter = 0x4; mode = PM },
-        { k = 5; gie = false; umem_val = 0x2a; reg_val = 0; timerA_counter = 0x3; mode = UM }
+        { k = 7; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 0x4; mode = PM },
+        { k = 4; gie = false; umem_val = 0x2a; reg_val = 0; timerA_counter = 0x2; mode = UM }
       )
     )
   ]
 ]
 
-(* Identical to the FPGA fixture except for the PM payload's umem_val, which the
-   simulator reports as 0x2a and the FPGA as 0. That discrepancy is still open;
-   see the parity notes in AGENTS.md. *)
 let output_b6_encl1_int_orig = [
   [
     (
       OTime_Handle (
-        { k = 8; gie = true; umem_val = 0x2a; reg_val = 0; timerA_counter = 0x5; mode = PM },
-        { k = 4; gie = false; umem_val = 0x2a; reg_val = 0; timerA_counter = 0x3; mode = UM }
+        { k = 7; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 0x4; mode = PM },
+        { k = 4; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 0x2; mode = UM }
       )
     )
   ]
