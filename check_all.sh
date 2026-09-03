@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 
-# This script is the entry point for the automatic discovery of
-# gaps between various versions of the processor.
-# It takes all the models pairs from RES_DIR and follwing the naming convention in learn_all produces
-# witness graphs comparing them in CEX_DIR.
-# LIMIT variable is used to limit the number of
-# counterexamples to be considered for each pair of model
+# Compare all learned models (secret 0 vs secret 1) for a given subdirectory.
 #
-# If fast is given it uses the fast models.
 # Usage:
-#   ./check_all.sh <subdirectory>
+#   ./check_all.sh <subdirectory> [--fpga]
+#
+# --fpga  Look for models produced by the FPGA backend (<subdirectory>-fpga).
+
+FPGA=false
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--fpga" ]; then
+    FPGA=true
+  else
+    ARGS+=("$arg")
+  fi
+done
+set -- "${ARGS[@]}"
+
 if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <subdirectory>" >&2
+  echo "Usage: $0 <subdirectory> [--fpga]" >&2
   exit 2
 fi
 
@@ -19,21 +27,20 @@ fi
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "$SCRIPT_DIR/script_helpers.sh"
 
-LOGS_DIR=$SCRIPT_DIR/logs/$1
-RES_DIR=$SCRIPT_DIR/results/$1
-CEX_DIR=$SCRIPT_DIR/counterexamples/$1
+DIR_SUFFIX=$( $FPGA && echo "-fpga" || true )
+LOGS_DIR=$SCRIPT_DIR/logs/$1${DIR_SUFFIX}
+RES_DIR=$SCRIPT_DIR/results/$1${DIR_SUFFIX}
+CEX_DIR=$SCRIPT_DIR/counterexamples/$1${DIR_SUFFIX}
 TMP_DIR=$SCRIPT_DIR/tmp
 
 MM_DIR=$SCRIPT_DIR/alvie/code
 
-# LIMIT = 10
-# LIMIT=100
-# NO LIMIT!
 LIMIT=-1
 
 cd $SCRIPT_DIR
 
 mkdir -p $LOGS_DIR
+mkdir -p $CEX_DIR
 
 # Loads the list of all available models
 shopt -s nullglob
@@ -75,7 +82,6 @@ do
       continue
     fi
 
-
     for m2 in "${ONE_MODELS[@]}"
     do
         m1_nint=${m1//int/nint}
@@ -99,7 +105,6 @@ do
         name="$commit-$att"
 
         # Call the comparison process
-        # run "$name" "_build/default/bin/compare.exe --tmpdir \"$TMP_DIR\" --m1 \"${m1%%[[:space:]]}\" --m2 \"${m2%%[[:space:]]}\" --cex-file \"$cexfile\" $cexlimit > \"$logfile\" 2>&1" "$logfile"
         alvie_run_background "$name" "_build/default/bin/fa.exe --tmpdir \"$TMP_DIR\" --m1-int \"${m1%%[[:space:]]}\" --m2-int \"${m2%%[[:space:]]}\" --m1-nint \"${m1_nint%%[[:space:]]}\" --m2-nint \"${m2_nint%%[[:space:]]}\" --witness-file-basename \"$cexfile\" --debug $cexlimit > \"$logfile\" 2>&1" "$logfile"
     done
 done

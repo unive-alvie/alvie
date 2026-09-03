@@ -57,6 +57,11 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
+    and fpga =
+      flag
+        "--fpga"
+        no_arg
+        ~doc:"Use the physical FPGA backend (default: Verilog simulator)"
       in
      fun () ->
        Cli_diagnostics.protect ~debug:dbg (fun () ->
@@ -163,6 +168,32 @@ let command =
         )" in *)
         let input_sequence = List.t_of_sexp Sancus.Input.t_of_sexp (Sexp.load_sexp sexp_fn) in
         (* initialize the interface with the processor's implementation *)
+        let run_exec (type t)
+            (module Sul : Learninglib.Sul.SUL
+                with type t = t
+                and type input_t = Sancus.Input.t
+                and type output_t = Sancus.Output_internal.t)
+            (sul : t) =
+          List.iter input_sequence ~f:(fun i ->
+            let o = Sul.step sul i in
+            Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)))
+        in
+        if fpga then (
+          let sul =
+            Sancus.Fpga.make
+              ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+              ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+              ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+              ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
+              ~pmem_script:(cwd ^ "/../scripts/build_pmem")
+              ~simulate_script:(cwd ^ "/../scripts/simulate")
+              ~submitfile:(cwd ^ "/../src/submit.f")
+              ~templatefile:(cwd ^ "/../src/generic_template.s43")
+              ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
+              ~dumpfile:"tb_openMSP430.vcd"
+              ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts () in
+          run_exec (module Sancus.Fpga) sul
+        ) else (
         let sul =
           Sancus.Verilog.make
             ~workingdir:cwd
@@ -206,11 +237,13 @@ let command =
               Sancus.Input.IEnclave (Enclave.CInst (Common.I_CMP (Common.S_IMM "0", Common.D_R (R 4))));
               Sancus.Input.IEnclave (Enclave.CZeroOrNop (Common.I_MOV (Common.S_IMM "42", Common.D_R (R 5)), 2));
               Sancus.Input.IAttacker (Attacker.CReti) ] in *)
+              (* Expose the simulator's VCD dump at a predictable path. The FPGA
+                 backend produces no dump, so this applies to this branch only. *)
               ignore (Sys_unix.command (sprintf "rm -f %s/tb_openMSP430.vcd" tmpdir));
               let cmd = sprintf "ln -sr %s %s/tb_openMSP430.vcd" !sul.dumpfile tmpdir in
               ignore (Sys_unix.command cmd);
-              List.iter input_sequence ~f:(fun i -> let o = Sancus.Verilog.step sul i in
-              Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)));
+              run_exec (module Sancus.Verilog) sul
+        )
        )
   )
 

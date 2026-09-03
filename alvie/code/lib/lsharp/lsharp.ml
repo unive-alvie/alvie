@@ -27,6 +27,75 @@ struct
   module F2BMap = Int.Map
   type f2b_map_t = (int list) F2BMap.t
 
+  type loop_state_t = {
+    ot : IIOObservationTree.t;
+    basis : Int.Set.t;
+    frontier : Int.Set.t;
+    mutable f2b : f2b_map_t option;
+  }
+
+  type rule_stats_t = {
+    mutable calls : int;
+    mutable applied : int;
+    mutable finished : int;
+    mutable ms : float;
+  }
+
+  type profile_t = {
+    r1 : rule_stats_t;
+    r2 : rule_stats_t;
+    r3 : rule_stats_t;
+    r4 : rule_stats_t;
+    mutable total_ms : float;
+  }
+
+  let make_rule_stats () = { calls = 0; applied = 0; finished = 0; ms = 0.0 }
+
+  let profile = {
+    r1 = make_rule_stats ();
+    r2 = make_rule_stats ();
+    r3 = make_rule_stats ();
+    r4 = make_rule_stats ();
+    total_ms = 0.0;
+  }
+
+  let ms_since t0 =
+    let open Int63 in
+    to_float (Time_now.nanoseconds_since_unix_epoch () - t0) /. 1_000_000.0
+
+  let stats_for_rule = function
+    | `R1 -> profile.r1
+    | `R2 -> profile.r2
+    | `R3 -> profile.r3
+    | `R4 -> profile.r4
+
+  let apply_profiled_rule rule_id rule state =
+    let stats = stats_for_rule rule_id in
+    let t0 = Time_now.nanoseconds_since_unix_epoch () in
+    let res = rule state in
+    let elapsed = ms_since t0 in
+    stats.calls <- stats.calls + 1;
+    stats.ms <- stats.ms +. elapsed;
+    (match res with
+    | `RestartApplied _ -> stats.applied <- stats.applied + 1
+    | `Finished _ -> stats.finished <- stats.finished + 1
+    | `RestartNotApplied _ | `ContinueNotApplied _ -> ());
+    res
+
+  let () =
+    Stdlib.at_exit (fun () ->
+      let total_calls =
+        profile.r1.calls + profile.r2.calls + profile.r3.calls + profile.r4.calls in
+      if total_calls > 0 then
+        Printf.eprintf
+          "[LSHARP_PROFILE] total_ms=%.1f r1_calls=%d r1_applied=%d r1_ms=%.1f r2_calls=%d r2_applied=%d r2_ms=%.1f r3_calls=%d r3_applied=%d r3_ms=%.1f r4_calls=%d r4_applied=%d r4_finished=%d r4_ms=%.1f\n%!"
+          profile.total_ms
+          profile.r1.calls profile.r1.applied profile.r1.ms
+          profile.r2.calls profile.r2.applied profile.r2.ms
+          profile.r3.calls profile.r3.applied profile.r3.ms
+          profile.r4.calls profile.r4.applied profile.r4.finished profile.r4.ms
+    )
+
   (* let show_rule s = match Logs.level () with | Some Logs.Info -> Format.printf "%s" s; Out_channel.flush stdout | _ -> () *)
 
   let build_hypothesis
@@ -79,6 +148,7 @@ struct
     _check_consistency (Fqueue.enqueue Fqueue.empty (ot.s0, hyp.s0))
 
   let lsharp_run (oracle : IOSOracle.t) (sul : S.t) (input_alphabet : I.t list) (* (output_alphabet : O.t list) *) =
+    let lsharp_t0 = Time_now.nanoseconds_since_unix_epoch () in
     (* This is for ADS and computes the expected reward
     let rec expected_reward ot u : int =
       let inp = IIOObservationTree.ISet.to_list (List.fold input_alphabet ~init:IIOObservationTree.ISet.empty ~f:(fun acc_inp i ->
@@ -123,6 +193,17 @@ struct
           let fs_cand = Set.filter basis ~f:(fun b -> not (IIOObservationTree.apart ot fs b)) in
             Map.add_exn prev_f2b ~key:fs ~data:(Set.to_list fs_cand)
         ) in
+    let make_state ot basis =
+      { ot; basis; frontier = gen_frontier ot basis; f2b = None }
+    in
+    let state_f2b state =
+      match state.f2b with
+      | Some f2b -> f2b
+      | None ->
+          let f2b = gen_f2b state.ot ~basis:state.basis ~frontier:state.frontier in
+          state.f2b <- Some f2b;
+          f2b
+    in
     let shortest_cex (ot : IIOObservationTree.t) (hyp : IIOMealy.t) (rho : I.t list) : I.t list =
       (* Logs.debug (fun m -> m "shortest_cex: ot is %s" (Sexp.to_string (IIOObservationTree.sexp_of_t ot))); *)
       (* Logs.debug (fun m -> m "shortest_cex: hyp is %s" (Sexp.to_string (IIOMealy.sexp_of_t hyp))); *)
@@ -201,33 +282,30 @@ struct
       FIXME: We could do that, but maybe it's not worthy
     *)
     let isolated_to_basis
-      (ot : IIOObservationTree.t)
-      (basis : Int.Set.t) =
+      (state : loop_state_t) =
       (* Logs.debug (fun m -> m "R1 check"); *)
-      let frontier = gen_frontier ot basis in
-      match Set.find frontier ~f:(fun q -> Set.for_all basis ~f:(IIOObservationTree.apart ot q)) with
+      match Set.find state.frontier ~f:(fun q -> Set.for_all state.basis ~f:(IIOObservationTree.apart state.ot q)) with
       | None ->
           (* show_rule "\x1B[1;31m①\x1B[0m"; *)
-          `ContinueNotApplied (ot, basis)
+          `ContinueNotApplied state
       | Some q ->
           (* show_rule "\x1B[1;32m①\x1B[0m"; *)
-          `RestartApplied (ot, Set.add basis q)
+          `RestartApplied (make_state state.ot (Set.add state.basis q))
     in
     (*
       Rule 2: If exists (s in basis) (i in input), ot.step s i = bot, then ask the teacher.
       Updates to rule 2 can be batched since we do not update basis/frontier/f2b but just the observation tree, but we avoid batching for performance reasons (i.e., too many output queries)
     *)
     let explore_frontier
-      (ot : IIOObservationTree.t)
-      (basis : Int.Set.t) =
+      (state : loop_state_t) =
       (* Logs.debug (fun m -> m "R2 check"); *)
       let undef_list = List.filter_map
-        (List.cartesian_product (Set.to_list basis) input_alphabet)
-        ~f:(fun (s, i) -> (match IIOObservationTree.step ot s i with Some _ -> None | _ -> Some (s, i))) in
+        (List.cartesian_product (Set.to_list state.basis) input_alphabet)
+        ~f:(fun (s, i) -> (match IIOObservationTree.step state.ot s i with Some _ -> None | _ -> Some (s, i))) in
       if List.is_empty undef_list then
         (* (show_rule "\x1B[1;31m②\x1B[0m"; *)
         (* Logs.debug (fun m -> m "R2 not applied"); *)
-        `ContinueNotApplied (ot, basis)
+        `ContinueNotApplied state
         (* ) *)
       else
         (
@@ -241,8 +319,8 @@ struct
           )); *)
           ot'), basis) *)
         let (s, i) = List.random_element_exn undef_list in
-        let ot', _ = IOSOracle.output_query oracle ot sul ((IIOObservationTree.access ot s) @ [i]) in
-          `RestartApplied (ot', basis)
+        let ot', _ = IOSOracle.output_query oracle state.ot sul ((IIOObservationTree.access state.ot s) @ [i]) in
+          `RestartApplied (make_state ot' state.basis)
         )
     in
     (*
@@ -254,29 +332,27 @@ struct
       Again, we avoid batching for performance reasons (i.e., too many output queries)
     *)
     let explore_from_frontier
-      (ot : IIOObservationTree.t)
-      (basis : Int.Set.t) =
+      (state : loop_state_t) =
       (* This finds a state q in frontier s.t. exists r, r'. r <> r' /\ not (q # r) /\ not (q # r'), if any *)
-      let frontier = gen_frontier ot basis in
-      let f2b = gen_f2b ot ~basis ~frontier in
+      let f2b = state_f2b state in
       let qrr'_list = List.filter_map (Map.to_alist f2b) ~f:(fun (q, r_list) -> match r_list with |
       r::r'::_ -> Some (q, r, r') | _ -> None) in
       if List.is_empty qrr'_list then
         (
           (* show_rule "\x1B[1;31m③\x1B[0m"; *)
           (* Logs.debug (fun m -> m "R3 not applied: no non-identified state q in frontier"); *)
-          `ContinueNotApplied (ot, basis)
+          `ContinueNotApplied state
         )
       else
         (
           (* show_rule (sprintf "\x1B[1;32m③x%d\x1B[0m" (List.length qrr'_list)); *)
           (* Since we do not batch, we just select one from qrr'_list that satisfied the apartness conditions and use it. The fold_until stops after finding the first valid triple *)
-          let ot' = List.fold_until qrr'_list ~init:ot ~finish:(fun ot -> ot) ~f:(
+          let ot' = List.fold_until qrr'_list ~init:state.ot ~finish:(fun ot -> ot) ~f:(
             fun acc_ot (q, r, r') ->
               if IIOObservationTree.apart acc_ot q r || IIOObservationTree.apart acc_ot q r' then
-                Continue ot (* i.e., Skip the triple *)
+                Continue acc_ot (* i.e., skip the triple *)
               else
-              (match IIOObservationTree.apart_with_witness ot r r' with
+              (match IIOObservationTree.apart_with_witness state.ot r r' with
               | `Apart witness ->
                   let access_path = IIOObservationTree.access acc_ot q in
                   let ot', _ = IOSOracle.output_query oracle acc_ot sul (access_path @ witness) in
@@ -295,45 +371,43 @@ struct
                     (ot |- q:%d # r':%d? %b),
                     (acc_ot |- q:%d # r:%d? %b),
                     (acc_ot |- q:%d # r':%d? %b)"
-                    q r (IIOObservationTree.apart ot q r)
-                    q r' (IIOObservationTree.apart ot q r)
+                    q r (IIOObservationTree.apart state.ot q r)
+                    q r' (IIOObservationTree.apart state.ot q r)
                     q r (IIOObservationTree.apart acc_ot q r)
                     q r' (IIOObservationTree.apart acc_ot q r))
               )
           ) in
-            `RestartApplied (ot', basis)
+            `RestartApplied (make_state ot' state.basis)
         )
     in
     (* Rule 4: the only rule that can return true on the second component *)
     let check_hypothesis
-      (ot : IIOObservationTree.t)
-      (basis : Int.Set.t) =
+      (state : loop_state_t) =
       (* Logs.debug (fun m -> m "R4 check"); *)
-      let frontier = gen_frontier ot basis in
-      match (Set.find frontier ~f:(fun q -> Set.for_all basis ~f:(IIOObservationTree.apart ot q)), basis_complete ot basis input_alphabet) with
+      match (Set.find state.frontier ~f:(fun q -> Set.for_all state.basis ~f:(IIOObservationTree.apart state.ot q)), basis_complete state.ot state.basis input_alphabet) with
       | Some _, _ | None, false ->
         (* show_rule "\x1B[1;31m④\x1B[0m"; *)
         (* Logs.debug (fun m -> m "R4 not applied"); *)
-        `RestartNotApplied (ot, basis)
+        `RestartNotApplied state
       | None, true ->
         (* The conditions are OK for rule 4. *)
-        let f2b = gen_f2b ot ~basis ~frontier in
+        let f2b = state_f2b state in
         (* show_rule "\x1B[1;32m④\x1B[0m"; *)
-        let h = build_hypothesis ot basis input_alphabet f2b in
+        let h = build_hypothesis state.ot state.basis input_alphabet f2b in
         (* Logs.debug (fun m -> m "R4: ot is %s" (Sexp.to_string (IIOObservationTree.sexp_of_t ot))); *)
         (* Logs.debug (fun m -> m "R4: hypothesis is %s" (Sexp.to_string (IIOMealy.sexp_of_t h))); *)
-        match check_consistency ot h with
+        match check_consistency state.ot h with
         | `NotConsistent nc_witness ->
           (* Logs.debug (fun m -> m "R4: hypothesis not consistent"); *)
-            let ot', _  = proc_cex ~ot:ot ~hyp:h ~basis:basis ~frontier:frontier ~sigma:nc_witness in
+            let ot', _  = proc_cex ~ot:state.ot ~hyp:h ~basis:state.basis ~frontier:state.frontier ~sigma:nc_witness in
             (* let f2b' = gen_f2b ot' ~basis:basis ~frontier:frontier' in *)
               (* Logs.debug (fun m -> m "R4: applied"); *)
-              `RestartApplied (ot', basis)
+              `RestartApplied (make_state ot' state.basis)
         | `Consistent -> (
           (match Logs.level () with
           | Some Logs.App -> Format.print_newline (); Out_channel.flush stdout
           | _ -> ());
-            match IOSOracle.equiv_query oracle ot sul h with
+            match IOSOracle.equiv_query oracle state.ot sul h with
             | `Cex (ot', icex) ->
                 (* Logs.debug
                   (fun m -> m "R4: hyp consistent, cex found by equiv_query: %s"
@@ -342,13 +416,13 @@ struct
                   (* Logs.debug
                     (fun m -> m "R4: shortest_cex: %s"
                       (Sexp.to_string (List.sexp_of_t (I.sexp_of_t) short_cex))); *)
-                let ot'', _ = proc_cex ~ot:ot' ~hyp:h ~basis:basis ~frontier:frontier ~sigma:short_cex in
+                let ot'', _ = proc_cex ~ot:ot' ~hyp:h ~basis:state.basis ~frontier:state.frontier ~sigma:short_cex in
                   (* Logs.debug (fun m -> m "R4 applied"); *)
                   (match Logs.level () with
                   | Some Logs.App -> Format.print_newline (); Out_channel.flush stdout
                   | _ -> ());
                   (* let f2b'' = gen_f2b ot'' ~basis:basis ~frontier:frontier' in *)
-                  `RestartApplied (ot'', basis)
+                  `RestartApplied (make_state ot'' state.basis)
             | `Equivalent ->
               (* Logs.debug (fun m -> m "R4: done -- hyp and sul are equivalent!"); *)
               `Finished h
@@ -364,25 +438,26 @@ struct
         ~transition:(IIOObservationTree.TransitionMap.empty) in
     (* let frontier = gen_frontier ot basis in
     let f2b = gen_f2b ot ~basis:basis ~frontier:frontier in *)
-    let rule_sched = [ isolated_to_basis; explore_frontier; explore_from_frontier; check_hypothesis ] in
+    let rule_sched = [ (`R1, isolated_to_basis); (`R2, explore_frontier); (`R3, explore_from_frontier); (`R4, check_hypothesis) ] in
     (* Execute the above rules, using Rule 4 only if nothing else applies (it's the last in the list!) *)
-    let rec _rule_apply rl c_ot c_basis =
+    let rec _rule_apply rl state =
       (match rl with
       | [] -> failwith "No rule is applicable and R4 did not find a suitable automatons: this is a bug."
-      | rule::rs ->
-        match rule c_ot c_basis with
-        | `RestartApplied (p_ot, p_basis)
-        | `RestartNotApplied (p_ot, p_basis) ->
+      | (rule_id, rule)::rs ->
+        match apply_profiled_rule rule_id rule state with
+        | `RestartApplied p_state
+        | `RestartNotApplied p_state ->
             (* The rule requested to start over *)
             (* show_rule " "; *)
-            _rule_apply rule_sched p_ot p_basis
-        | `ContinueNotApplied (p_ot, p_basis) ->
-        (* | `ContinueApplied (p_ot, p_basis) -> *)
+            _rule_apply rule_sched p_state
+        | `ContinueNotApplied p_state ->
             (* Last rule not applied, proceed with current schedule *)
-            _rule_apply rs p_ot p_basis
+            _rule_apply rs p_state
         | `Finished h ->
             (* Rule 4 completed the learning process *)
             h
       ) in
-    _rule_apply rule_sched ot basis
+    let result = _rule_apply rule_sched (make_state ot basis) in
+    profile.total_ms <- profile.total_ms +. ms_since lsharp_t0;
+    result
 end

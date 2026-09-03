@@ -8,17 +8,9 @@ open Enclave
 
 module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
 
-module IIBLSharpRW = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Randomwalkoracle.RandomWalkOracle)
-module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Pacoracle.PACOracle)
-module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
-module IIBLSharpIncrExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Incrementalexhoracle.IncrementalExhOracle)
-(* module IIBLSharpHybrid = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Hybridoracle.HybridOracle) *)
-
-module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module IncrementalOracle = Learninglib.Incrementalexhoracle.IncrementalExhOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-(* module HybridOracle = Learninglib.Hybridoracle.HybridOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) *)
+(* The learner and the oracles are instantiated inside [do_run] below, against
+   whichever backend the caller selected, rather than being pinned to the
+   simulator here. *)
 
 let filter_model (m : IOInteropInternal.IIOMealy.t) =
   let _filtered_transition = Map.filteri
@@ -149,9 +141,35 @@ let command =
       "--precompute"
       no_arg
       ~doc:"Tries to compute all the spec strings beforehand, so filling the observation tree and speeding up the learning (WARNING: may take a long time or fail to terminate!)" *)
+    and fpga =
+      flag
+        "--fpga"
+        no_arg
+        ~doc:"Use the physical FPGA backend (default: Verilog simulator)"
     in
     fun () ->
       Cli_diagnostics.protect ~debug:dbg (fun () ->
+        (* Coarse end-to-end timings, printed as [LEARN_PHASES] on exit. *)
+        let learn_start = Time_now.nanoseconds_since_unix_epoch () in
+        let phase_rows = ref [] in
+        let ms_since start =
+          let open Int63 in
+          to_float (Time_now.nanoseconds_since_unix_epoch () - start) /. 1_000_000.0
+        in
+        let phase name f =
+          let start = Time_now.nanoseconds_since_unix_epoch () in
+          Exn.protect ~f ~finally:(fun () ->
+            phase_rows := (name, ms_since start) :: !phase_rows)
+        in
+        let print_phase_summary () =
+          let phases =
+            !phase_rows
+            |> List.rev
+            |> List.map ~f:(fun (name, ms) -> sprintf "%s_ms=%.1f" name ms)
+            |> String.concat ~sep:" "
+          in
+          eprintf "[LEARN_PHASES] total_ms=%.1f %s\n%!" (ms_since learn_start) phases
+        in
         (* Random.self_init (); *)
         Random.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
@@ -185,27 +203,21 @@ let command =
         let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
         let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
         let spec_dfa = Inputgen.build_spec_dfa complete_spec in
-        (* (2) initialize the interface with the processor's implementation *)
-        let sul =
-          Sancus.Verilog.make
-            ~workingdir:cwd
-            ~tmpdir:tmpdir
-            ~basename:"generic"
-            ~verilog_compile: (cwd ^ "/../scripts/verilog_compile")
-            ~get_symbolpos: (cwd ^ "/../scripts/get_symbolpos.sh")
-            ~pmem_elf:"pmem.elf"
-            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
-            ~simulate_script:(cwd ^ "/../scripts/simulate")
-            ~submitfile:(cwd ^ "/../src/submit.f")
-            ~sancus_repo:sancus_core_gap_dir
-            ~sancus_master_key:sancus_master_key
-            ~commit:commit
-            ~templatefile:(cwd ^ "/../src/generic_template.s43")
-            ~filledfile:"generic.s43"
-            ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa
-            ~ignore_interrupts:ignore_interrupts
-            () in
+        (* (2) run the learner against whichever backend was selected. The
+           learner and oracles are instantiated here, over a locally abstract
+           SUL type, so the same code drives the simulator and the board. *)
+        let do_run (type t)
+            (module Sul : Learninglib.Sul.SUL
+                with type t = t
+                and type input_t = Sancus.Input.t
+                and type output_t = Sancus.Output_internal.t)
+            (sul : t) =
+          let module IIBLSharpRW = LSharp (Sancus.Input) (Sancus.Output_internal) (Sul) (Learninglib.Randomwalkoracle.RandomWalkOracle) in
+          let module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sul) (Learninglib.Pacoracle.PACOracle) in
+          let module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sul) (Learninglib.Exhaustiveoracle.ExhaustiveOracle) in
+          let module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
+          let module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
+          let module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sul) in
         (* (3) prepare the oracle *)
         let attacker_atoms =
           List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
@@ -215,6 +227,7 @@ let command =
         let complete_input_alphabet = Input.INoInput :: alphabet_attacker @ alphabet_enclave in
         let
           (outputquery_cnt, equivquery_cnt, sul_reset_cnt, sul_step_cnt, sul_step_dry_cnt, avg_len, sigmasq_len), time, learned =
+          phase "learn_oracle" (fun () ->
           if String.equal oracle_name "randomwalk" then
             let oracle = (RWOracle.make
                 ~step_limit:step_limit
@@ -461,7 +474,7 @@ let command =
             HybridOracle.get_stats oracle,
             Time_now.nanoseconds_since_unix_epoch () - start,
             learned *)
-          else assert false
+          else assert false)
         in
         (* and, finally, (5) to produce the output *)
         if report then
@@ -500,11 +513,34 @@ let command =
                 avgpath_len
             ) else (printf "\n"); *)
         let final_model = filter_model learned in
-        let graph = IOInteropInternal.dot_of_t final_model in
-        let basename = sprintf "%s" resfile in
-        let dot_dest = basename in
-        IOInteropInternal.Dot.output_graph (Stdlib.open_out_bin dot_dest) graph;
-          Logs.debug (fun m -> m "\n=== Graph written to %s\n" basename)
+        phase "dot_write" (fun () ->
+          let graph = IOInteropInternal.dot_of_t final_model in
+          let basename = sprintf "%s" resfile in
+          let dot_dest = basename in
+          IOInteropInternal.Dot.output_graph (Stdlib.open_out_bin dot_dest) graph;
+          Logs.debug (fun m -> m "\n=== Graph written to %s\n" basename))
+        in
+        let make_backend make_fn =
+          phase "sul_make" (fun () ->
+            make_fn
+              ~sancus_repo:sancus_core_gap_dir ~sancus_master_key:sancus_master_key
+              ~commit:commit ~workingdir:cwd ~tmpdir:tmpdir ~basename:"generic"
+              ~verilog_compile:(cwd ^ "/../scripts/verilog_compile")
+              ~get_symbolpos:(cwd ^ "/../scripts/get_symbolpos.sh")
+              ~pmem_script:(cwd ^ "/../scripts/build_pmem")
+              ~simulate_script:(cwd ^ "/../scripts/simulate")
+              ~submitfile:(cwd ^ "/../src/submit.f")
+              ~templatefile:(cwd ^ "/../src/generic_template.s43")
+              ~pmem_elf:"pmem.elf" ~filledfile:"generic.s43"
+              ~dumpfile:"tb_openMSP430.vcd"
+              ~initial_spec:spec_dfa ~ignore_interrupts:ignore_interrupts
+              ?sim_cycle_ratio:None ())
+        in
+        Exn.protect
+          ~f:(fun () ->
+            if fpga then do_run (module Sancus.Fpga) (make_backend Sancus.Fpga.make)
+            else do_run (module Sancus.Verilog) (make_backend Sancus.Verilog.make))
+          ~finally:print_phase_summary
       )
     )
 

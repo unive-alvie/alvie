@@ -1,0 +1,41 @@
+#!/bin/bash
+# Per-step pmem build for Verilog simulator.
+# Assumes setup_sim.sh has already been run for this tmpdir.
+# Skips msp430-objdump (listing only, not needed for simulation).
+# Outputs: $tmpdir/$basename.mem  (loaded by Verilog testbench)
+#
+# Usage: build_pmem_sim <tmpdir> <basename> [>/dev/null 2>/dev/null]
+
+tmpdir="$1"
+basename="$2"
+
+if [ -z "$MSPGCC_PFX" ]; then
+    if command -v msp430-gcc >/dev/null; then
+        MSPGCC_PFX=msp430
+    else
+        MSPGCC_PFX=msp430-elf
+    fi
+fi
+
+scriptsdir="$(dirname "$0")"
+srcdir="$scriptsdir/../src"
+
+cp "$tmpdir/$basename.s43" "$tmpdir/pmem.s43"
+
+$MSPGCC_PFX-as \
+    -I "$srcdir/gap-attacks" \
+    -I "$tmpdir" \
+    --defsym "__SECRET=${__SECRET:-0}" \
+    "$tmpdir/pmem.s43" \
+    -o "$tmpdir/pmem.o"
+
+$MSPGCC_PFX-ld \
+    -T "$tmpdir/pmem.x" \
+    "$tmpdir/pmem.o" \
+    -o "$tmpdir/pmem.elf"
+
+$MSPGCC_PFX-objcopy -O ihex "$tmpdir/pmem.elf" "$tmpdir/pmem.ihex"
+
+# Source pmem.sh to get pmemsize (generated once by setup_sim.sh)
+source "$tmpdir/pmem.sh"
+"$scriptsdir/ihex2mem.tcl" -ihex "$tmpdir/pmem.ihex" -out "$tmpdir/$basename.mem" -mem_size $pmemsize

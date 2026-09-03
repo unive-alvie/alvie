@@ -3,7 +3,7 @@ open Interop
 
 open Core
 
-module IOVOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output) (Sancus.Verilog)
+module IOVOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output) (Sancus.Fpga)
 module IOInterop = Interop (Sancus.Input) (Sancus.Output)
 
 module Obs = struct
@@ -22,8 +22,8 @@ module Obs = struct
 end
 
 module LTS (S : sig type t [@@deriving eq,ord,sexp,hash,show] end) = struct
-  module LTSMap = Map.Make (struct type t = S.t * Obs.t [@@deriving ord,sexp] end) [@@deriving sexp]
-  module LTSSSet = Set.Make (struct type t = S.t [@@deriving ord,sexp] end) [@@deriving sexp]
+  module LTSMap = Map.Make (struct type t = S.t * Obs.t [@@deriving ord,sexp] end)
+  module LTSSSet = Set.Make (struct type t = S.t [@@deriving ord,sexp] end)
 
   type lts_map_t = LTSSSet.t LTSMap.t [@@deriving sexp]
   type t = {

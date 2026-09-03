@@ -13,6 +13,33 @@ type label_t = string*string [@@deriving sexp,ord]
 
 let dbg_str () = match Logs.level () with | Some Logs.Debug -> "" | _ -> ">/dev/null 2>/dev/null"
 
+type verilog_stats_t = {
+  mutable build_calls : int;
+  mutable build_ms : float;
+  mutable simulate_calls : int;
+  mutable simulate_ms : float;
+}
+
+let verilog_stats = {
+  build_calls = 0;
+  build_ms = 0.0;
+  simulate_calls = 0;
+  simulate_ms = 0.0;
+}
+
+let () =
+  Stdlib.at_exit (fun () ->
+    if verilog_stats.build_calls > 0 || verilog_stats.simulate_calls > 0 then
+      Printf.eprintf
+        "[VERILOG_STATS] build_calls=%d build_ms=%.1f simulate_calls=%d simulate_ms=%.1f avg_build_ms=%.1f avg_simulate_ms=%.1f\n%!"
+        verilog_stats.build_calls
+        verilog_stats.build_ms
+        verilog_stats.simulate_calls
+        verilog_stats.simulate_ms
+        (if verilog_stats.build_calls = 0 then 0.0 else verilog_stats.build_ms /. Float.of_int verilog_stats.build_calls)
+        (if verilog_stats.simulate_calls = 0 then 0.0 else verilog_stats.simulate_ms /. Float.of_int verilog_stats.simulate_calls)
+  )
+
 let show_mode m = match m with `PM -> "PM" | `UM -> "UM"
 
 let show_e_state e = match e with `NO_SM -> "NO_SM" | `OTHER -> "OTHER" | `RETI -> "RETI" | `PP_JMPOUT -> "PP_JMPOUT" | `HANDLE -> "HANDLE"
@@ -72,6 +99,7 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
   let security = Int.max 20 (4 * String.length sancus_master_key) in
   assert (Sys_unix.command (Format.sprintf "%s/../scripts/build_config.sh \"%s/sancus-core-gap/\" %d %s %s" workingdir r_tmpdir security sancus_master_key (dbg_str ())) = 0);
+  assert (Sys_unix.command (Format.sprintf "%s/../scripts/setup_sim.sh \"%s\" %s" workingdir r_tmpdir (dbg_str ())) = 0);
   (* Load the submit.f file *)
   let submitfile_filled = r_tmpdir ^ "/submit.f" in
   let submit_template = In_channel.read_all submitfile in
@@ -254,14 +282,28 @@ let addr_of_label cfg l =
   (* Logs.debug (fun p -> p "Verilog.addr_of_label %s %s" cfg.pmem_elf l); *)
   Int.of_string ("0x" ^ (String.substr_replace_all ~pattern:"\n" ~with_:"" (Shexp_process.eval Shexp_process.(pipe (run "bash" [cfg.get_symbolpos; cfg.pmem_elf; l]) read_all))))
 
+let ms_since t0 =
+  let open Int63 in
+  to_float (Time_now.nanoseconds_since_unix_epoch () - t0) /. 1_000_000.0
+
 let run_simulator (cfg : cfg_t) =
-  (* Call build_pmem to compile and link the code *)
-  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ())) in
+  let build_pmem_sim = Format.sprintf "%s/../scripts/build_pmem_sim" cfg.workingdir in
+  let t0 = Time_now.nanoseconds_since_unix_epoch () in
+  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" build_pmem_sim cfg.tmpdir cfg.basename (dbg_str ())) in
+  let build_ms = ms_since t0 in
+  verilog_stats.build_calls <- verilog_stats.build_calls + 1;
+  verilog_stats.build_ms <- verilog_stats.build_ms +. build_ms;
+  Logs.info (fun m -> m "[PERF] build_pmem_sim: %.1f ms" build_ms);
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
   else (
     (* Invoke the simulator *)
+    let ts = Time_now.nanoseconds_since_unix_epoch () in
     let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ())) in
+    let simulate_ms = ms_since ts in
+    verilog_stats.simulate_calls <- verilog_stats.simulate_calls + 1;
+    verilog_stats.simulate_ms <- verilog_stats.simulate_ms +. simulate_ms;
+    Logs.info (fun m -> m "[PERF] simulate: %.1f ms" simulate_ms);
     (* (match Logs.level () with | Some Logs.Debug -> assert (Sys_unix.command (Format.sprintf "cp %s %s" cfg.dumpfile cfg.workingdir) = 0) | _ -> ()); *)
     if res = 1 then
       failwith "Simulator: Stimulus did not complete!"
@@ -335,8 +377,19 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
   (* let labels = List.dedup_and_sort labels ~compare:[%derive.ord: string*string] in *)
   (* Find the interesting points in the code, using the labels *)
   Logs.debug (fun p -> p "Verilog.analyse_dump: labels: %s" ([%derive.show: (string*string) list] labels));
-  let annot_pcs = List.map labels ~f:(fun (s, e) -> addr_of_label cfg s, addr_of_label cfg e) in
-  let pc_to_label (s, e) = List.find_exn labels ~f:(fun (s', e') -> s = addr_of_label cfg s' && e = addr_of_label cfg e') in
+  let nm_output = Shexp_process.eval Shexp_process.(pipe (run "nm" [cfg.pmem_elf]) read_all) in
+  let sym_table = List.fold (String.split_lines nm_output) ~init:String.Map.empty
+    ~f:(fun acc line ->
+      match String.split (String.strip line) ~on:' ' with
+      | [addr; _; name] -> Map.set acc ~key:name ~data:addr
+      | _ -> acc) in
+  let addr_of_label_fast l =
+    match Map.find sym_table l with
+    | Some addr -> Int.of_string ("0x" ^ String.strip addr)
+    | None -> addr_of_label cfg l
+  in
+  let annot_pcs = List.map labels ~f:(fun (s, e) -> addr_of_label_fast s, addr_of_label_fast e) in
+  let pc_to_label (s, e) = List.find_exn labels ~f:(fun (s', e') -> s = addr_of_label_fast s' && e = addr_of_label_fast e') in
   let pc_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_pc[15:0]" in
   let irq_map = Vcd.get_signal dump "TOP.tb_openMSP430.msp_debug_0.irq" in
   let inst_number_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_number[31:0]" in
@@ -428,15 +481,18 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
           Logs.debug (fun m -> m "Verilog.analyse_dump: folding over inst_numbers and found a RESET, outputting OReset.");
           lin, acc @ [ `Out Output_internal.OReset ]
         | Some (ref_time_end, _) ->
-            (* Extract the list of all elements from e_state_map whose keys are >= ref_time_begin and < ref_time_end *)
+            (* Extract current-instruction Sancus states only.  The value at
+               ref_time_end belongs to the next instruction, even though
+               payload writes have become observable by then. *)
             let e_status = List.map (Map.to_alist (Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
-            (* Extract the values of registers and memory, as the last value before ref_time_end *)
-            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            (* Extract the values of registers and memory, as the last value at
+               or before ref_time_end.  Writes commit on this boundary. *)
+            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
             (* let pmem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
-            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let k = (ref_time_end - ref_time_begin) / cfg.sim_cycle_ratio in
+            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            let k = (ref_time_end - ref_time_begin + 1) / cfg.sim_cycle_ratio in
             let lin' = inst_number in
             Logs.debug (fun m -> m "===== cfg.last_inst_number %d, lin %d, lin' %d\n" cfg.last_inst_number lin lin');
             (* Process the results into an actual output *)
