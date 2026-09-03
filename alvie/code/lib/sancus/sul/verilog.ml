@@ -485,13 +485,18 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
                ref_time_end belongs to the next instruction, even though
                payload writes have become observable by then. *)
             let e_status = List.map (Map.to_alist (Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
-            (* Extract the values of registers and memory, as the last value at
-               or before ref_time_end.  Writes commit on this boundary. *)
+            (* State the instruction writes is read at or before ref_time_end,
+               because writes commit on that boundary. Without this, a store such
+               as `mov #42, &unprot_mem` is invisible in its own observation. *)
             let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
             let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
             let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
             (* let pmem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
-            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key <= ref_time_end))) ~f:snd) in
+            (* timerA is a free-running counter, not state this instruction
+               writes, so the window stays half-open. Reading it at ref_time_end
+               would report the next cycle's tick and inflate every timing
+               observation by one. *)
+            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
             let k = (ref_time_end - ref_time_begin + 1) / cfg.sim_cycle_ratio in
             let lin' = inst_number in
             Logs.debug (fun m -> m "===== cfg.last_inst_number %d, lin %d, lin' %d\n" cfg.last_inst_number lin lin');
