@@ -10,8 +10,8 @@ digraph G {
   8 [shape=circle, ];
   9 [shape=circle, ];
   10 [shape=circle, ];
-
-
+  
+  
   0 -> 1 [fontcolor="#000000", color="#000000",
           label="start_counting 256/Time (k = 10, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
           style="dashed", ];
@@ -41,5 +41,5 @@ digraph G {
           style="dotted", ];
   9 -> 10 [fontcolor="#A40000", color="#A40000", label="ubr/JmpOut",
            style="dotted", ];
-
+  
   }

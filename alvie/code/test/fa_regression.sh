@@ -11,24 +11,28 @@
 # Usage:
 #   bash test/fa_regression.sh            # all tracked cases
 #   bash test/fa_regression.sh --fast     # small cases only, for inner loops
+#   bash test/fa_regression.sh --update   # overwrite the tracked witnesses
+#
+# --update exists for deliberate changes to the analysis layer, where the new
+# witnesses are the intended result. Review the resulting diff before committing:
+# an unexpected change there is exactly the regression this harness is meant to
+# catch.
 #
 # Witnesses are written to a scratch directory. The tracked files under
 # counterexamples/ are read but never modified.
 #
-# Comparison ignores whitespace that carries no meaning in DOT, namely trailing
-# whitespace on a line and the presence or absence of a final newline. The
-# committed witnesses are inconsistent about both: none ends with a newline, and
-# counterexamples/example/ was additionally whitespace-cleaned before being
-# committed. Every other byte, and therefore every node, edge and label, must
-# match exactly.
+# Comparison is exact, byte for byte. The committed witnesses are stored exactly
+# as fa.exe emits them, so any difference at all is a real change in behaviour.
 
 set -uo pipefail
 
 FAST=0
+UPDATE=0
 if [ "$#" -gt 0 ]; then
   case "$1" in
     --fast) FAST=1 ;;
-    *) echo "Usage: $0 [--fast]" >&2; exit 2 ;;
+    --update) UPDATE=1 ;;
+    *) echo "Usage: $0 [--fast|--update]" >&2; exit 2 ;;
   esac
 fi
 
@@ -92,9 +96,19 @@ check_result () {
   violations=$(grep -o 'found [0-9]* FA violations' "$log" | tail -1 | grep -o '[0-9]*')
   : "${violations:=?}"
 
-  # sed drops trailing whitespace per line, and command substitution drops
-  # trailing newlines; every other byte still has to match.
-  if [ "$(sed 's/[[:space:]]*$//' "$produced")" = "$(sed 's/[[:space:]]*$//' "$expected")" ]; then
+  if [ "$UPDATE" -eq 1 ]; then
+    mkdir -p "$(dirname "$expected")"
+    if cmp -s "$produced" "$expected"; then
+      echo "  ok   $label (unchanged, $violations violations)"
+    else
+      cp "$produced" "$expected"
+      echo "  UPD  $label ($violations violations, $(wc -l < "$produced") lines)"
+    fi
+    passed=$((passed + 1))
+    return
+  fi
+
+  if cmp -s "$produced" "$expected"; then
     echo "  ok   $label ($violations violations, $(wc -l < "$produced") lines)"
     passed=$((passed + 1))
   else
@@ -109,6 +123,7 @@ echo "Replaying tracked comparisons through fa.exe"
 echo "  models:    $RES_DIR"
 echo "  witnesses: $CEX_DIR"
 [ "$FAST" -eq 1 ] && echo "  mode:      fast subset ($FAST_CASES)"
+[ "$UPDATE" -eq 1 ] && echo "  mode:      UPDATE, tracked witnesses will be overwritten"
 echo
 
 # Four-model cases: secret 0 and 1, each with and without interrupts.
