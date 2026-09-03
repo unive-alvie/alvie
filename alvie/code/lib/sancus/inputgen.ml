@@ -23,7 +23,6 @@ let upd_enclave_spec (_, b, c, d) a = (a, b, c, d)
 
 type profile_t = {
   mutable get_options_calls : int;
-  mutable get_options_cache_hits : int;
   mutable get_options_ms : float;
   mutable history_len_sum : int;
   mutable history_len_max : int;
@@ -48,7 +47,6 @@ type profile_t = {
 
 let profile = {
   get_options_calls = 0;
-  get_options_cache_hits = 0;
   get_options_ms = 0.0;
   history_len_sum = 0;
   history_len_max = 0;
@@ -84,9 +82,8 @@ let () =
   Stdlib.at_exit (fun () ->
     if profile.get_options_calls > 0 then
       Printf.eprintf
-        "[INPUTGEN_STATS] get_options_calls=%d get_options_cache_hits=%d get_options_ms=%.1f avg_get_options_ms=%.3f history_len_avg=%.1f history_len_max=%d intersperse_ms=%.1f replay_ms=%.1f option_ms=%.1f transition_calls=%d transition_ms=%.1f attacker_derive_calls=%d attacker_derive_ms=%.1f enclave_derive_calls=%d enclave_derive_ms=%.1f attacker_is_empty_calls=%d attacker_is_empty_ms=%.1f enclave_is_empty_calls=%d enclave_is_empty_ms=%.1f attacker_get_atoms_calls=%d attacker_get_atoms_ms=%.1f enclave_get_atoms_calls=%d enclave_get_atoms_ms=%.1f\n%!"
+        "[INPUTGEN_STATS] get_options_calls=%d get_options_ms=%.1f avg_get_options_ms=%.3f history_len_avg=%.1f history_len_max=%d intersperse_ms=%.1f replay_ms=%.1f option_ms=%.1f transition_calls=%d transition_ms=%.1f attacker_derive_calls=%d attacker_derive_ms=%.1f enclave_derive_calls=%d enclave_derive_ms=%.1f attacker_is_empty_calls=%d attacker_is_empty_ms=%.1f enclave_is_empty_calls=%d enclave_is_empty_ms=%.1f attacker_get_atoms_calls=%d attacker_get_atoms_ms=%.1f enclave_get_atoms_calls=%d enclave_get_atoms_ms=%.1f\n%!"
         profile.get_options_calls
-        profile.get_options_cache_hits
         profile.get_options_ms
         (profile.get_options_ms /. Float.of_int profile.get_options_calls)
         (Float.of_int profile.history_len_sum /. Float.of_int profile.get_options_calls)
@@ -235,8 +232,19 @@ let transition sd o =
   profile.transition_ms <- profile.transition_ms +. ms;
   res
 
-let get_options_cache : ((Input.t list * Output_internal.t list * ([ `Next of t | `Stop ] option)) , spec_dfa * ([`Stop | `Next of Input.t] list)) Hashtbl.Poly.t =
-  Hashtbl.Poly.create ()
+(* There was a process-global memo table here keyed on (il, ol, force_encl).
+   It was unsound: get_options is a function of [spec] too, so the same I/O
+   history under a different specification must produce different options, and
+   the cached value carries the advanced spec_dfa as well. Anything driving two
+   specifications in one process therefore got the wrong answer: pbt.exe, which
+   compares two attacker specs by design, and tt_attack, where secret 0 and
+   secret 1 are different specs after Enclave.expand_secret and the earlier case
+   poisoned the entry for the later one. That surfaced as an input being judged
+   unmatchable, so the SUL emitted OIllegal in place of a real observation.
+
+   Removed rather than re-keyed: Phase 3 of design/modularity.md replaces this
+   whole replay with incremental state threaded through the oracle, which is the
+   actual fix. Re-introducing a cache here would need the spec in the key. *)
 
 (* This is based on two facts:
   1. forall (b : body_t) (a : ca_atom_t list), (forall w, not (b ~ aw)) <=> E(lderive b a):
@@ -256,13 +264,6 @@ let get_options
   (spec : spec_dfa)
   (il : Input.t list)
   (ol : Output_internal.t list) : spec_dfa * [`Stop | `Next of Input.t] list =
-  let cache_key = (il, ol, force_encl) in
-  match Hashtbl.find get_options_cache cache_key with
-  | Some cached ->
-      profile.get_options_calls <- profile.get_options_calls + 1;
-      profile.get_options_cache_hits <- profile.get_options_cache_hits + 1;
-      cached
-  | None ->
       let t_get_options = Time_now.nanoseconds_since_unix_epoch () in
       (* CRUCIAL: here we assume that il and ol are valid prefixes, i.e., that matchable spec il ol returns true! *)
       (* il and ol should have the same length here since we are here required to generate an Input! *)
@@ -356,9 +357,7 @@ let get_options
       profile.intersperse_ms <- profile.intersperse_ms +. intersperse_ms;
       profile.replay_ms <- profile.replay_ms +. replay_ms;
       profile.option_ms <- profile.option_ms +. option_ms;
-      let res = curr_spec_dfa', options in
-      Hashtbl.set get_options_cache ~key:cache_key ~data:res;
-      res
+      curr_spec_dfa', options
 
 
 let generate_next
