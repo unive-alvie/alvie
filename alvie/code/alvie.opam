@@ -12,7 +12,7 @@ tags: [
 ]
 depends: [
   "dune" {>= "3.1"}
-  "ocaml" {>= "4.13"}
+  "ocaml" {>= "5.4"}
   "alcotest"
   "angstrom"
   "core"

@@ -15,7 +15,7 @@
 \" to appear at IEEE CSF 2024")
  (description "")
  (depends
-  (ocaml (>= "4.13"))
+  (ocaml (>= "5.4"))
   alcotest
   angstrom
   core
