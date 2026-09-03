@@ -685,17 +685,24 @@ let analyse_trace (diverges : bool) (cfg : cfg_t) (labels : (string * string) li
           (* e_status: all e_state values across the full instruction *)
           let inst_cycles = all_cycles_of entry.inst_number in
           let e_status = List.map inst_cycles ~f:(fun e -> sprintf "%d" e.e_state) in
-          (* Match Verilog analysis: payload signals are sampled at the next
-             instruction boundary, after writes have had a chance to commit. *)
+          (* Match Verilog analysis: state the instruction writes is read at the
+             next instruction boundary, after writes have had a chance to
+             commit. Without this a store is invisible in its own observation. *)
           let payload_entry =
             match first_cycle_of (entry.inst_number + 1) with
             | Some next_entry -> next_entry
             | None -> Option.value (List.last inst_cycles) ~default:entry
           in
+          (* timerA is a free-running counter rather than state this instruction
+             writes, so it is read within the instruction, mirroring the
+             half-open window Verilog uses for it. Reading it at the next
+             boundary reports the following cycle's tick and puts every FPGA
+             timing observation one above the simulator's. *)
+          let timer_entry = Option.value (List.last inst_cycles) ~default:entry in
           let reg_val = sprintf "%d" payload_entry.r4 in
           let gie_val = if payload_entry.gie = 1 then "true" else "false" in
           let umem_val = sprintf "%d" payload_entry.umem in
-          let timerA_val = sprintf "%d" payload_entry.timerA in
+          let timerA_val = sprintf "%d" timer_entry.timerA in
           (* k: number of clock cycles for this instruction *)
           let k = Int.max 1 (List.length inst_cycles) in
           let lin' = entry.inst_number in
