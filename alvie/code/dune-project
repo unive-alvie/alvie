@@ -2,6 +2,8 @@
 
 (name alvie)
 
+(version 2026.09)
+
 (generate_opam_files true)
 
 (authors "Matteo Busi, Riccardo Focardi, Flaminia Luccio")

@@ -1,5 +1,5 @@
 # Building (multi-platform):
-#   docker buildx build --platform linux/amd64,linux/arm64 -t matteobusi/alvie_csf24 --push .
+#   docker buildx build --platform linux/amd64,linux/arm64 -t matteobusi/alvie:2026.09 -t matteobusi/alvie:latest --push .
 # Building (single platform):
 #   docker build -t alvie .
 # Running:
