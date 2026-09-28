@@ -18,6 +18,9 @@ ALVIE was initially designed for [Sancus](https://github.com/sancus-tee), a ligh
 As part of the [CCAT project](https://ccat.fi.muni.cz/), ALVIE is being extended to other architectures.
 **ALVIE/Sancus** denotes the Sancus-specific backend and workflow, while **ALVIE** refers to the general framework.
 
+In this tutorial, we work from the command line.
+For a graphical alternative, [alvie-ui](https://github.com/unive-alvie/alvie-ui) is an easy-to-use user interface for ALVIE, developed at Ca’ Foscari University of Venice by Marco Ballarin and Giovanni Quacchia during their thesis work.
+
 ALVIE/Sancus experiments assess whether families of Sancus enclaves, which are hardware-protected memory regions for code and data, protect their secrets from timing and interrupt-capable attackers.
 A standard experiment uses the same attacker and victim specifications to learn four models: secret 0 and secret 1, each with interrupts enabled and ignored.
 `fa.exe` compares the two interrupt-enabled models and filters out differences that are also present in the no-interrupt models.

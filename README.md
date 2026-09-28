@@ -4,7 +4,7 @@ ALVIE is an open-source security-analysis framework that learns finite-state mod
 It combines active automata learning with model checking to produce witness traces when selected behaviors are distinguishable.
 **ALVIE/Sancus** is the current backend and workflow for Sancus/openMSP430 systems.
 
-[Homepage](https://unive-alvie.github.io/alvie/) · [Documentation](https://unive-alvie.github.io/alvie/guides/walkthrough-repro/) · [Getting Started](https://unive-alvie.github.io/alvie/getting-started/) · [Docker Hub](https://hub.docker.com/r/matteobusi/alvie) · [Paper](https://ieeexplore.ieee.org/abstract/document/10664425)
+[Homepage](https://unive-alvie.github.io/alvie/) · [Documentation](https://unive-alvie.github.io/alvie/guides/walkthrough-repro/) · [Getting Started](https://unive-alvie.github.io/alvie/getting-started/) · [Docker Hub](https://hub.docker.com/r/matteobusi/alvie) · [ALVIE UI](https://github.com/unive-alvie/alvie-ui) · [Paper](https://ieeexplore.ieee.org/abstract/document/10664425)
 
 ## Quick Start
 
@@ -26,6 +26,11 @@ dune build
 ```
 
 The complete native setup, Docker output mount, command-line interfaces, and simulation workflows are maintained in the [documentation](https://unive-alvie.github.io/alvie/guides/walkthrough-repro/).
+
+## Graphical Interface
+
+[alvie-ui](https://github.com/unive-alvie/alvie-ui) is an easy-to-use user interface for ALVIE.
+It was developed at Ca’ Foscari University of Venice by Marco Ballarin and Giovanni Quacchia during their thesis work.
 
 ## What ALVIE Produces
 
