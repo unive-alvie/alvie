@@ -4,6 +4,14 @@
 
 This is the first release since the CSF'24 artifact (`csf24.v1`).
 
+### ALVIE UI
+
+ALVIE now has an easy-to-use graphical interface,
+[alvie-ui](https://github.com/unive-alvie/alvie-ui): a user interface for the
+ALVIE research tool from Ca’ Foscari University of Venice, developed by Marco
+Ballarin and Giovanni Quacchia during their thesis work at Ca’ Foscari
+University of Venice.
+
 ### Build and distribution
 
 - Ports ALVIE to OCaml 4.14 and updates library calls.
