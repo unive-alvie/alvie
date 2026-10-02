@@ -1,4 +1,0 @@
-enclave {
-    cmp ?, r4;
-    ubr
-};

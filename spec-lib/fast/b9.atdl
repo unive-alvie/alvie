@@ -1,9 +1,0 @@
-isr { eps };
-
-prepare {
-    timer_enable 3;
-    create <enc_s, enc_e, data_s, data_e>;
-    jin enc_s
-};
-
-cleanup { nop };
