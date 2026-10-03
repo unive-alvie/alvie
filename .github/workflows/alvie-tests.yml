@@ -44,4 +44,4 @@ jobs:
         run: opam exec -- dune build
       - name: Run VaultLink tests
         working-directory: alvie/code
-        run: opam exec -- dune test test/vaultlink
+        run: opam exec -- dune test test/vaultlink test/wmethod
