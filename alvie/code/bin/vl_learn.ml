@@ -10,10 +10,10 @@ open Vaultlink
 module S = Service.Sul
 module RW = Learninglib.Randomwalkoracle.RandomWalkOracle (Symbol) (Symbol) (S)
 module PAC = Learninglib.Pacoracle.PACOracle (Symbol) (Symbol) (S)
-module Exh = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Symbol) (Symbol) (S)
+module Wm = Learninglib.Wmethodoracle.WMethodOracle (Symbol) (Symbol) (S)
 module LRW = Learninglib.Lsharp.LSharp (Symbol) (Symbol) (S) (Learninglib.Randomwalkoracle.RandomWalkOracle)
 module LPAC = Learninglib.Lsharp.LSharp (Symbol) (Symbol) (S) (Learninglib.Pacoracle.PACOracle)
-module LExh = Learninglib.Lsharp.LSharp (Symbol) (Symbol) (S) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
+module LWm = Learninglib.Lsharp.LSharp (Symbol) (Symbol) (S) (Learninglib.Wmethodoracle.WMethodOracle)
 
 let user_error fmt = Printf.ksprintf (fun msg -> eprintf "ALVIE/VaultLink: %s\n%!" msg; exit 2) fmt
 
@@ -39,12 +39,14 @@ let command =
     (let%map_open.Command spec_file = flag "--spec" (required string) ~doc:"file Specification (.vtdl)"
      and target = flag "--target" (required string) ~doc:"host:port Address of the VaultLink service"
      and res = flag "--res" (required string) ~doc:"file Where the learned model is written, in DOT"
-     and oracle = flag "--oracle" (optional_with_default "randomwalk" string) ~doc:"oracle randomwalk (default), pac, or exhaustive"
+     and oracle = flag "--oracle" (optional_with_default "randomwalk" string) ~doc:"oracle randomwalk (default), pac, or wmethod"
      and step_limit = flag "--step-limit" (optional_with_default 500 int) ~doc:"n randomwalk: steps per equivalence query (default 500)"
      and reset_prob = flag "--reset-probability" (optional_with_default 0.05 float) ~doc:"p randomwalk: chance of restarting the walk after each step (default 0.05)"
      and epsilon = flag "--epsilon" (optional_with_default 0.001 float) ~doc:"e pac: error bound (default 0.001)"
      and delta = flag "--delta" (optional_with_default 0.001 float) ~doc:"d pac: confidence parameter (default 0.001)"
      and round_limit = flag "--round-limit" (optional int) ~doc:"n pac: maximum number of rounds (default: no limit)"
+     and extra_states = flag "--extra-states" (optional_with_default 2 int) ~doc:"k wmethod: the service may have up to k more states than the hypothesis (default 2)"
+     and max_tests = flag "--max-tests" (optional int) ~doc:"n wmethod: stop each equivalence check after n tests, giving up the guarantee (default: no limit)"
      and seed = flag "--seed" (optional_with_default 0 int) ~doc:"n Seed of the random exploration (default 0)"
      and debug = flag "--debug" no_arg ~doc:"Log every step"
      in
@@ -52,8 +54,10 @@ let command =
        Logs.set_reporter (Logs_fmt.reporter ());
        Logs.set_level (Some (if debug then Logs.Debug else Logs.App));
        Random.init seed;
-       if not (List.mem [ "randomwalk"; "pac"; "exhaustive" ] oracle ~equal:String.equal) then
-         user_error "--oracle must be randomwalk, pac, or exhaustive, not %S" oracle;
+       if not (List.mem [ "randomwalk"; "pac"; "wmethod" ] oracle ~equal:String.equal) then
+         user_error "--oracle must be randomwalk, pac, or wmethod, not %S" oracle;
+       if extra_states < 0 then user_error "--extra-states must not be negative";
+       Option.iter max_tests ~f:(fun n -> if n <= 0 then user_error "--max-tests must be positive");
        if step_limit <= 0 then user_error "--step-limit must be positive";
        if Float.(reset_prob < 0. || reset_prob > 1.) then user_error "--reset-probability must be between 0 and 1";
        if Float.(epsilon <= 0. || epsilon >= 1. || delta <= 0. || delta >= 1.) then
@@ -78,10 +82,8 @@ let command =
                     ~next_input:(fun _ il _ -> match next_good il with Some i -> `Next i | None -> `Stop) () in
                 LPAC.lsharp_run o sul alphabet
               | _ ->
-                let o = Exh.make
-                    ~next_options:(fun il _ -> List.map (Service.allowed_inputs spec il) ~f:(fun i -> `Next i))
-                    ~stop_cond:(fun available _ _ -> List.is_empty available) () in
-                LExh.lsharp_run o sul alphabet
+                let o = Wm.make ~extra_states ?max_tests () in
+                LWm.lsharp_run o sul alphabet
             with Service.Service_error msg -> eprintf "\nALVIE/VaultLink: %s\n%!" msg; exit 3
           in
           let elapsed = Int63.to_float (Int63.( - ) (Time_now.nanoseconds_since_unix_epoch ()) start) /. 1e9 in
