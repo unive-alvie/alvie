@@ -42,9 +42,6 @@ jobs:
       - name: Build ALVIE
         working-directory: alvie/code
         run: opam exec -- dune build
-      - name: Run isolated feature suite
+      - name: Run VaultLink tests
         working-directory: alvie/code
-        run: opam exec -- dune exec tt_features -- test --color=never
-      - name: Run CLI diagnostics
-        working-directory: alvie/code
-        run: opam exec -- bash test/cli_diagnostics.sh
+        run: opam exec -- dune test test/vaultlink

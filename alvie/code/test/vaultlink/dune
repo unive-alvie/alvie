@@ -1,0 +1,5 @@
+(test
+  (name vaultlink_tests)
+  (libraries alcotest vaultlink learninglib core)
+  (preprocess (pps ppx_jane))
+)

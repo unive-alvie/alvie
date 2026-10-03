@@ -1,0 +1,6 @@
+(library
+  (name vaultlink)
+  (modules symbol session vtdl observe conn service model)
+  (preprocess (pps ppx_jane))
+  (libraries core unix learninglib)
+)

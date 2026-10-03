@@ -1,0 +1,7 @@
+(executables
+ (names vl_learn vl_compare)
+ (public_names vl_learn vl_compare)
+ (package alvie)
+ (preprocess (pps ppx_jane))
+ (libraries vaultlink learninglib core core_unix.command_unix logs logs.fmt)
+)
