@@ -32,6 +32,37 @@ let drop_illegal (m : t) : t =
   in
   { m with transition; states = Set.filter m.states ~f:mentioned }
 
+(* Renames the states 0, 1, 2, ... in breadth-first order from the initial
+   state, visiting inputs alphabetically, so that equal behaviour gives equal
+   numbering and a model is readable. Unreachable states are dropped. *)
+let renumber (m : t) : t =
+  let inputs = Set.to_list (M.input_alphabet m) in
+  let names = Hashtbl.create (module Int) in
+  let order = Queue.create () in
+  let name s =
+    match Hashtbl.find names s with
+    | Some n -> n
+    | None ->
+      let n = Hashtbl.length names in
+      Hashtbl.set names ~key:s ~data:n;
+      Queue.enqueue order s;
+      n
+  in
+  ignore (name m.s0 : int);
+  let transition = ref M.TransitionMap.empty in
+  while not (Queue.is_empty order) do
+    let s = Queue.dequeue_exn order in
+    List.iter inputs ~f:(fun i ->
+      match M.transition m (s, i) with
+      | None -> ()
+      | Some (o, s') ->
+        let src = Hashtbl.find_exn names s in
+        transition := Map.set !transition ~key:(src, i) ~data:(o, name s'))
+  done;
+  M.make
+    ~states:(M.SSet.of_list (List.init (Hashtbl.length names) ~f:Fn.id))
+    ~s0:0 ~input_alphabet:(M.input_alphabet m) ~transition:!transition
+
 let escape s =
   String.concat_map s ~f:(function '"' -> "\\\"" | '\\' -> "\\\\" | c -> String.of_char c)
 

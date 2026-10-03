@@ -125,3 +125,35 @@ end
 let allowed_inputs (spec : Vtdl.t) (history : Symbol.t list) : Symbol.t list =
   let r = List.fold history ~init:spec.session ~f:(fun r i -> Session.derive i r) in
   List.filter_map spec.inputs ~f:(fun (name, _) -> if Session.allows r name then Some name else None)
+
+(* --- Replay --- *)
+
+type replayed = {
+  input : Symbol.t;
+  command : string;  (* what was sent *)
+  response : string option;  (* the raw line, [None] if the service disconnected *)
+  output : Symbol.t;  (* the abstract output, as the learner would see it *)
+}
+
+(* Sends the given inputs to the service in order and returns the raw
+   conversation. Unlike [step], this ignores the `session` expression: a
+   replay may deviate from what was explored during learning. It stops after a
+   disconnect. *)
+let replay t (inputs : Symbol.t list) : replayed list =
+  pre t;
+  let rec go acc = function
+    | [] -> List.rev acc
+    | input :: rest ->
+      (match List.Assoc.find t.spec.inputs ~equal:String.equal input with
+       | None -> service_error "input %S is not declared in the specification" input
+       | Some command ->
+         t.steps <- t.steps + 1;
+         (match send_line t command with
+          | None ->
+            disconnect t;
+            List.rev ({ input; command; response = None; output = Symbol.disconnected } :: acc)
+          | Some line ->
+            let output = Option.value (Observe.classify t.spec.observe line) ~default:Symbol.default in
+            go ({ input; command; response = Some line; output } :: acc) rest))
+  in
+  go [] inputs

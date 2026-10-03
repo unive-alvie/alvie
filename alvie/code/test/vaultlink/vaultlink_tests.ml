@@ -221,6 +221,17 @@ let test_differences_partial () =
   Alcotest.(check int) "smaller has transitions" 2 (Map.length smaller.transition);
   Alcotest.(check int) "no difference" 0 (List.length (Model.differences a smaller))
 
+let test_renumber () =
+  (* States 7 and 3 are reached in the order OPEN-first, so they become 1 and 2 in input order. *)
+  let m = Model.of_dot "digraph model {\n__start -> 9;\n9 -> 7 [label=\"HELLO / OK\"];\n9 -> 3 [label=\"AUDIT / OK\"];\n7 -> 9 [label=\"OPEN / ERR\"];\n3 -> 3 [label=\"OPEN / ERR\"];\n40 -> 40 [label=\"OPEN / ERR\"];\n}\n" in
+  let r = Model.renumber m in
+  Alcotest.(check int) "initial state" 0 r.s0;
+  Alcotest.(check int) "unreachable state dropped" 3 (Set.length r.states);
+  Alcotest.(check (list (list string))) "edges"
+    [ [ "0"; "AUDIT"; "OK"; "1" ]; [ "0"; "HELLO"; "OK"; "2" ]; [ "1"; "OPEN"; "ERR"; "1" ]; [ "2"; "OPEN"; "ERR"; "0" ] ]
+    (List.map (Model.edges r) ~f:(fun (s, i, o, s') -> [ Int.to_string s; i; o; Int.to_string s' ]));
+  Alcotest.(check string) "idempotent" (Model.to_dot r) (Model.to_dot (Model.renumber r))
+
 let () =
   Alcotest.run "vaultlink"
     [ ( "vtdl",
@@ -240,7 +251,8 @@ let () =
           Alcotest.test_case "DOT errors" `Quick test_dot_errors;
           Alcotest.test_case "drop ILLEGAL" `Quick test_drop_illegal;
           Alcotest.test_case "differences" `Quick test_differences;
-          Alcotest.test_case "partial models" `Quick test_differences_partial ] );
+          Alcotest.test_case "partial models" `Quick test_differences_partial;
+          Alcotest.test_case "renumber states" `Quick test_renumber ] );
       ( "session",
         [ Alcotest.test_case "allowed inputs" `Quick test_session;
           Alcotest.test_case "smart constructors" `Quick test_session_constructors ] ) ]

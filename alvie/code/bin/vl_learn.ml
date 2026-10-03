@@ -85,7 +85,7 @@ let command =
             with Service.Service_error msg -> eprintf "\nALVIE/VaultLink: %s\n%!" msg; exit 3
           in
           let elapsed = Int63.to_float (Int63.( - ) (Time_now.nanoseconds_since_unix_epoch ()) start) /. 1e9 in
-          let model = Model.drop_illegal learned in
+          let model = Model.renumber (Model.drop_illegal learned) in
           Out_channel.write_all res ~data:(Model.to_dot model);
           printf "\nLearned a model with %d states and %d transitions in %.1fs (%d commands sent): %s\n"
             (Set.length model.states) (Map.length model.transition) elapsed (Service.steps sul) res))
