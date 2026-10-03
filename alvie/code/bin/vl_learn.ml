@@ -39,7 +39,7 @@ let command =
     (let%map_open.Command spec_file = flag "--spec" (required string) ~doc:"file Specification (.vtdl)"
      and target = flag "--target" (required string) ~doc:"host:port Address of the VaultLink service"
      and res = flag "--res" (required string) ~doc:"file Where the learned model is written, in DOT"
-     and oracle = flag "--oracle" (optional_with_default "randomwalk" string) ~doc:"oracle randomwalk (default), pac, or wmethod"
+     and oracle = flag "--oracle" (optional_with_default "wmethod" string) ~doc:"oracle wmethod (default), randomwalk, or pac"
      and step_limit = flag "--step-limit" (optional_with_default 500 int) ~doc:"n randomwalk: steps per equivalence query (default 500)"
      and reset_prob = flag "--reset-probability" (optional_with_default 0.05 float) ~doc:"p randomwalk: chance of restarting the walk after each step (default 0.05)"
      and epsilon = flag "--epsilon" (optional_with_default 0.001 float) ~doc:"e pac: error bound (default 0.001)"
@@ -90,6 +90,12 @@ let command =
           let model = Model.renumber (Model.drop_illegal learned) in
           Out_channel.write_all res ~data:(Model.to_dot model);
           printf "\nLearned a model with %d states and %d transitions in %.1fs (%d commands sent): %s\n"
-            (Set.length model.states) (Map.length model.transition) elapsed (Service.steps sul) res))
+            (Set.length model.states) (Map.length model.transition) elapsed (Service.steps sul) res;
+          (match oracle, max_tests with
+           | "wmethod", None ->
+             printf "The model is exact if the service has at most %d more states than it, for the inputs your session allows.\n" extra_states
+           | "wmethod", Some n ->
+             printf "Each equivalence check was cut after %d tests, so the model is not guaranteed to be exact.\n" n
+           | _ -> printf "This oracle samples behaviour: the model may miss rare behaviour. Use --oracle wmethod for a check with a guarantee.\n")))
 
 let () = Command_unix.run command
