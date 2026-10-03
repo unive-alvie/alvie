@@ -1,0 +1,5 @@
+(test
+  (name wmethod_tests)
+  (libraries alcotest learninglib core)
+  (preprocess (pps ppx_jane))
+)
