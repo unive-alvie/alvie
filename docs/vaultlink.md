@@ -11,6 +11,10 @@ The workflow has three steps:
 
 ## Specification files
 
+A training exercise provides a starter `.vtdl` file with `values` and `inputs` filled in for its own service.
+`observe` and `session` are left minimal on purpose: writing them is part of the exercise.
+A minimal file still parses and runs, producing a model too small to be useful, as a starting point to extend.
+
 A `.vtdl` file has four sections in this order.
 `values` may be omitted.
 Every section and every statement ends with `;`.
