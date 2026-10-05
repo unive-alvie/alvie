@@ -1,6 +1,11 @@
 **/tmp/
 .vscode
 old
+
+# VaultLink training challenge material (flag, credentials, vulnerability
+# location): must never be committed to this public repository.
+/challenge/
+/vaultlink.zip
 **/logs/
 **/logfast/
 **/tmp/
