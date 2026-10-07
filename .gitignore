@@ -4,7 +4,7 @@ old
 
 # VaultLink training challenge material (flag, credentials, vulnerability
 # location): must never be committed to this public repository.
-/challenge/
+/vaultlink-material/
 /vaultlink.zip
 **/logs/
 **/logfast/
