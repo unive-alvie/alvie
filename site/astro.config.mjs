@@ -9,6 +9,7 @@ export default defineConfig({
       title: 'ALVIE',
       description: 'Automated analysis of Sancus using active automata learning.',
       customCss: ['./src/styles/custom.css'],
+      components: { PageTitle: './src/components/PageTitle.astro' },
       sidebar: [
         { label: 'Getting Started', slug: 'getting-started' },
         { label: 'Guides', items: [{ autogenerate: { directory: 'guides' } }] },

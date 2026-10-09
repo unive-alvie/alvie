@@ -1,6 +1,10 @@
 ---
 title: Designing Your Own Specifications
 description: How to plan, write, check, and refine attacker and enclave specifications for a new ALVIE experiment.
+sidebar:
+  badge:
+    text: Advanced
+    variant: caution
 ---
 
 This guide shows how to design the specifications for an experiment that is not in `spec-lib/`.

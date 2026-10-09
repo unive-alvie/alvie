@@ -1,6 +1,10 @@
 ---
 title: Choosing Learner Settings
 description: How to choose the equivalence oracle and its limits, and how to balance run time against confidence in the learned model.
+sidebar:
+  badge:
+    text: Advanced
+    variant: caution
 ---
 
 The learner settings decide how hard ALVIE looks for behavior that the model does not yet describe.

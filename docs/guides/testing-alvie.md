@@ -1,6 +1,10 @@
 ---
 title: Testing ALVIE
 description: The ALVIE test suites, what each one needs, when to run it, and how to add a test.
+sidebar:
+  badge:
+    text: Advanced
+    variant: caution
 ---
 
 This guide is for people who change the ALVIE code, the specifications, or the documentation.

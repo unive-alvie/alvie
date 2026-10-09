@@ -1,0 +1,20 @@
+---
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import { Badge } from '@astrojs/starlight/components';
+
+// Shows the page's sidebar badge (Beginner or Advanced) next to its title.
+const badge = Astro.locals.starlightRoute.entry.data.sidebar.badge;
+---
+
+<Default {...Astro.props}><slot /></Default>
+{badge && (
+  <p class="level-badge">
+    <Badge text={badge.text} variant={badge.variant} size="medium" />
+  </p>
+)}
+
+<style>
+  .level-badge {
+    margin-top: 0.5rem;
+  }
+</style>

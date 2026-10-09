@@ -1,6 +1,10 @@
 ---
 title: Glossary
 description: Short definitions of the terms that ALVIE documentation and output use.
+sidebar:
+  badge:
+    text: Beginner
+    variant: success
 ---
 
 This glossary gives short definitions.

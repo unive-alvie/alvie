@@ -1,6 +1,10 @@
 ---
 title: Code Architecture
 description: The ALVIE/Sancus implementation.
+sidebar:
+  badge:
+    text: Advanced
+    variant: caution
 ---
 
 This document describes the ALVIE/Sancus implementation.

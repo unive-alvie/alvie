@@ -1,6 +1,10 @@
 ---
 title: Getting Started
 description: A first-session tutorial for building ALVIE/Sancus and learning a Sancus model.
+sidebar:
+  badge:
+    text: Beginner
+    variant: success
 ---
 
 This one-hour tutorial is a first guided session with ALVIE/Sancus.

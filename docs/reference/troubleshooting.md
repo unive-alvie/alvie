@@ -1,6 +1,10 @@
 ---
 title: Troubleshooting
 description: Symptoms, causes, and fixes for the problems that users meet when they build ALVIE, run experiments, and read results.
+sidebar:
+  badge:
+    text: Beginner
+    variant: success
 ---
 
 Find your symptom in the tables below.
