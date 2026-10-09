@@ -294,13 +294,56 @@ let sig_timerA = "TOP.tb_openMSP430.timerA_0.tar[15:0]"
 let sig_umem = "TOP.tb_openMSP430.mem250[15:0]"
 let analysed_signals = [ sig_pc; sig_irq; sig_inst_number; sig_sm_executing; sig_e_state; sig_r4; sig_gie; sig_timerA; sig_umem ]
 
+(*
+  Native version of scripts/ihex2mem.tcl: converts the IHEX file produced by build_pmem into the
+  Verilog MEMH file loaded by the simulator, reproducing the output of the Tcl script exactly.
+*)
+let ihex2mem ~ihex ~out ~mem_size =
+  (* Tcl's [string range s first last], with the clamping behaviour of out-of-range indices *)
+  let string_range str first last =
+    let first = Int.max first 0 and last = Int.min last (String.length str - 1) in
+    if first > last then "" else String.sub str ~pos:first ~len:(last - first + 1) in
+  let hex2dec v = Int.of_string ("0x" ^ v) in
+  let num_word = (mem_size / 2) - 1 in
+  let mem_arr = Array.create ~len:(num_word + 1) "0000" in
+  let mem_offset = 65536 - mem_size in
+  In_channel.with_file ihex ~f:(fun ic ->
+    In_channel.iter_lines ic ~f:(fun line ->
+      let byte_count = hex2dec (string_range line 1 2) in
+      let start_addr = hex2dec (string_range line 3 6) - mem_offset in
+      if String.equal (string_range line 7 8) "00" then (
+        let i = ref 0 in
+        while !i < byte_count * 2 do
+          let mem_msb = string_range line (!i + 11) (!i + 12) in
+          let mem_lsb = string_range line (!i + 9) (!i + 10) in
+          (* Tcl's integer division rounds towards negative infinity *)
+          let addr = Int.( /% ) (start_addr + (!i / 2)) 2 in
+          if addr >= 0 && addr <= num_word then mem_arr.(addr) <- mem_msb ^ mem_lsb;
+          i := !i + 4
+        done)));
+  let buf = Buffer.create ((num_word + 1) * 6) in
+  Array.iteri mem_arr ~f:(fun i v ->
+    if i % 16 = 0 then Buffer.add_string buf (sprintf "\n@%04x " i);
+    Buffer.add_string buf (sprintf " %2s" v));
+  Buffer.add_string buf "\n\n";
+  Out_channel.write_all out ~data:(Buffer.contents buf)
+
+(* The program memory size, as computed by build_pmem in <tmpdir>/pmem.sh *)
+let pmem_size cfg =
+  let conf = In_channel.read_lines (cfg.tmpdir ^ "/pmem.sh") in
+  match List.find_map conf ~f:(fun l -> String.chop_prefix (String.strip l) ~prefix:"pmemsize=") with
+  | Some v -> Int.of_string (String.strip v)
+  | None -> failwith "Could not find pmemsize in pmem.sh"
+
 let run_simulator (cfg : cfg_t) =
   (* Call build_pmem to compile and link the code *)
   invalidate_symtab ();
-  let res = Prof.time "sul.build_pmem" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))) in
+  let res = Prof.time "sul.build_pmem" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s --no-mem %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))) in
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
   else (
+    Prof.time "sul.ihex2mem" (fun () ->
+      ihex2mem ~ihex:(cfg.tmpdir ^ "/pmem.ihex") ~out:(cfg.tmpdir ^ "/" ^ cfg.basename ^ ".mem") ~mem_size:(pmem_size cfg));
     (* Invoke the simulator *)
     let res = Prof.time "sul.simulate" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ()))) in
     (* (match Logs.level () with | Some Logs.Debug -> assert (Sys_unix.command (Format.sprintf "cp %s %s" cfg.dumpfile cfg.workingdir) = 0) | _ -> ()); *)
