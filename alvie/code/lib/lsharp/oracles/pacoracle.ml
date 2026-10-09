@@ -137,6 +137,8 @@ struct
             failwith (Format.sprintf "equiv_query - this may be a bug: %d -- %s/?? --> ?? in hyp!"
               prev_state (Sexp.to_string (I.sexp_of_t new_i)))
         | Some (o_hyp, _) when not (O.equal o o_hyp) ->
+            Logs.info (fun m -> m "(PAC) counterexample of length %d: %s\n  SUL output:        %s\n  hypothesis output: %s"
+              (sz + 1) (List.to_string ~f:I.show (is @ [new_i])) (O.show o) (O.show o_hyp));
             S.post sul;
             `Cex (ot', is@[new_i], sz+1) (* We found a counter example! *)
         | Some (o_hyp, s_hyp) ->
