@@ -13,10 +13,21 @@ alvie_build_or_exit() {
   fi
 }
 
+# Maximum number of experiments running at the same time (default: number of cores; 0: no limit)
+ALVIE_JOBS="${ALVIE_JOBS:-$(nproc 2>/dev/null || echo 4)}"
+
 alvie_run_background() {
   local name="$1"
   local command="$2"
   local logfile="$3"
+
+  # Throttle: wait for a slot without reaping finished jobs, so that
+  # alvie_wait_for_jobs can still collect their exit status
+  if [ "$ALVIE_JOBS" -gt 0 ]; then
+    while [ "$(jobs -rp | wc -l)" -ge "$ALVIE_JOBS" ]; do
+      sleep 1
+    done
+  fi
 
   echo "$command"
   bash -c "$command" &

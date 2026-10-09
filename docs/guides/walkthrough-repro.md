@@ -99,7 +99,8 @@ Learning time varies substantially with the machine and specification, so we kee
 ./check_all.sh all-sim
 ```
 
-The learning wrapper launches simulator jobs in parallel.
+The learning wrapper launches simulator jobs in parallel, at most as many at a time as the machine has cores.
+We set `ALVIE_JOBS` to choose a different limit (`0` removes it), for example `ALVIE_JOBS=8 ./learn_all.sh all-sim`.
 We use a machine with enough memory and disk space for the temporary VCD and program files.
 
 ## Fast specifications
