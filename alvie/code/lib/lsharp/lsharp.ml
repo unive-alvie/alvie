@@ -79,6 +79,74 @@ struct
     _check_consistency (Fqueue.enqueue Fqueue.empty (ot.s0, hyp.s0))
 
   let lsharp_run (oracle : IOSOracle.t) (sul : S.t) (input_alphabet : I.t list) (* (output_alphabet : O.t list) *) =
+    (*
+      All the observation trees handled during a run are extensions of one another, and apartness is
+      monotone wrt extension: once q # r holds, it holds forever. Hence we remember positive answers
+      (only booleans: witnesses may change when the tree grows) and recompute just the negative ones.
+    *)
+    let known_apart = Hash_set.Poly.create () in
+    (*
+      Negative answers can be reused too, as long as the tree did not change below q or r: q # r only
+      depends on the subtrees rooted in q and r. We keep, for each node, the last epoch in which a node
+      was added to its subtree, and for each non-apart pair the epoch in which this was checked.
+      New nodes are found relying on the fact that the oracles number them increasingly.
+    *)
+    let epoch = ref 0 in
+    let max_seen = ref (-1) in
+    let modified_at = Int.Table.create () in
+    (* Outgoing edges of each node, kept in sync with the tree (transitions are only ever added) *)
+    let children : (I.t * O.t * int) list Int.Table.t = Int.Table.create () in
+    let known_not_apart = Hashtbl.Poly.create () in
+    let sync (ot : IIOObservationTree.t) =
+      match Set.max_elt ot.states with
+      | Some m when m > !max_seen ->
+        incr epoch;
+        Sequence.iter (Set.to_sequence ot.states ~greater_or_equal_to:(!max_seen + 1)) ~f:(fun n ->
+          Option.iter (Map.find ot.pred_map n) ~f:(fun (p, i) ->
+            let o = Option.value_exn (IIOMealy.output ot p i) in
+            Hashtbl.add_multi children ~key:p ~data:(i, o, n));
+          (* Mark n and its ancestors, stopping at the first one already marked in this epoch *)
+          let rec mark n =
+            match Hashtbl.find modified_at n with
+            | Some e when e = !epoch -> ()
+            | _ ->
+              Hashtbl.set modified_at ~key:n ~data:!epoch;
+              Option.iter (Map.find ot.pred_map n) ~f:(fun (p, _) -> mark p) in
+          mark n);
+        max_seen := m
+      | _ -> () in
+    (* Same answer as IIOObservationTree.apart on the latest tree, using the index above *)
+    let apart_indexed q r =
+      let edges n = Option.value (Hashtbl.find children n) ~default:[] in
+      let rec explore = function
+        | [] -> false
+        | (a, b) :: rest ->
+          let eb = edges b in
+          let rec scan todo = function
+            | [] -> explore todo
+            | (i, o, a') :: ea ->
+              match List.find eb ~f:(fun (i', _, _) -> I.equal i i') with
+              | None -> scan todo ea
+              | Some (_, o', b') -> if O.equal o o' then scan ((a', b') :: todo) ea else true in
+          scan rest (edges a) in
+      explore [ (q, r) ] in
+    let unchanged_since e n = Option.value (Hashtbl.find modified_at n) ~default:0 <= e in
+    let apart_fast (ot : IIOObservationTree.t) q r =
+      Hash_set.mem known_apart (q, r) ||
+      (sync ot;
+       match Hashtbl.find known_not_apart (q, r) with
+       | Some e when unchanged_since e q && unchanged_since e r -> false
+       | _ ->
+         let res = Prof.time "lsharp.apart(miss)" (fun () -> apart_indexed q r) in
+         if res then (Hash_set.add known_apart (q, r); Hash_set.add known_apart (r, q))
+         else Hashtbl.set known_not_apart ~key:(q, r) ~data:!epoch;
+         res) in
+    let check_apart = Option.is_some (Sys.getenv "ALVIE_CHECK_APART") in
+    let apart (ot : IIOObservationTree.t) q r =
+      let res = apart_fast ot q r in
+      if check_apart && not (Bool.equal res (IIOObservationTree.apart ot q r)) then
+        failwithf "apartness cache disagrees on (%d, %d)" q r ();
+      res in
     (* This is for ADS and computes the expected reward
     let rec expected_reward ot u : int =
       let inp = IIOObservationTree.ISet.to_list (List.fold input_alphabet ~init:IIOObservationTree.ISet.empty ~f:(fun acc_inp i ->
@@ -100,6 +168,19 @@ struct
       let si_pairs = List.cartesian_product (Set.to_list basis) input_alphabet in
         List.for_all si_pairs ~f:(fun si -> Option.is_some (IIOObservationTree.transition ot si))
     in
+    (*
+      Basis states that are not apart from q. Since apartness is monotone and the basis only grows,
+      we only need to re-check the previous candidates of q and the basis states added since then.
+    *)
+    let cand_memo : (Int.Set.t * Int.Set.t) Int.Table.t = Int.Table.create () in
+    let candidates (ot : IIOObservationTree.t) (basis : Int.Set.t) (q : int) : Int.Set.t =
+      let to_check = match Hashtbl.find cand_memo q with
+        | Some (old_basis, old_cands) when phys_equal old_basis basis -> old_cands
+        | Some (old_basis, old_cands) when Set.is_subset old_basis ~of_:basis -> Set.union old_cands (Set.diff basis old_basis)
+        | _ -> basis in
+      let cands = Set.filter to_check ~f:(fun b -> not (apart ot q b)) in
+      Hashtbl.set cand_memo ~key:q ~data:(basis, cands);
+      cands in
     (* Recompute the frontier given the basis *)
     let gen_frontier (ot : IIOObservationTree.t) (basis : Int.Set.t) : Int.Set.t  =
       List.fold
@@ -120,7 +201,7 @@ struct
         frontier
         ~init:F2BMap.empty
         ~f:(fun prev_f2b fs ->
-          let fs_cand = Set.filter basis ~f:(fun b -> not (IIOObservationTree.apart ot fs b)) in
+          let fs_cand = candidates ot basis fs in
             Map.add_exn prev_f2b ~key:fs ~data:(Set.to_list fs_cand)
         ) in
     let shortest_cex (ot : IIOObservationTree.t) (hyp : IIOMealy.t) (rho : I.t list) : I.t list =
@@ -139,7 +220,7 @@ struct
                 (* Logs.debug (fun m -> m "shortest_cex: transition_all on hyp"); *)
                 let res_hyp = IIOMealy.transition_all hyp hyp.s0 pref in
                 match res_ot, res_hyp  with
-                | Some (_, s_ot), Some (_, s_hyp) when IIOObservationTree.apart ot s_hyp s_ot -> pref
+                | Some (_, s_ot), Some (_, s_hyp) when apart ot s_hyp s_ot -> pref
                 | Some _, Some _ -> _shortest_cex rho_rest (pref @ [i])
                 | _ -> failwith "shortest_cex: this may be a bug")
               )
@@ -184,7 +265,7 @@ struct
                           (* Logs.debug (fun m -> m "proc_cex: q'_access: %s; eta: %s" (List.to_string ~f:I.show q'_access) (List.to_string ~f:I.show eta)); *)
                           let ot', _ = IOSOracle.output_query oracle ot sul (q'_access @ sigma_2 @ eta) in
                           let frontier' = gen_frontier ot' basis in
-                          if IIOObservationTree.apart ot' q' r' then
+                          if apart ot' q' r' then
                             proc_cex ~ot:ot' ~hyp:hyp ~basis:basis ~frontier:frontier' ~sigma:sigma_1
                           else
                             proc_cex ~ot:ot' ~hyp:hyp ~basis:basis ~frontier:frontier' ~sigma:(q'_access @ sigma_2))
@@ -205,7 +286,7 @@ struct
       (basis : Int.Set.t) =
       (* Logs.debug (fun m -> m "R1 check"); *)
       let frontier = gen_frontier ot basis in
-      match Set.find frontier ~f:(fun q -> Set.for_all basis ~f:(IIOObservationTree.apart ot q)) with
+      match Set.find frontier ~f:(fun q -> Set.is_empty (candidates ot basis q)) with
       | None ->
           (* show_rule "\x1B[1;31m①\x1B[0m"; *)
           `ContinueNotApplied (ot, basis)
@@ -273,7 +354,7 @@ struct
           (* Since we do not batch, we just select one from qrr'_list that satisfied the apartness conditions and use it. The fold_until stops after finding the first valid triple *)
           let ot' = List.fold_until qrr'_list ~init:ot ~finish:(fun ot -> ot) ~f:(
             fun acc_ot (q, r, r') ->
-              if IIOObservationTree.apart acc_ot q r || IIOObservationTree.apart acc_ot q r' then
+              if apart acc_ot q r || apart acc_ot q r' then
                 Continue ot (* i.e., Skip the triple *)
               else
               (match IIOObservationTree.apart_with_witness ot r r' with
@@ -310,7 +391,7 @@ struct
       (basis : Int.Set.t) =
       (* Logs.debug (fun m -> m "R4 check"); *)
       let frontier = gen_frontier ot basis in
-      match (Set.find frontier ~f:(fun q -> Set.for_all basis ~f:(IIOObservationTree.apart ot q)), basis_complete ot basis input_alphabet) with
+      match (Set.find frontier ~f:(fun q -> Set.is_empty (candidates ot basis q)), basis_complete ot basis input_alphabet) with
       | Some _, _ | None, false ->
         (* show_rule "\x1B[1;31m④\x1B[0m"; *)
         (* Logs.debug (fun m -> m "R4 not applied"); *)
