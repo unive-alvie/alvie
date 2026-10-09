@@ -172,17 +172,37 @@ struct
       Basis states that are not apart from q. Since apartness is monotone and the basis only grows,
       we only need to re-check the previous candidates of q and the basis states added since then.
     *)
-    let cand_memo : (Int.Set.t * Int.Set.t) Int.Table.t = Int.Table.create () in
-    let candidates (ot : IIOObservationTree.t) (basis : Int.Set.t) (q : int) : Int.Set.t =
-      let to_check = match Hashtbl.find cand_memo q with
-        | Some (old_basis, old_cands) when phys_equal old_basis basis -> old_cands
-        | Some (old_basis, old_cands) when Set.is_subset old_basis ~of_:basis -> Set.union old_cands (Set.diff basis old_basis)
-        | _ -> basis in
-      let cands = Set.filter to_check ~f:(fun b -> not (apart ot q b)) in
-      Hashtbl.set cand_memo ~key:q ~data:(basis, cands);
-      cands in
+    let cand_memo : (Int.Set.t * Int.Set.t * int) Int.Table.t = Int.Table.create () in
+    let rec candidates (ot : IIOObservationTree.t) (basis : Int.Set.t) (q : int) : Int.Set.t =
+      let res = candidates_fast ot basis q in
+      if check_apart && not (Set.equal res (Set.filter basis ~f:(fun b -> not (IIOObservationTree.apart ot q b)))) then
+        failwithf "candidate cache disagrees on %d" q ();
+      res
+    and candidates_fast (ot : IIOObservationTree.t) (basis : Int.Set.t) (q : int) : Int.Set.t =
+      sync ot;
+      match Hashtbl.find cand_memo q with
+      (* Nothing changed below q or its candidates since we computed them: they are still the same *)
+      | Some (old_basis, old_cands, e) when phys_equal old_basis basis && unchanged_since e q && Set.for_all old_cands ~f:(unchanged_since e) ->
+        old_cands
+      | memo ->
+        let to_check = match memo with
+          | Some (old_basis, old_cands, _) when phys_equal old_basis basis -> old_cands
+          | Some (old_basis, old_cands, _) when Set.is_subset old_basis ~of_:basis -> Set.union old_cands (Set.diff basis old_basis)
+          | _ -> basis in
+        let cands = Set.filter to_check ~f:(fun b -> not (apart ot q b)) in
+        Hashtbl.set cand_memo ~key:q ~data:(basis, cands, !epoch);
+        cands in
     (* Recompute the frontier given the basis *)
-    let gen_frontier (ot : IIOObservationTree.t) (basis : Int.Set.t) : Int.Set.t  =
+    let rec gen_frontier (ot : IIOObservationTree.t) (basis : Int.Set.t) : Int.Set.t  =
+      Prof.time "lsharp.gen_frontier" @@ fun () ->
+      (* Same as gen_frontier_orig, using the index of the children of each node *)
+      sync ot;
+      let res = Set.fold basis ~init:Int.Set.empty ~f:(fun acc b ->
+        List.fold (Option.value (Hashtbl.find children b) ~default:[]) ~init:acc ~f:(fun acc (_, _, s') ->
+          if Set.mem basis s' then acc else Set.add acc s')) in
+      if check_apart && not (Set.equal res (gen_frontier_orig ot basis)) then failwith "frontier index disagrees";
+      res
+    and gen_frontier_orig (ot : IIOObservationTree.t) (basis : Int.Set.t) : Int.Set.t  =
       List.fold
         (List.filter_map
           (List.cartesian_product (Set.to_list basis) input_alphabet)
@@ -197,6 +217,7 @@ struct
       (ot : IIOObservationTree.t)
       ~(basis : Int.Set.t)
       ~(frontier : Int.Set.t) : f2b_map_t =
+      Prof.time "lsharp.gen_f2b" @@ fun () ->
       Set.fold
         frontier
         ~init:F2BMap.empty
