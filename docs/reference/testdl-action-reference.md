@@ -1,6 +1,8 @@
 ---
 title: TestDL Action Reference
 description: Syntax and semantics of TestDL actions.
+sidebar:
+  order: 5
 ---
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.

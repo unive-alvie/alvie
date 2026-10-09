@@ -1,0 +1,26 @@
+---
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import { Badge } from '@astrojs/starlight/components';
+
+// Shows the page's level badge and, for recently added pages, a purple "New" badge.
+const { entry } = Astro.locals.starlightRoute;
+const level = entry.data.sidebar.badge;
+const isNew = entry.data.isNew;
+const names = { A: 'Advanced' };
+---
+
+<Default {...Astro.props}><slot /></Default>
+{(level || isNew) && (
+  <p class="page-badges">
+    {level && <Badge text={names[level.text] ?? level.text} variant={level.variant} size="medium" />}
+    {isNew && <Badge text="New" variant="tip" size="medium" />}
+  </p>
+)}
+
+<style>
+  .page-badges {
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+  }
+</style>

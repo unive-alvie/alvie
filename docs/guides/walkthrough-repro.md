@@ -1,6 +1,8 @@
 ---
 title: Reproducing the Simulation Experiments
 description: Build ALVIE/Sancus and reproduce the paper experiments.
+sidebar:
+  order: 3
 ---
 
 In this guide, we build ALVIE/Sancus, run its checked-in example, and then reproduce an attack experiment.
@@ -104,7 +106,8 @@ We use a machine with enough memory and disk space for the temporary VCD and pro
 
 ## Fast specifications
 
-`spec-lib/fast/` contains deliberately smaller attacker and enclave specifications.
+`spec-lib/fast/` contains faster attacker specifications.
+They fix the timer to one value instead of four; the enclave specification is the same.
 We pass `fast` as the namespace to select them:
 
 ```bash

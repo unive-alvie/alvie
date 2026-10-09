@@ -51,10 +51,22 @@ It is not an automatically generated remediation.
 
 ## Learn More
 
+Start here:
+
 - [Getting Started](https://unive-alvie.github.io/alvie/getting-started/) provides a first end-to-end exercise.
+- [How ALVIE Works](https://unive-alvie.github.io/alvie/guides/concepts/) explains the experiment, the four models, and what a result means.
+- [Reading and Checking a Witness](https://unive-alvie.github.io/alvie/guides/interpreting-results/) shows how to read and replay a result.
+- [Troubleshooting](https://unive-alvie.github.io/alvie/reference/troubleshooting/) lists common problems and fixes.
+
+Go further:
+
 - [Reproducing the Simulation Experiments](https://unive-alvie.github.io/alvie/guides/walkthrough-repro/) documents the experiment wrappers and output layout.
+- [Attack Catalogue](https://unive-alvie.github.io/alvie/reference/attack-catalogue/) lists the known Sancus attacks, their commits, and the expected results.
 - [TestDL Tutorial: V-B1 Example](https://unive-alvie.github.io/alvie/guides/testdl-tutorial-vb1/) explains a published vulnerability and its witness.
+- [Choosing Learner Settings](https://unive-alvie.github.io/alvie/guides/learning-settings/) explains the oracles and how to balance time and confidence.
+- [Designing Your Own Specifications](https://unive-alvie.github.io/alvie/guides/writing-specifications/) shows how to plan and check a new experiment.
 - [Executable Reference](https://unive-alvie.github.io/alvie/reference/executables-reference/) documents `learn.exe`, `fa.exe`, `exec.exe`, and `pbt.exe`.
+- [Testing ALVIE](https://unive-alvie.github.io/alvie/guides/testing-alvie/) explains the test suites for contributors.
 
 ## Research
 
