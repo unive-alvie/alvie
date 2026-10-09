@@ -55,6 +55,50 @@ type t = cfg_t ref
 
 let clone s = ref { !s with last_inst_number = !s.last_inst_number}
 
+(*
+  Compiling the simulator takes most of the setup time of a SUL, and experiments compile the same
+  processor over and over. Compiled simulators are kept in a cache directory (ALVIE_SIM_CACHE, by
+  default <tmpdir>/simv-cache; ALVIE_SIM_CACHE=0 disables it), indexed by a digest of everything the
+  compilation depends on: the processor sources as configured in r_tmpdir, the stimulus, the
+  compilation script, the Verilator version and the tracing option. A lock makes concurrent runs
+  needing the same simulator compile it once.
+*)
+let with_simulator_cache ~tmpdir ~workingdir ~r_tmpdir ~basename ~verilog_compile ~submitfile compile =
+  match Sys.getenv "ALVIE_SIM_CACHE" with
+  | Some ("0" | "") -> compile ()
+  | cache_dir ->
+    let cache_dir = Option.value cache_dir ~default:(tmpdir ^ "/simv-cache") in
+    let rec files dir =
+      List.concat_map (List.sort ~compare:String.compare (Sys_unix.ls_dir dir)) ~f:(fun f ->
+        let path = dir ^ "/" ^ f in
+        if Sys_unix.is_directory_exn path then files path else [ path ]) in
+    let core = r_tmpdir ^ "/sancus-core-gap/core" in
+    let sources = files (core ^ "/rtl") @ files (core ^ "/bench") in
+    let verilator_version = In_channel.input_all (Core_unix.open_process_in "verilator --version 2>&1") in
+    let digest = Md5.digest_string (String.concat ~sep:"\000" (
+      [ verilator_version; Option.value (Sys.getenv "ALVIE_FULL_TRACE") ~default:"";
+        In_channel.read_all (workingdir ^ "/../src/" ^ basename ^ ".v");
+        In_channel.read_all verilog_compile; In_channel.read_all submitfile ]
+      @ List.concat_map sources ~f:(fun f -> [ String.chop_prefix_exn f ~prefix:core; In_channel.read_all f ]))) in
+    let cached = cache_dir ^ "/" ^ Md5.to_hex digest ^ ".simv" in
+    let simv_dir = r_tmpdir ^ "/sancus-core-gap/obj_dir" in
+    Core_unix.mkdir_p cache_dir;
+    let lock = Core_unix.openfile (cached ^ ".lock") ~mode:[ O_CREAT; O_RDWR ] ~perm:0o644 in
+    Exn.protect ~finally:(fun () -> Core_unix.close lock) ~f:(fun () ->
+      Core_unix.flock_blocking lock Core_unix.Flock_command.lock_exclusive;
+      if Sys_unix.file_exists_exn cached then (
+        Logs.debug (fun m -> m "Reusing the compiled simulator %s" cached);
+        Core_unix.mkdir_p simv_dir;
+        Out_channel.write_all (simv_dir ^ "/simv") ~data:(In_channel.read_all cached);
+        Core_unix.chmod (simv_dir ^ "/simv") ~perm:0o755;
+        0)
+      else
+        let res = compile () in
+        if res = 0 then (
+          Out_channel.write_all (cached ^ ".tmp") ~data:(In_channel.read_all (simv_dir ^ "/simv"));
+          Core_unix.rename ~src:(cached ^ ".tmp") ~dst:cached);
+        res)
+
 let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) ?(collapse_reentries = true) () =
   Sys_unix.chdir workingdir;
   (* Create tmpdir and a temporary dir inside tmpdir *)
@@ -82,8 +126,10 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   let submit_filled =
     String.substr_replace_all submit_template ~pattern:"{{tmp_dir}}" ~with_:r_tmpdir in
       Out_channel.write_all submitfile_filled ~data:submit_filled;
-  (* Compile the Verilog testbench beforehand *)
-  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s %s" verilog_compile r_tmpdir basename submitfile_filled ">/dev/null 2>/dev/null") in
+  (* Compile the Verilog testbench beforehand (or reuse a previous compilation of the same sources) *)
+  let compile () = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s %s" verilog_compile r_tmpdir basename submitfile_filled ">/dev/null 2>/dev/null") in
+  let res = Prof.time "sul.compile_simulator" (fun () ->
+    with_simulator_cache ~tmpdir ~workingdir ~r_tmpdir ~basename ~verilog_compile ~submitfile compile) in
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." verilog_compile res)
   else (
