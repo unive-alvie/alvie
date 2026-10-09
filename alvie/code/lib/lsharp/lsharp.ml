@@ -333,7 +333,7 @@ struct
           (match Logs.level () with
           | Some Logs.App -> Format.print_newline (); Out_channel.flush stdout
           | _ -> ());
-            match IOSOracle.equiv_query oracle ot sul h with
+            match Prof.time "oracle.equiv_query" (fun () -> IOSOracle.equiv_query oracle ot sul h) with
             | `Cex (ot', icex) ->
                 (* Logs.debug
                   (fun m -> m "R4: hyp consistent, cex found by equiv_query: %s"
@@ -342,7 +342,7 @@ struct
                   (* Logs.debug
                     (fun m -> m "R4: shortest_cex: %s"
                       (Sexp.to_string (List.sexp_of_t (I.sexp_of_t) short_cex))); *)
-                let ot'', _ = proc_cex ~ot:ot' ~hyp:h ~basis:basis ~frontier:frontier ~sigma:short_cex in
+                let ot'', _ = Prof.time "lsharp.proc_cex" @@ fun () -> proc_cex ~ot:ot' ~hyp:h ~basis:basis ~frontier:frontier ~sigma:short_cex in
                   (* Logs.debug (fun m -> m "R4 applied"); *)
                   (match Logs.level () with
                   | Some Logs.App -> Format.print_newline (); Out_channel.flush stdout
@@ -364,7 +364,11 @@ struct
         ~transition:(IIOObservationTree.TransitionMap.empty) in
     (* let frontier = gen_frontier ot basis in
     let f2b = gen_f2b ot ~basis:basis ~frontier:frontier in *)
-    let rule_sched = [ isolated_to_basis; explore_frontier; explore_from_frontier; check_hypothesis ] in
+    let rule_sched = [
+      (fun ot b -> Prof.time "lsharp.R1 isolated_to_basis" (fun () -> isolated_to_basis ot b));
+      (fun ot b -> Prof.time "lsharp.R2 explore_frontier" (fun () -> explore_frontier ot b));
+      (fun ot b -> Prof.time "lsharp.R3 explore_from_frontier" (fun () -> explore_from_frontier ot b));
+      (fun ot b -> Prof.time "lsharp.R4 check_hypothesis" (fun () -> check_hypothesis ot b)) ] in
     (* Execute the above rules, using Rule 4 only if nothing else applies (it's the last in the list!) *)
     let rec _rule_apply rl c_ot c_basis =
       (match rl with
