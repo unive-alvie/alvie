@@ -3,6 +3,7 @@ title: Glossary
 description: Short definitions of the terms that ALVIE documentation and output use.
 sidebar:
   order: 1
+isNew: true
 ---
 
 This glossary gives short definitions.

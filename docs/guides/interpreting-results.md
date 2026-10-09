@@ -2,14 +2,16 @@
 title: Reading and Checking a Witness
 description: How to read a comparison result, understand a witness graph, and check that a witness is a real difference.
 sidebar:
+  label: Checking a Witness
   order: 2
+isNew: true
 ---
 
 This guide shows how to read the result of a comparison and how to check a witness.
 It uses the Getting Started example, so run that example first.
 The [How ALVIE Works](/alvie/guides/concepts/) page explains the terms.
 
-The commands run from the repository root.
+The commands run from the repository root, unless a step says otherwise.
 In the Docker image, the repository root is the start directory.
 
 ## 1. Find the violation count
@@ -24,8 +26,10 @@ It prints this number only in debug mode.
 
 For an attack run, read the count from the log:
 
+For example, after `./check_one.sh b6 b6-sim`, run:
+
 ```bash
-grep "Results" logs/<namespace>/compare-*.log
+grep "Results" logs/b6-sim/compare-*.log
 ```
 
 The line looks like this:
@@ -35,13 +39,11 @@ The line looks like this:
 ```
 
 For the example, run the comparison again with `--debug`.
-Run this command from `alvie/code`:
 
 ```bash
-R=../../results/example
-_build/default/bin/fa.exe \
-  --m1-int $R/bf89c0b-attacker-enclave-0-0.01-0.01.dot \
-  --m2-int $R/bf89c0b-attacker-enclave-1-0.01-0.01.dot \
+alvie/code/_build/default/bin/fa.exe \
+  --m1-int results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot \
+  --m2-int results/example/bf89c0b-attacker-enclave-1-0.01-0.01.dot \
   --witness-file-basename /tmp/example-witness \
   --tmpdir /tmp/alvie-fa \
   --debug
@@ -188,31 +190,39 @@ The learned model files contain them in S-expression form.
    0 -> 6 [label="((IAttacker(CStartCounting 256))(((OTime(…)))()5))", …
    ```
 
-2. Write the inputs into a file, one after the other, inside one pair of parentheses:
+2. Write the inputs into a file, one after the other, inside one pair of parentheses.
+   The command below also makes a second file for secret 1.
+   It changes `S_IMM 0` to `S_IMM 1`:
 
-   ```text
+   ```bash
+   cat > /tmp/trace0.sexp <<'EOF'
    ((IAttacker(CStartCounting 256))
     (IAttacker(CCreateEncl(enc_s enc_e data_s data_e)))
     (IAttacker(CJmpIn enc_s))
     (IEnclave(CInst(I_CMP(S_IMM 0)(D_R(R 4)))))
     (IEnclave CUbr))
+   EOF
+   sed 's/S_IMM 0/S_IMM 1/' /tmp/trace0.sexp > /tmp/trace1.sexp
    ```
 
-3. Run `exec.exe` from `alvie/code` with secret 0:
+3. Run `exec.exe` from `alvie/code`, once for each secret:
 
    ```bash
-   _build/default/bin/exec.exe \
-     --sexp-input /tmp/trace0.sexp \
-     --att-spec ../../spec-lib/example/attacker.atdl \
-     --encl-spec ../../spec-lib/example/enclave.etdl \
-     --secret 0 \
-     --commit bf89c0b \
-     --tmpdir /tmp/alvie-exec0 \
-     --sancus "$PWD/../../sancus-core-gap"
+   cd alvie/code
+   for secret in 0 1; do
+     echo "secret $secret:"
+     _build/default/bin/exec.exe \
+       --sexp-input /tmp/trace$secret.sexp \
+       --att-spec ../../spec-lib/example/attacker.atdl \
+       --encl-spec ../../spec-lib/example/enclave.etdl \
+       --secret $secret \
+       --commit bf89c0b \
+       --tmpdir /tmp/alvie-exec$secret \
+       --sancus "$PWD/../../sancus-core-gap"
+     echo
+   done
+   cd ../..
    ```
-
-4. Change `S_IMM 0` to `S_IMM 1` in the file.
-   Run the command again with `--secret 1`.
 
 The input must match the secret.
 If the file has `S_IMM 0` and you pass `--secret 1`, the specification does not allow the input.
@@ -222,11 +232,13 @@ The tool prints one bracket group for each input.
 For this trace, the last group is different:
 
 ```text
-secret 0:  [SCt][Ct][Iti][=t][Uto]
-secret 1:  [SCt][Ct][Iti][=t][Uo]
+secret 0:
+[SCt][Ct][Iti][=t][Uto]
+secret 1:
+[SCt][Ct][Iti][=t][Uo]
 ```
 
-The two runs give different outputs for the same inputs, except for the secret.
+The two input files differ only in the secret, and the outputs of the last input differ.
 This confirms the witness.
 Add `--debug` to see the full payload of each step.
 
@@ -238,16 +250,15 @@ A known-answer check shows that your setup produces correct results.
 The repository contains learned models for the known attacks.
 The comparison of these models is fast, because it does not run the simulator.
 
-Run `fa.exe` from `alvie/code` on the checked-in B6 models:
+Run `fa.exe` on the checked-in B6 models:
 
 ```bash
-R=../../results
 mkdir -p /tmp/alvie-kat
-_build/default/bin/fa.exe \
-  --m1-int  $R/ef753b6-b6-enclave-complete-0-0.01-0.01-int.dot \
-  --m2-int  $R/ef753b6-b6-enclave-complete-1-0.01-0.01-int.dot \
-  --m1-nint $R/ef753b6-b6-enclave-complete-0-0.01-0.01-nint.dot \
-  --m2-nint $R/ef753b6-b6-enclave-complete-1-0.01-0.01-nint.dot \
+alvie/code/_build/default/bin/fa.exe \
+  --m1-int  results/ef753b6-b6-enclave-complete-0-0.01-0.01-int.dot \
+  --m2-int  results/ef753b6-b6-enclave-complete-1-0.01-0.01-int.dot \
+  --m1-nint results/ef753b6-b6-enclave-complete-0-0.01-0.01-nint.dot \
+  --m2-nint results/ef753b6-b6-enclave-complete-1-0.01-0.01-nint.dot \
   --witness-file-basename /tmp/alvie-kat/b6 \
   --tmpdir /tmp/alvie-kat/tmp \
   --debug

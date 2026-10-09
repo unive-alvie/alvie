@@ -1,9 +1,35 @@
 ---
 import Default from '@astrojs/starlight/components/Sidebar.astro';
 import { Badge } from '@astrojs/starlight/components';
+import { getCollection } from 'astro:content';
+
+// Starlight allows one badge per sidebar link, and the level badge (A) owns it.
+// Add a purple "New" badge after the link text of pages marked `isNew: true`.
+const pages = await getCollection('docs');
+const selectors = pages
+  .filter((page) => page.data.isNew)
+  .map((page) => `.sidebar-content a[href="${import.meta.env.BASE_URL}/${page.id}/"]::after`);
+const newBadgeCss = selectors.length ? `${selectors.join(',\n')} {
+  content: 'New';
+  flex-shrink: 0;
+  font-family: var(--sl-font-system-mono);
+  line-height: 1;
+  font-size: var(--sl-text-xs);
+  padding: 0.125rem 0.375rem;
+  border: 1px solid var(--sl-badge-tip-border);
+  border-radius: 0.25rem;
+  background-color: var(--sl-badge-tip-bg);
+  color: var(--sl-badge-tip-text);
+}
+${selectors.map((selector) => selector.replace('a[href', 'a[aria-current="page"][href')).join(',\n')} {
+  background-color: transparent;
+  border-color: currentColor;
+  color: inherit;
+}` : '';
 ---
 
 <Default {...Astro.props}><slot /></Default>
+<style is:global set:html={newBadgeCss} />
 <aside class="level-legend" aria-label="Reading levels">
   <p><Badge text="A" variant="caution" /> - Advanced: assumes some ALVIE knowledge</p>
 </aside>

@@ -2,10 +2,12 @@
 title: Designing Your Own Specifications
 description: How to plan, write, check, and refine attacker and enclave specifications for a new ALVIE experiment.
 sidebar:
+  label: Writing Specifications
   order: 6
   badge:
     text: A
     variant: caution
+isNew: true
 ---
 
 This guide shows how to design the specifications for an experiment that is not in `spec-lib/`.
@@ -114,24 +116,41 @@ The `spec-lib/fast/` files do this, and they learn much faster.
 ## 5. Check the specification before a long run
 
 Use these checks in this order.
-Each takes less time than the next one.
+Each takes more time than the one before.
+All checks use the same command, so save it first.
+Run it from `alvie/code`.
+Replace the two specification files with your own:
+
+```bash
+cd alvie/code
+_build/default/bin/learn.exe \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec /tmp/balanced.etdl \
+  --oracle randomwalk --step-limit 500 \
+  --secret 0 \
+  --commit bf89c0b \
+  --res /tmp/check.dot \
+  --tmpdir /tmp/alvie-check \
+  --sancus "$PWD/../../sancus-core-gap" \
+  --dry
+```
 
 1. **Parse check.**
-   Run `learn.exe`.
-   A syntax error appears at once with exit code 2.
+   Run the command.
+   A syntax error appears at once with exit code 2, before the simulator starts.
    The message shows the place:
 
    ```text
-   ALVIE error: Could not parse the TestDL specifications: section_enclave > };: string. …
+   ALVIE error: Could not parse the TestDL specifications: section_enclave > };: string. Check --encl-spec and --att-spec.
    ```
 
 2. **Dry run.**
-   Add `--dry` to `learn.exe`.
-   The tool prepares the simulator and then stops without learning.
+   With `--dry`, the tool prepares the simulator and then stops without learning.
    This takes about 20 seconds.
    Use it to check your setup and your paths.
+   The file `/tmp/check.dot` has one state and no transitions.
 3. **Short run.**
-   Learn with `--oracle randomwalk --step-limit 500`.
+   Remove `--dry` and run the command again.
    Look at the model.
    Does it show the actions that you expect?
 4. **Full run.**
@@ -156,30 +175,34 @@ A control experiment tells you which.
 The enclave of the Getting Started example is unbalanced on purpose (`ubr`).
 The comparison of its two models gives 1 violation.
 
-Write a balanced enclave in the file `/tmp/balanced.etdl`:
+First, write a balanced enclave in the file `/tmp/balanced.etdl`:
 
-```text
+```bash
+cat > /tmp/balanced.etdl <<'EOF'
 enclave {
     cmp ?, r4;
     ifz (mov r5, r5; nop) (nop; mov r5, r5);
     jmp #enc_e
 };
+EOF
 ```
 
 Learn one model for each secret.
-Run this command from `alvie/code`, once with `--secret 0` and once with `--secret 1`.
-Change the name of the result file each time.
+The loop runs the learner twice from `alvie/code`, and it takes about a minute:
 
 ```bash
-_build/default/bin/learn.exe \
-  --att-spec  ../../spec-lib/example/attacker.atdl \
-  --encl-spec /tmp/balanced.etdl \
-  --oracle pac --epsilon 0.01 --delta 0.01 \
-  --secret 0 \
-  --commit bf89c0b \
-  --res /tmp/balanced-0.dot \
-  --tmpdir /tmp/alvie-balanced-0 \
-  --sancus "$PWD/../../sancus-core-gap"
+cd alvie/code
+for secret in 0 1; do
+  _build/default/bin/learn.exe \
+    --att-spec ../../spec-lib/example/attacker.atdl \
+    --encl-spec /tmp/balanced.etdl \
+    --oracle pac --epsilon 0.01 --delta 0.01 \
+    --secret $secret \
+    --commit bf89c0b \
+    --res /tmp/balanced-$secret.dot \
+    --tmpdir /tmp/alvie-balanced-$secret \
+    --sancus "$PWD/../../sancus-core-gap"
+done
 ```
 
 Compare the two models:

@@ -6,6 +6,7 @@ sidebar:
   badge:
     text: A
     variant: caution
+isNew: true
 ---
 
 This guide is for people who change the ALVIE code, the specifications, or the documentation.

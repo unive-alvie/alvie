@@ -2,10 +2,12 @@
 title: Choosing Learner Settings
 description: How to choose the equivalence oracle and its limits, and how to balance run time against confidence in the learned model.
 sidebar:
+  label: Learner Settings
   order: 5
   badge:
     text: A
     variant: caution
+isNew: true
 ---
 
 The learner settings decide how hard ALVIE looks for behavior that the model does not yet describe.
@@ -112,6 +114,30 @@ The complete model has 6 states and 5 transitions.
 The two short random walks accepted a model that had merged two states.
 ALVIE did not report an error.
 This is the main risk of a weak oracle.
+
+To run the comparison yourself, use a loop from `alvie/code`.
+Each run takes about 20 to 40 seconds:
+
+```bash
+cd alvie/code
+for limit in 20 100 500; do
+  _build/default/bin/learn.exe \
+    --att-spec ../../spec-lib/example/attacker.atdl \
+    --encl-spec ../../spec-lib/example/enclave.etdl \
+    --oracle randomwalk --step-limit $limit \
+    --secret 0 \
+    --commit bf89c0b \
+    --res /tmp/rw-$limit.dot \
+    --tmpdir /tmp/alvie-rw-$limit \
+    --sancus "$PWD/../../sancus-core-gap" \
+    --report
+done
+wc -l /tmp/rw-*.dot
+cd ../..
+```
+
+The runs with limits 20 and 100 write 20 lines, and the run with limit 500 writes 21 lines.
+The `--report` option prints one line of statistics for each run.
 
 Part of the time in each run is fixed.
 ALVIE needs 20 to 25 seconds to prepare the simulator before it asks the first query.
