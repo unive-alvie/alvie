@@ -40,7 +40,9 @@ let report () =
 
 let () = at_exit report
 
-(* Make sure the report is produced also when the run is interrupted (e.g., by timeout) *)
+(* Make sure the report is produced also when the run is interrupted (e.g., by timeout); SIGUSR1 prints it without stopping *)
 let () =
-  if enabled then
-    List.iter (fun s -> Sys.set_signal s (Sys.Signal_handle (fun _ -> exit 130))) [Sys.sigterm; Sys.sigint]
+  if enabled then begin
+    List.iter (fun s -> Sys.set_signal s (Sys.Signal_handle (fun _ -> exit 130))) [Sys.sigterm; Sys.sigint];
+    Sys.set_signal Sys.sigusr1 (Sys.Signal_handle (fun _ -> report ()))
+  end

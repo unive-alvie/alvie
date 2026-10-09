@@ -33,6 +33,8 @@ struct
     stats : stats_t
   }
 
+  let start_time = Time_now.nanoseconds_since_unix_epoch ()
+
   let make ?(round_limit) ?(epsilon = 0.001) ?(delta = 0.001) ~next_input () : t =
     {
       round_limit=round_limit;
@@ -155,6 +157,8 @@ struct
     | _ ->
       (let r = ref (Float.to_int (Float.round_up ((1.0 /. oracle.epsilon) *. (log (1.0 /. oracle.delta) +. ((log 2.0) *. (Float.of_int(oracle.round) +. 1.0)))))) in
         oracle.round <- oracle.round + 1;
+        Logs.info (fun m -> m "[%.1fs] (PAC) equivalence query #%d: hypothesis with %d states, %d samples to draw (so far: %d samples, %d output queries, %d resets, %d SUL steps, %d dry steps)"
+          (Float.of_int63 Int63.(Time_now.nanoseconds_since_unix_epoch () - start_time) /. 1e9) oracle.round (Set.length hyp.states) !r oracle.stats.equivquery_samples oracle.stats.outputquery_cnt oracle.stats.sul_reset_cnt oracle.stats.sul_step_cnt oracle.stats.sul_step_dry_cnt);
         Logs.debug (fun m -> m "(PAC) equiv_query (eps: %f, delta: %f): samples: %d, round #%d, sampling %d paths" oracle.epsilon oracle.delta oracle.stats.equivquery_samples oracle.round !r);
         let result = ref `Equivalent in
         let first = ref true in
