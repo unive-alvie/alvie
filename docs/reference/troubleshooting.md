@@ -84,8 +84,3 @@ The tool prepares the simulator, which takes about 20 seconds, and writes a mode
 | --- | --- | --- |
 | Files disappear after the container stops. | The `--rm` option removes the container. | Mount a host directory, and copy the results to it. See [Getting Started](/alvie/getting-started/). |
 | The ALVIE installation disappears when you mount a directory. | The mount hides `/home/alvie`. | Mount a different path, for example `/output`. |
-
-## Hardware (FPGA)
-
-The FPGA backend is not part of the supported user documentation.
-Use the simulator for the experiments in these guides.

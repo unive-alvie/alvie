@@ -20,6 +20,7 @@ ALVIE asks one question:
 
 ALVIE answers this question for a set of attackers and a set of victim programs.
 You describe both sets in two small specification files.
+The [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) defines the language, and the [Designing Your Own Specifications](/alvie/guides/writing-specifications/) guide shows how to write them.
 ALVIE does the rest.
 
 ## The five parts of an experiment
@@ -30,19 +31,23 @@ An ALVIE experiment has five parts.
    The attacker specification (`.atdl`) lists what the attacker can do.
    The enclave specification (`.etdl`) lists what the victim can do.
    They define a family of programs, not one program.
+   See the [TestDL Action Reference](/alvie/reference/testdl-action-reference/) for the meaning of each action.
 2. **System under learning (SUL).**
    The SUL is the system that ALVIE tests.
    In ALVIE/Sancus, the SUL is a simulation of the Sancus processor.
    ALVIE builds a program, runs it on the simulator, and reads the result.
+   The [Code Architecture](/alvie/reference/code-architecture/) reference describes this interface.
 3. **Learner.**
-   The learner is the L# algorithm.
+   The learner is the [L# algorithm](https://arxiv.org/abs/2107.05419).
    It sends inputs to the SUL and builds a model from the outputs.
 4. **Oracle.**
    The oracle decides when the model is good enough.
    It tries to find an input on which the model and the SUL disagree.
+   See [Choosing Learner Settings](/alvie/guides/learning-settings/).
 5. **Comparison.**
    The comparison step checks two learned models for a difference.
-   It uses the mCRL2 model checker.
+   It uses the [mCRL2](https://www.mcrl2.org/) model checker.
+   The tool is `fa.exe`, described in the [Executables Reference](/alvie/reference/executables-reference/).
 
 The data moves through the parts in this order:
 
@@ -71,6 +76,7 @@ It shows only what the attacker can see.
 It does not show the internal state of the processor.
 
 The learner needs the SUL to be deterministic.
+The [Log and Output Reference](/alvie/reference/log-output-reference/) explains the symbols and the output fields of a model.
 The same inputs must always give the same outputs.
 The Sancus simulator has this property.
 
@@ -130,10 +136,10 @@ It then removes the differences that also exist between the two `nint` models.
 What remains needs interrupts to appear.
 These are the differences that the interrupt mechanism of the processor causes.
 
-This matches the check in the ALVIE paper.
+This matches the check in the [ALVIE paper](https://ieeexplore.ieee.org/abstract/document/10664425).
 The paper looks for violations that a powerful attacker with interrupts causes and that a basic attacker without interrupts does not cause.
 
-The Getting Started example is a simplified case.
+The [Getting Started](/alvie/getting-started/) example is a simplified case.
 It compares only two `int` models, so it can report program flaws as well.
 
 ## What a result means
@@ -161,6 +167,7 @@ Three facts limit every result:
   A learned model can be incomplete.
   The oracle can miss a rare behavior.
   With the PAC oracle, the paper gives a bound on this error.
+  See [Choosing Learner Settings](/alvie/guides/learning-settings/#pac).
   The bound depends on the ε and δ values, and it is weaker when four models are involved.
 - **Observation scope.**
   ALVIE sees only the outputs that the SUL reports.

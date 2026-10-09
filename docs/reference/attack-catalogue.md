@@ -43,7 +43,6 @@ Notes:
 
 - **B5 is not supported.**
   ALVIE has no action that creates more than one enclave.
-  The ALVIE paper lists this as future work.
 - **B8 and B9 have no fix.**
   Even the last commit `bf89c0b` has them.
   The paper explains that a CPU reset inside an enclave is an observable event, and an attacker with interrupts can use it.

@@ -117,8 +117,7 @@ ALVIE needs 20 to 25 seconds to prepare the simulator before it asks the first q
    The directory `spec-lib/fast/` has faster attacker specifications.
    They use one timer value instead of four, so the learner has fewer cases to explore.
    The enclave specification is the same.
-   Use `randomwalk --step-limit 5000 --reset-probability 0.09` with them.
-   In development measurements on one workstation, learning the four B6 models took between 35 and 55 minutes.
+   Use `randomwalk` with them, and start with `--step-limit 500`.
 2. **Test that the model is stable.**
    Learn the model again with a larger step limit.
    If the model does not change, you have more confidence in it.
