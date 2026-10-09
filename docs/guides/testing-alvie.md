@@ -2,8 +2,9 @@
 title: Testing ALVIE
 description: The ALVIE test suites, what each one needs, when to run it, and how to add a test.
 sidebar:
+  order: 8
   badge:
-    text: Advanced
+    text: A
     variant: caution
 ---
 

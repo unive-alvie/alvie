@@ -2,8 +2,9 @@
 title: Code Architecture
 description: The ALVIE/Sancus implementation.
 sidebar:
+  order: 8
   badge:
-    text: Advanced
+    text: A
     variant: caution
 ---
 

@@ -2,9 +2,7 @@
 title: Attack Catalogue
 description: The known Sancus vulnerabilities that ALVIE reproduces, with their commits, specification files, and expected results.
 sidebar:
-  badge:
-    text: Beginner
-    variant: success
+  order: 3
 ---
 
 This page lists the Sancus problems that ALVIE can reproduce.

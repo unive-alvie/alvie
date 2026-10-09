@@ -2,9 +2,7 @@
 title: How ALVIE Works
 description: The ideas behind an ALVIE experiment, explained without tool details.
 sidebar:
-  badge:
-    text: Beginner
-    variant: success
+  order: 1
 ---
 
 This page explains what ALVIE does and why it works in this way.

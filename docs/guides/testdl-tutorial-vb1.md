@@ -2,9 +2,7 @@
 title: 'TestDL Tutorial: V-B1 Example'
 description: A one-hour introduction to the TestDL languages through a worked V-B1 example.
 sidebar:
-  badge:
-    text: Beginner
-    variant: success
+  order: 4
 ---
 
 This one-hour tutorial is our first practical session with the two small languages used by ALVIE/Sancus.

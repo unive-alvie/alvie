@@ -2,8 +2,9 @@
 title: Designing Your Own Specifications
 description: How to plan, write, check, and refine attacker and enclave specifications for a new ALVIE experiment.
 sidebar:
+  order: 6
   badge:
-    text: Advanced
+    text: A
     variant: caution
 ---
 

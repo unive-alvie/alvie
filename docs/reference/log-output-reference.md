@@ -1,6 +1,8 @@
 ---
 title: Log and Output Reference
 description: How to read ALVIE/Sancus learning logs and model outputs.
+sidebar:
+  order: 7
 ---
 
 This document explains how to read the live progress output and log files produced by ALVIE/Sancus learning (`learn.exe`) and comparison (`fa.exe`) phases.

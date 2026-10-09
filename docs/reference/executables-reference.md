@@ -1,6 +1,8 @@
 ---
 title: Executables Reference
 description: Command-line reference for ALVIE/Sancus tools.
+sidebar:
+  order: 6
 ---
 
 All executables are built with `dune build` from inside `alvie/code/` and run as:

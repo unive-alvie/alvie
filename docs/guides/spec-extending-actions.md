@@ -2,8 +2,9 @@
 title: Extending TestDL Actions
 description: Add a new attacker or enclave action to ALVIE/Sancus.
 sidebar:
+  order: 7
   badge:
-    text: Advanced
+    text: A
     variant: caution
 ---
 

@@ -2,9 +2,7 @@
 title: Reading and Checking a Witness
 description: How to read a comparison result, understand a witness graph, and check that a witness is a real difference.
 sidebar:
-  badge:
-    text: Beginner
-    variant: success
+  order: 2
 ---
 
 This guide shows how to read the result of a comparison and how to check a witness.

@@ -2,8 +2,9 @@
 title: Choosing Learner Settings
 description: How to choose the equivalence oracle and its limits, and how to balance run time against confidence in the learned model.
 sidebar:
+  order: 5
   badge:
-    text: Advanced
+    text: A
     variant: caution
 ---
 
