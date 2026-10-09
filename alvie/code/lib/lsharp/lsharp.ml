@@ -96,6 +96,8 @@ struct
     let modified_at = Int.Table.create () in
     (* Outgoing edges of each node, kept in sync with the tree (transitions are only ever added) *)
     let children : (I.t * O.t * int) list Int.Table.t = Int.Table.create () in
+    (* Nodes that got new children since the frontier was last computed (see gen_frontier) *)
+    let new_parents = Int.Hash_set.create () in
     let known_not_apart = Hashtbl.Poly.create () in
     let sync (ot : IIOObservationTree.t) =
       match Set.max_elt ot.states with
@@ -104,7 +106,8 @@ struct
         Sequence.iter (Set.to_sequence ot.states ~greater_or_equal_to:(!max_seen + 1)) ~f:(fun n ->
           Option.iter (Map.find ot.pred_map n) ~f:(fun (p, i) ->
             let o = Option.value_exn (IIOMealy.output ot p i) in
-            Hashtbl.add_multi children ~key:p ~data:(i, o, n));
+            Hashtbl.add_multi children ~key:p ~data:(i, o, n);
+            Hash_set.add new_parents p);
           (* Mark n and its ancestors, stopping at the first one already marked in this epoch *)
           let rec mark n =
             match Hashtbl.find modified_at n with
@@ -193,13 +196,21 @@ struct
         Hashtbl.set cand_memo ~key:q ~data:(basis, cands, !epoch);
         cands in
     (* Recompute the frontier given the basis *)
+    let frontier_memo : (Int.Set.t * Int.Set.t) option ref = ref None in
     let rec gen_frontier (ot : IIOObservationTree.t) (basis : Int.Set.t) : Int.Set.t  =
       Prof.time "lsharp.gen_frontier" @@ fun () ->
       (* Same as gen_frontier_orig, using the index of the children of each node *)
       sync ot;
-      let res = Set.fold basis ~init:Int.Set.empty ~f:(fun acc b ->
+      let add_children_of acc b =
         List.fold (Option.value (Hashtbl.find children b) ~default:[]) ~init:acc ~f:(fun acc (_, _, s') ->
-          if Set.mem basis s' then acc else Set.add acc s')) in
+          if Set.mem basis s' then acc else Set.add acc s') in
+      let res = match !frontier_memo with
+        (* Same basis as last time: only the nodes that got new children can extend the frontier *)
+        | Some (old_basis, old_frontier) when phys_equal old_basis basis ->
+          Hash_set.fold new_parents ~init:old_frontier ~f:(fun acc p -> if Set.mem basis p then add_children_of acc p else acc)
+        | _ -> Set.fold basis ~init:Int.Set.empty ~f:add_children_of in
+      Hash_set.clear new_parents;
+      frontier_memo := Some (basis, res);
       if check_apart && not (Set.equal res (gen_frontier_orig ot basis)) then failwith "frontier index disagrees";
       res
     and gen_frontier_orig (ot : IIOObservationTree.t) (basis : Int.Set.t) : Int.Set.t  =
@@ -360,9 +371,13 @@ struct
       (basis : Int.Set.t) =
       (* This finds a state q in frontier s.t. exists r, r'. r <> r' /\ not (q # r) /\ not (q # r'), if any *)
       let frontier = gen_frontier ot basis in
-      let f2b = gen_f2b ot ~basis ~frontier in
-      let qrr'_list = List.filter_map (Map.to_alist f2b) ~f:(fun (q, r_list) -> match r_list with |
-      r::r'::_ -> Some (q, r, r') | _ -> None) in
+      (* Only the first triple (in increasing order of q) can be used below, since candidates are never
+         apart from q in ot: look for it lazily instead of building the whole frontier-to-basis map *)
+      let qrr'_list =
+        Set.to_sequence frontier
+        |> Sequence.find_map ~f:(fun q ->
+          match Set.to_list (candidates ot basis q) with r :: r' :: _ -> Some (q, r, r') | _ -> None)
+        |> Option.to_list in
       if List.is_empty qrr'_list then
         (
           (* show_rule "\x1B[1;31m③\x1B[0m"; *)
