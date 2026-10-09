@@ -100,6 +100,8 @@ struct
     let new_parents = Int.Hash_set.create () in
     (* Same as new_parents, for explore_frontier *)
     let new_parents_r2 = Int.Hash_set.create () in
+    (* Nodes added to the tree and not yet processed by the candidates tracker (see refresh) *)
+    let pending = Queue.create () in
     let known_not_apart = Hashtbl.Poly.create () in
     let sync (ot : IIOObservationTree.t) =
       match Set.max_elt ot.states with
@@ -110,7 +112,8 @@ struct
             let o = Option.value_exn (IIOMealy.output ot p i) in
             Hashtbl.add_multi children ~key:p ~data:(i, o, n);
             Hash_set.add new_parents p;
-            Hash_set.add new_parents_r2 p);
+            Hash_set.add new_parents_r2 p;
+            Queue.enqueue pending n);
           (* Mark n and its ancestors, stopping at the first one already marked in this epoch *)
           let rec mark n =
             match Hashtbl.find modified_at n with
@@ -179,8 +182,86 @@ struct
       we only need to re-check the previous candidates of q and the basis states added since then.
     *)
     let cand_memo : (Int.Set.t * Int.Set.t * int) Int.Table.t = Int.Table.create () in
+    (*
+      Candidates tracker: for each frontier state q, the set C(q) of basis states q is not apart from,
+      kept up to date by processing each new node of the tree once. q # r can only start to hold when
+      a new node n = p.i is added below q or below r, at the same relative path w.i, and the
+      corresponding node on the other side exists with a different output; so for each ancestor a of p
+      (at relative path w), if a is a frontier state q we check its candidates r.w.i, and if a is a
+      basis state r we check q.w.i for the frontier states q that have r as candidate.
+    *)
+    let tracked_basis : Int.Set.t option ref = ref None in
+    let cands : Int.Set.t Int.Table.t = Int.Table.create () in
+    let rev_cands : Int.Hash_set.t Int.Table.t = Int.Table.create () in
+    let isolated = ref Int.Set.empty and ambiguous = ref Int.Set.empty in
+    let set_cands q c =
+      let old = Option.value (Hashtbl.find cands q) ~default:Int.Set.empty in
+      Set.iter (Set.diff old c) ~f:(fun r -> Option.iter (Hashtbl.find rev_cands r) ~f:(fun h -> Hash_set.remove h q));
+      Set.iter (Set.diff c old) ~f:(fun r -> Hash_set.add (Hashtbl.find_or_add rev_cands r ~default:Int.Hash_set.create) q);
+      Hashtbl.set cands ~key:q ~data:c;
+      isolated := (if Set.is_empty c then Set.add !isolated q else Set.remove !isolated q);
+      ambiguous := (if Set.length c >= 2 then Set.add !ambiguous q else Set.remove !ambiguous q) in
+    let remove_frontier q =
+      set_cands q Int.Set.empty;
+      Hashtbl.remove cands q;
+      isolated := Set.remove !isolated q in
+    let add_frontier ot basis q = set_cands q (Set.filter basis ~f:(fun b -> not (apart ot q b))) in
+    let child n i = List.find_map (Option.value (Hashtbl.find children n) ~default:[]) ~f:(fun (i', o, n') -> if I.equal i i' then Some (o, n') else None) in
+    let rec walk n = function [] -> Some n | i :: w -> Option.bind (child n i) ~f:(fun (_, n') -> walk n' w) in
+    (* True if node.w.i exists and its output differs from o *)
+    let differs node w i o = match Option.bind (walk node w) ~f:(fun n' -> child n' i) with Some (o', _) -> not (O.equal o o') | None -> false in
+    let rebuild ot basis =
+      List.iter (Hashtbl.keys cands) ~f:remove_frontier;
+      Set.iter basis ~f:(fun b ->
+        List.iter (Option.value (Hashtbl.find children b) ~default:[]) ~f:(fun (_, _, s') ->
+          if not (Set.mem basis s') then add_frontier ot basis s')) in
+    let refresh (ot : IIOObservationTree.t) (basis : Int.Set.t) =
+      Prof.time "lsharp.refresh" @@ fun () ->
+      sync ot;
+      (match !tracked_basis with
+       | Some old when phys_equal old basis -> ()
+       | Some old when Set.is_subset old ~of_:basis ->
+         Set.iter (Set.diff basis old) ~f:(fun b ->
+           remove_frontier b;
+           (* Existing frontier states may have the new basis state as a candidate... *)
+           List.iter (Hashtbl.keys cands) ~f:(fun q -> if not (apart ot q b) then set_cands q (Set.add (Hashtbl.find_exn cands q) b));
+           (* ...and its children become frontier states *)
+           List.iter (Option.value (Hashtbl.find children b) ~default:[]) ~f:(fun (_, _, s') ->
+             if not (Set.mem basis s') then add_frontier ot basis s'))
+       | _ -> Queue.clear pending; rebuild ot basis);
+      tracked_basis := Some basis;
+      (* Candidates computed by add_frontier already account for all the nodes in the tree: processing
+         some of them again below can only try to remove candidates that are already gone *)
+      Queue.iter pending ~f:(fun n ->
+        let p, i = Map.find_exn ot.pred_map n in
+        (* A new child of a basis state is a new frontier state; in any case, n may make apart some
+           of the pairs involving its ancestors *)
+        if Set.mem basis p && not (Set.mem basis n) then add_frontier ot basis n;
+        (
+          let o = Option.value_exn (IIOMealy.output ot p i) in
+          (* Walk up from p, keeping the path w from the current ancestor a to p *)
+          let rec up a w =
+            (match Hashtbl.find cands a with
+             | Some c -> set_cands a (Set.filter c ~f:(fun r -> not (differs r w i o)))
+             | None -> ());
+            (if Set.mem basis a then
+               Option.iter (Hashtbl.find rev_cands a) ~f:(fun qs ->
+                 List.iter (Hash_set.to_list qs) ~f:(fun q ->
+                   if differs q w i o then set_cands q (Set.remove (Hashtbl.find_exn cands q) a))));
+            Option.iter (Map.find ot.pred_map a) ~f:(fun (a', i') -> up a' (i' :: w)) in
+          up p []));
+      Queue.clear pending;
+      if check_apart then (
+        let frontier = Set.fold basis ~init:Int.Set.empty ~f:(fun acc b ->
+          List.fold input_alphabet ~init:acc ~f:(fun acc i ->
+            match IIOObservationTree.step ot b i with Some s' when not (Set.mem basis s') -> Set.add acc s' | _ -> acc)) in
+        if not (Set.equal frontier (Int.Set.of_list (Hashtbl.keys cands))) then failwith "candidates tracker: wrong frontier";
+        Set.iter frontier ~f:(fun q ->
+          if not (Set.equal (Hashtbl.find_exn cands q) (Set.filter basis ~f:(fun b -> not (IIOObservationTree.apart ot q b)))) then
+            failwithf "candidates tracker disagrees on %d" q ())) in
     let rec candidates (ot : IIOObservationTree.t) (basis : Int.Set.t) (q : int) : Int.Set.t =
-      let res = candidates_fast ot basis q in
+      refresh ot basis;
+      let res = match Hashtbl.find cands q with Some c -> c | None -> candidates_fast ot basis q in
       if check_apart && not (Set.equal res (Set.filter basis ~f:(fun b -> not (IIOObservationTree.apart ot q b)))) then
         failwithf "candidate cache disagrees on %d" q ();
       res
@@ -320,8 +401,9 @@ struct
       (ot : IIOObservationTree.t)
       (basis : Int.Set.t) =
       (* Logs.debug (fun m -> m "R1 check"); *)
-      let frontier = gen_frontier ot basis in
-      match Set.find frontier ~f:(fun q -> Set.is_empty (candidates ot basis q)) with
+      (* Any frontier state apart from the whole basis can be moved to the basis: take the smallest one *)
+      refresh ot basis;
+      match Set.min_elt !isolated with
       | None ->
           (* show_rule "\x1B[1;31m①\x1B[0m"; *)
           `ContinueNotApplied (ot, basis)
@@ -387,13 +469,12 @@ struct
       (ot : IIOObservationTree.t)
       (basis : Int.Set.t) =
       (* This finds a state q in frontier s.t. exists r, r'. r <> r' /\ not (q # r) /\ not (q # r'), if any *)
-      let frontier = gen_frontier ot basis in
       (* Only the first triple (in increasing order of q) can be used below, since candidates are never
-         apart from q in ot: look for it lazily instead of building the whole frontier-to-basis map *)
+         apart from q in ot: take the smallest frontier state with at least two candidates *)
+      refresh ot basis;
       let qrr'_list =
-        Set.to_sequence frontier
-        |> Sequence.find_map ~f:(fun q ->
-          match Set.to_list (candidates ot basis q) with r :: r' :: _ -> Some (q, r, r') | _ -> None)
+        Set.min_elt !ambiguous
+        |> Option.bind ~f:(fun q -> match Set.to_list (candidates ot basis q) with r :: r' :: _ -> Some (q, r, r') | _ -> None)
         |> Option.to_list in
       if List.is_empty qrr'_list then
         (
@@ -444,7 +525,8 @@ struct
       (basis : Int.Set.t) =
       (* Logs.debug (fun m -> m "R4 check"); *)
       let frontier = gen_frontier ot basis in
-      match (Set.find frontier ~f:(fun q -> Set.is_empty (candidates ot basis q)), basis_complete ot basis input_alphabet) with
+      refresh ot basis;
+      match (Set.min_elt !isolated, basis_complete ot basis input_alphabet) with
       | Some _, _ | None, false ->
         (* show_rule "\x1B[1;31m④\x1B[0m"; *)
         (* Logs.debug (fun m -> m "R4 not applied"); *)
