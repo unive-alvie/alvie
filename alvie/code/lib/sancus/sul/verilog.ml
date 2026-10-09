@@ -266,17 +266,41 @@ let addr_of_label_script cfg l =
   Reading the whole table with a single nm invocation avoids spawning a shell per label lookup.
   It must be invalidated whenever pmem.elf is rebuilt (see run_simulator).
 *)
-let symtab : (string * string list String.Table.t) option ref = ref None
+let symtab : (string * int list String.Table.t) option ref = ref None
 
 let invalidate_symtab () = symtab := None
 
+(*
+  The symbols nm would list for a 32-bit little-endian ELF file, i.e., defined symbols that are
+  neither section nor file symbols, as (name, value) pairs.
+*)
+let elf_symbols (elf : string) : (string * int) list =
+  let b = In_channel.read_all elf in
+  let u8 o = Char.to_int b.[o] in
+  let u16 o = u8 o lor (u8 (o + 1) lsl 8) in
+  let u32 o = u16 o lor (u16 (o + 2) lsl 16) in
+  if String.length b < 52 || not (String.equal (String.prefix b 4) "\x7fELF") || u8 4 <> 1 || u8 5 <> 1 then
+    failwithf "elf_symbols: %s is not a 32-bit little-endian ELF file" elf ();
+  let shoff = u32 32 and shentsize = u16 46 and shnum = u16 48 in
+  let section k = shoff + (k * shentsize) in
+  List.concat_map (List.init shnum ~f:Fn.id) ~f:(fun k ->
+    let sh = section k in
+    (* SHT_SYMTAB *)
+    if u32 (sh + 4) <> 2 then []
+    else
+      let off = u32 (sh + 16) and size = u32 (sh + 20) and entsize = u32 (sh + 36) in
+      let strtab = u32 (section (u32 (sh + 24)) + 16) in
+      let name_at o = let e = String.index_from_exn b o '\000' in String.sub b ~pos:o ~len:(e - o) in
+      List.filter_map (List.init (size / entsize) ~f:Fn.id) ~f:(fun j ->
+        let st = off + (j * entsize) in
+        let name = name_at (strtab + u32 st) and value = u32 (st + 4) in
+        let typ = u8 (st + 12) land 0xf and shndx = u16 (st + 14) in
+        (* Skip undefined, section (STT_SECTION) and file (STT_FILE) symbols, as nm does *)
+        if String.is_empty name || shndx = 0 || typ = 3 || typ = 4 then None else Some (name, value)))
+
 let load_symtab elf =
   let tbl = String.Table.create () in
-  let out = Shexp_process.eval Shexp_process.(pipe (run "nm" [elf]) read_all) in
-  List.iter (String.split_lines out) ~f:(fun line ->
-    match String.split line ~on:' ' |> List.filter ~f:(fun w -> not (String.is_empty w)) with
-    | [ addr; _; name ] -> Hashtbl.add_multi tbl ~key:name ~data:addr
-    | _ -> ());
+  List.iter (elf_symbols elf) ~f:(fun (name, value) -> Hashtbl.add_multi tbl ~key:name ~data:value);
   tbl
 
 let addr_of_label cfg l =
@@ -284,7 +308,7 @@ let addr_of_label cfg l =
     | Some (elf, tbl) when String.equal elf cfg.pmem_elf -> tbl
     | _ -> let tbl = Prof.time "sul.load_symtab" (fun () -> load_symtab cfg.pmem_elf) in symtab := Some (cfg.pmem_elf, tbl); tbl in
   match Hashtbl.find tbl l with
-  | Some [ addr ] -> Int.of_string ("0x" ^ addr)
+  | Some [ addr ] -> addr
   (* Missing or ambiguous symbols: fall back to the original lookup, to preserve its exact behaviour *)
   | _ -> addr_of_label_script cfg l
 
@@ -332,7 +356,10 @@ let ihex2mem ~ihex ~out ~mem_size =
   let buf = Buffer.create ((num_word + 1) * 6) in
   Array.iteri mem_arr ~f:(fun i v ->
     if i % 16 = 0 then Buffer.add_string buf (sprintf "\n@%04x " i);
-    Buffer.add_string buf (sprintf " %2s" v));
+    (* i.e., sprintf " %2s" v *)
+    Buffer.add_char buf ' ';
+    for _ = String.length v to 1 do Buffer.add_char buf ' ' done;
+    Buffer.add_string buf v);
   Buffer.add_string buf "\n\n";
   Out_channel.write_all out ~data:(Buffer.contents buf)
 
@@ -348,17 +375,69 @@ let get_signal dump names =
   | Some n -> Vcd.get_signal dump n
   | None -> Vcd.get_signal dump (List.last_exn names)
 
+(* Runs prog (looked up in PATH) with args, without a shell; returns its exit code and standard output *)
+let run_process ?working_dir prog args =
+  let p = Core_unix.create_process_env ?working_dir ~prog ~args ~env:(`Extend []) () in
+  Core_unix.close p.stdin;
+  let stdout = In_channel.input_all (Core_unix.in_channel_of_descr p.stdout) in
+  let stderr = In_channel.input_all (Core_unix.in_channel_of_descr p.stderr) in
+  Core_unix.close p.stdout; Core_unix.close p.stderr;
+  let code = match Core_unix.waitpid p.pid with
+    | Ok () -> 0
+    | Error (`Exit_non_zero n) -> n
+    | Error (`Signal _) -> 128 in
+  if code <> 0 then Logs.debug (fun m -> m "%s exited with %d: %s" prog code stderr);
+  code, stdout
+
+let toolchain_prefix = lazy (if Sys_unix.command "command -v msp430-gcc >/dev/null 2>&1" = 0 then "msp430" else "msp430-elf")
+
+(*
+  Same as scripts/build_pmem --no-mem once its setup has been done in cfg.tmpdir (and outside of debug
+  mode, where the scripts also produce assembly listings): assemble, link and convert the program by
+  running the tools directly, instead of through two shell scripts.
+*)
+let build_pmem (cfg : cfg_t) =
+  let setup_done = Sys_unix.file_exists_exn (cfg.tmpdir ^ "/.build_pmem_setup_done") in
+  match Logs.level () with
+  | Some Logs.Debug -> Sys_unix.command (Format.sprintf "%s \"%s\" %s --no-mem %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))
+  | _ when not setup_done -> Sys_unix.command (Format.sprintf "%s \"%s\" %s --no-mem %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))
+  | _ ->
+    let pfx = Lazy.force toolchain_prefix and t = cfg.tmpdir in
+    Out_channel.write_all (t ^ "/pmem.s43") ~data:(In_channel.read_all (t ^ "/" ^ cfg.basename ^ ".s43"));
+    let secret = Option.value (Sys.getenv "__SECRET") ~default:"" in
+    (* As in asm2ihex.sh, failures of the single tools do not make the build fail *)
+    ignore (run_process (pfx ^ "-as") [ "-I"; "../../src/gap-attacks"; "-I"; t; "--defsym"; "__SECRET=" ^ secret; t ^ "/pmem.s43"; "-o"; t ^ "/pmem.o" ]);
+    ignore (run_process (pfx ^ "-ld") [ "-T"; t ^ "/pmem.x"; t ^ "/pmem.o"; "-o"; t ^ "/pmem.elf" ]);
+    ignore (run_process (pfx ^ "-objcopy") [ "-O"; "ihex"; t ^ "/pmem.elf"; t ^ "/pmem.ihex" ]);
+    0
+
+(* Same as scripts/simulate, running the simulator directly: 0 on success, 1 if the stimulus did not
+   complete, 2 on timeout, 3 on any other failure *)
+let simulate (cfg : cfg_t) =
+  match Logs.level () with
+  | Some Logs.Debug -> Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ()))
+  | _ ->
+    let _, out = run_process ~working_dir:cfg.tmpdir "sancus-core-gap/obj_dir/simv" [] in
+    if String.is_substring out ~substring:"SIMULATION FAILED" then
+      (if String.is_substring out ~substring:"the verilog stimulus didn't complete" then 1
+       else if String.is_substring out ~substring:"simulation Timeout" then 2
+       else 3)
+    else 0
+
 let run_simulator (cfg : cfg_t) =
   (* Call build_pmem to compile and link the code *)
   invalidate_symtab ();
-  let res = Prof.time "sul.build_pmem" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s --no-mem %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))) in
+  let res = Prof.time "sul.build_pmem" (fun () -> build_pmem cfg) in
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
   else (
     Prof.time "sul.ihex2mem" (fun () ->
-      ihex2mem ~ihex:(cfg.tmpdir ^ "/pmem.ihex") ~out:(cfg.tmpdir ^ "/" ^ cfg.basename ^ ".mem") ~mem_size:(pmem_size cfg));
+      let mem = cfg.tmpdir ^ "/" ^ cfg.basename ^ ".mem" in
+      ihex2mem ~ihex:(cfg.tmpdir ^ "/pmem.ihex") ~out:mem ~mem_size:(pmem_size cfg);
+      (* The simulator loads pmem.mem (scripts/simulate copies it) *)
+      Out_channel.write_all (cfg.tmpdir ^ "/pmem.mem") ~data:(In_channel.read_all mem));
     (* Invoke the simulator *)
-    let res = Prof.time "sul.simulate" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ()))) in
+    let res = Prof.time "sul.simulate" (fun () -> simulate cfg) in
     (* (match Logs.level () with | Some Logs.Debug -> assert (Sys_unix.command (Format.sprintf "cp %s %s" cfg.dumpfile cfg.workingdir) = 0) | _ -> ()); *)
     if res = 1 then
       failwith "Simulator: Stimulus did not complete!"
