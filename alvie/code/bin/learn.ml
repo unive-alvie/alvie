@@ -144,6 +144,11 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
+    and keep_repeated_reentries =
+      flag
+        "--keep-repeated-reentries"
+        no_arg
+        ~doc:"Do not identify a segment of execution between two enclave re-entries (reti) with an identical segment immediately preceding it. Without this flag, attackers that can resume an enclave repeatedly (e.g., B3) yield finite models."
 (* and precompute =
       flag
       "--precompute"
@@ -205,6 +210,7 @@ let command =
             ~dumpfile:"tb_openMSP430.vcd"
             ~initial_spec:spec_dfa
             ~ignore_interrupts:ignore_interrupts
+            ~collapse_reentries:(not keep_repeated_reentries)
             () in
         (* (3) prepare the oracle *)
         let attacker_atoms =

@@ -45,13 +45,17 @@ type cfg_t = {
   (* last_time : int; *)
   last_inst_number : int;
   ignore_interrupts : bool;
+  (* If set, a re-entry segment that repeats the previous one is collapsed (see collapse_repeated_reentry) *)
+  collapse_reentries : bool;
+  (* The configurations at the re-entry points of the current run, most recent first *)
+  reentries : cfg_t list;
 } [@@deriving ord,sexp,make]
 
 type t = cfg_t ref
 
 let clone s = ref { !s with last_inst_number = !s.last_inst_number}
 
-let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) () =
+let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) ?(collapse_reentries = true) () =
   Sys_unix.chdir workingdir;
   (* Create tmpdir and a temporary dir inside tmpdir *)
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
@@ -105,6 +109,8 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
       (* ~last_time:0  *)
       ~last_inst_number:0
       ~ignore_interrupts:ignore_interrupts
+      ~collapse_reentries
+      ~reentries:[]
       ())
   )
 
@@ -629,7 +635,41 @@ let pre (cfg : t) =
       left_labels = [];
       (* last_time = 0; *)
       last_inst_number = 0;
+      reentries = [];
   }
+
+(* True if the output is a reti that resumes a (previously interrupted) enclave *)
+let is_reentry ((ol, _, _) : output_t) =
+  List.exists ol ~f:(function Output_internal.OReti p -> Output_internal.equal_mode_t p.mode PM | _ -> false)
+
+(*
+  An attacker that can resume an enclave with reti more than once (e.g., B3 on unpatched Sancus) can
+  repeat the same piece of enclave execution indefinitely: traces are only bounded by the simulation
+  timeout and, since each repetition makes the trace longer, they would make every repetition
+  look like a new state. We call re-entry segment the part of a trace between two re-entries (see
+  is_reentry), and identify the configuration after a segment with the one after an identical
+  segment immediately preceding it, i.e., u x x behaves as u x, when
+  - the two segments have the same inputs and outputs, and
+  - the input generator (spec DFA) is in the same state after each of them.
+  This is done by restoring the configuration reached after the first segment.
+*)
+let collapse_repeated_reentry (cfg : cfg_t) : cfg_t =
+  if not cfg.collapse_reentries then cfg
+  else
+    match cfg.reentries with
+    | r1 :: r0 :: _ ->
+      let segment (a : cfg_t) (b : cfg_t) =
+        let from = List.length a.input_history and len = List.length b.input_history - List.length a.input_history in
+        List.sub b.input_history ~pos:from ~len, List.sub b.output_history ~pos:from ~len in
+      let (i1, o1), (i2, o2) = segment r0 r1, segment r1 cfg in
+      let dfa (c : cfg_t) = fst (Inputgen.get_options c.initial_spec c.input_history c.output_history) in
+      if List.equal Input.equal i1 i2 && List.equal Output_internal.equal o1 o2 && Inputgen.compare_spec_dfa (dfa r1) (dfa cfg) = 0 then (
+        Logs.debug (fun m -> m "Verilog: collapsing a repeated re-entry segment of %d steps" (List.length i2));
+        Prof.count "sul.collapsed_reentry";
+        (* r1 was saved before being pushed: keep the stack as it is now, i.e., r1 :: r0 :: ... *)
+        { r1 with reentries = cfg.reentries })
+      else { cfg with reentries = cfg :: cfg.reentries }
+    | _ -> { cfg with reentries = cfg :: cfg.reentries }
 
 let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
   Prof.time (match dry_output with None -> "sul.step(real)" | Some _ -> "sul.step(dry)") @@ fun () ->
@@ -737,6 +777,7 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
   ) in
   let cfg'_nolbl = update_cfg `NoLabel curr_spec_dfa.mode !cfg i in
   cfg := { cfg'_nolbl with last_inst_number = last_inst_number; left_labels = left_labels; output_history = cfg'.output_history @ [ out ] };
+  if is_reentry out then cfg := collapse_repeated_reentry !cfg;
   (* If we observe a reset, this is special and we should behave as if a pre () was issued by the learning algorithm *)
   if List.mem (fst3 out) OReset ~equal:Output_internal.equal_element_t then pre cfg else ();
   if not silent then
