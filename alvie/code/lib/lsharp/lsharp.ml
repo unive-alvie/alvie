@@ -59,12 +59,12 @@ struct
   (*
     Returns `Consistent if there exists a functional simulation from ot to hyp; otherwise returns a witness leading to the conflict.
   *)
-  let check_consistency (ot : IIOObservationTree.t) (hyp : IIOMealy.t) =
+  let check_consistency ?(apart = IIOObservationTree.apart) (ot : IIOObservationTree.t) (hyp : IIOMealy.t) =
     let rec _check_consistency (queue : (int*int) Fqueue.t) =
       (match Fqueue.dequeue queue with
       | None -> `Consistent
       | Some ((q, r), queue') ->
-          if IIOObservationTree.apart ot q r then `NotConsistent (IIOObservationTree.access ot q)
+          if apart ot q r then `NotConsistent (IIOObservationTree.access ot q)
           else
           (let queue'' = (Set.fold
             (IIOObservationTree.input_alphabet ot)
@@ -98,6 +98,8 @@ struct
     let children : (I.t * O.t * int) list Int.Table.t = Int.Table.create () in
     (* Nodes that got new children since the frontier was last computed (see gen_frontier) *)
     let new_parents = Int.Hash_set.create () in
+    (* Same as new_parents, for explore_frontier *)
+    let new_parents_r2 = Int.Hash_set.create () in
     let known_not_apart = Hashtbl.Poly.create () in
     let sync (ot : IIOObservationTree.t) =
       match Set.max_elt ot.states with
@@ -107,7 +109,8 @@ struct
           Option.iter (Map.find ot.pred_map n) ~f:(fun (p, i) ->
             let o = Option.value_exn (IIOMealy.output ot p i) in
             Hashtbl.add_multi children ~key:p ~data:(i, o, n);
-            Hash_set.add new_parents p);
+            Hash_set.add new_parents p;
+            Hash_set.add new_parents_r2 p);
           (* Mark n and its ancestors, stopping at the first one already marked in this epoch *)
           let rec mark n =
             match Hashtbl.find modified_at n with
@@ -330,13 +333,27 @@ struct
       Rule 2: If exists (s in basis) (i in input), ot.step s i = bot, then ask the teacher.
       Updates to rule 2 can be batched since we do not update basis/frontier/f2b but just the observation tree, but we avoid batching for performance reasons (i.e., too many output queries)
     *)
+    let undef_memo : (Int.Set.t * (int * I.t) list) option ref = ref None in
     let explore_frontier
       (ot : IIOObservationTree.t)
       (basis : Int.Set.t) =
       (* Logs.debug (fun m -> m "R2 check"); *)
-      let undef_list = List.filter_map
-        (List.cartesian_product (Set.to_list basis) input_alphabet)
-        ~f:(fun (s, i) -> (match IIOObservationTree.step ot s i with Some _ -> None | _ -> Some (s, i))) in
+      (* The undefined transitions from basis states, in the same order as
+           List.cartesian_product (Set.to_list basis) input_alphabet (a random one is picked below).
+           They can only change when the basis changes or a basis state gets a new transition. *)
+      sync ot;
+      let undef_list = match !undef_memo with
+        | Some (old_basis, l) when phys_equal old_basis basis && not (Hash_set.exists new_parents_r2 ~f:(Set.mem basis)) -> l
+        | _ ->
+          List.concat_map (Set.to_list basis) ~f:(fun s ->
+            let defined = Option.value (Hashtbl.find children s) ~default:[] in
+            List.filter_map input_alphabet ~f:(fun i ->
+              if List.exists defined ~f:(fun (i', _, _) -> I.equal i i') then None else Some (s, i))) in
+      Hash_set.clear new_parents_r2;
+      undef_memo := Some (basis, undef_list);
+      if check_apart then assert (List.equal (fun (s, i) (s', i') -> s = s' && I.equal i i') undef_list
+        (List.filter_map (List.cartesian_product (Set.to_list basis) input_alphabet)
+          ~f:(fun (s, i) -> (match IIOObservationTree.step ot s i with Some _ -> None | _ -> Some (s, i)))));
       if List.is_empty undef_list then
         (* (show_rule "\x1B[1;31m②\x1B[0m"; *)
         (* Logs.debug (fun m -> m "R2 not applied"); *)
@@ -439,7 +456,7 @@ struct
         let h = build_hypothesis ot basis input_alphabet f2b in
         (* Logs.debug (fun m -> m "R4: ot is %s" (Sexp.to_string (IIOObservationTree.sexp_of_t ot))); *)
         (* Logs.debug (fun m -> m "R4: hypothesis is %s" (Sexp.to_string (IIOMealy.sexp_of_t h))); *)
-        match check_consistency ot h with
+        match Prof.time "lsharp.check_consistency" (fun () -> check_consistency ~apart ot h) with
         | `NotConsistent nc_witness ->
           (* Logs.debug (fun m -> m "R4: hypothesis not consistent"); *)
             let ot', _  = proc_cex ~ot:ot ~hyp:h ~basis:basis ~frontier:frontier ~sigma:nc_witness in
