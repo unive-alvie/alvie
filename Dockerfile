@@ -53,13 +53,11 @@ RUN apt-get update && apt-get install -y opam && \
 RUN adduser --disabled-password --gecos "" alvie
 
 USER alvie
-RUN pip3 install Verilog_VCD
-
 RUN opam init --disable-sandboxing -y && \
     eval "$(opam env)" && \
     opam switch create 4.13.1 -y && \
     eval "$(opam env)" && \
-    opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck && \
+    opam install -y dune core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck && \
     opam env >> /home/alvie/.bashrc
 
 # Copy OCaml source code early (before other files)

@@ -18,7 +18,7 @@ docker run --rm -it alvie
 
 The Dockerfile installs mCRL2 from its Ubuntu PPA on `amd64` and builds it from source on `arm64`, so the default build works natively on both architectures.
 We specify `--platform` only when intentionally cross-building for another architecture.
-For a native setup, we need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with `Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
+For a native setup, we need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, mCRL2, and the Sancus simulator checkout.
 
 For either setup, we verify the OCaml build before running an experiment:
 
