@@ -177,6 +177,7 @@ No explicit "done" message appears in the stream; check the process status and e
 ## Comparison Phase Output (`fa.exe`)
 
 The `fa.exe` binary compares pairs of learned models (secret=0 vs secret=1) and reports how many distinguishing traces (FA violations) it found.
+It prints the report only when `--debug` is set.
 
 ### Terminal Output
 
@@ -224,7 +225,8 @@ Log files mirror the terminal stream and are written per experiment.
 
 `logs/<namespace>/compare-<commit>-<attack>.log` — output of `fa.exe` for one model pair.
 
-- Contains the final `=== Results: found N FA violations` line and any debug info if `--debug` was passed.
+- Contains the final `=== Results: found N FA violations` line and debug information when `--debug` was passed.
+  `check_one.sh` and `check_all.sh` pass `--debug`; `check_example.sh` does not, so its log has no count.
 
 ---
 

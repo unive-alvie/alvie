@@ -98,6 +98,8 @@ dune build
 bash test/cli_diagnostics.sh
 ```
 
+The [Testing ALVIE](/alvie/guides/testing-alvie/) guide explains each suite, what it needs, and when to run it.
+
 `test/cli_diagnostics.sh` runs the ALVIE-only diagnostic suite, including TestDL parsing and command-line validation.
 It does not require the Sancus simulator or mCRL2.
 
