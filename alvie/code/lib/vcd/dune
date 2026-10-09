@@ -4,5 +4,5 @@
  (name vcd)
   (modules vcd)
   (preprocess (pps ppx_deriving.make))
-  (libraries core logs py)
+  (libraries core logs)
 )
