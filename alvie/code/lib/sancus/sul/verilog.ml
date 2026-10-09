@@ -250,18 +250,59 @@ let fill_template template_code (cfg : cfg_t) =
     (* Logs.debug (fun m -> m "filled: %s" code); *)
     attacker_labels @ enclave_labels, code
 
-let addr_of_label cfg l =
+let addr_of_label_script cfg l =
   (* Logs.debug (fun p -> p "Verilog.addr_of_label %s %s" cfg.pmem_elf l); *)
+  Prof.time "sul.addr_of_label(script)" @@ fun () ->
   Int.of_string ("0x" ^ (String.substr_replace_all ~pattern:"\n" ~with_:"" (Shexp_process.eval Shexp_process.(pipe (run "bash" [cfg.get_symbolpos; cfg.pmem_elf; l]) read_all))))
+
+(*
+  Symbols of the last built pmem.elf: name -> list of addresses.
+  Reading the whole table with a single nm invocation avoids spawning a shell per label lookup.
+  It must be invalidated whenever pmem.elf is rebuilt (see run_simulator).
+*)
+let symtab : (string * string list String.Table.t) option ref = ref None
+
+let invalidate_symtab () = symtab := None
+
+let load_symtab elf =
+  let tbl = String.Table.create () in
+  let out = Shexp_process.eval Shexp_process.(pipe (run "nm" [elf]) read_all) in
+  List.iter (String.split_lines out) ~f:(fun line ->
+    match String.split line ~on:' ' |> List.filter ~f:(fun w -> not (String.is_empty w)) with
+    | [ addr; _; name ] -> Hashtbl.add_multi tbl ~key:name ~data:addr
+    | _ -> ());
+  tbl
+
+let addr_of_label cfg l =
+  let tbl = match !symtab with
+    | Some (elf, tbl) when String.equal elf cfg.pmem_elf -> tbl
+    | _ -> let tbl = Prof.time "sul.load_symtab" (fun () -> load_symtab cfg.pmem_elf) in symtab := Some (cfg.pmem_elf, tbl); tbl in
+  match Hashtbl.find tbl l with
+  | Some [ addr ] -> Int.of_string ("0x" ^ addr)
+  (* Missing or ambiguous symbols: fall back to the original lookup, to preserve its exact behaviour *)
+  | _ -> addr_of_label_script cfg l
+
+(* The only signals analyse_dump looks at: parsing just these is much cheaper than parsing the whole dump *)
+let sig_pc = "TOP.tb_openMSP430.inst_pc[15:0]"
+let sig_irq = "TOP.tb_openMSP430.msp_debug_0.irq"
+let sig_inst_number = "TOP.tb_openMSP430.inst_number[31:0]"
+let sig_sm_executing = "TOP.tb_openMSP430.dut.frontend_0.sm_executing"
+let sig_e_state = "TOP.tb_openMSP430.dut.e_state[4:0]"
+let sig_r4 = "TOP.tb_openMSP430.r4[15:0]"
+let sig_gie = "TOP.tb_openMSP430.gie"
+let sig_timerA = "TOP.tb_openMSP430.timerA_0.tar[15:0]"
+let sig_umem = "TOP.tb_openMSP430.mem250[15:0]"
+let analysed_signals = [ sig_pc; sig_irq; sig_inst_number; sig_sm_executing; sig_e_state; sig_r4; sig_gie; sig_timerA; sig_umem ]
 
 let run_simulator (cfg : cfg_t) =
   (* Call build_pmem to compile and link the code *)
-  let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ())) in
+  invalidate_symtab ();
+  let res = Prof.time "sul.build_pmem" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))) in
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
   else (
     (* Invoke the simulator *)
-    let res = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ())) in
+    let res = Prof.time "sul.simulate" (fun () -> Sys_unix.command (Format.sprintf "%s \"%s\" %s %s" cfg.simulate_script cfg.tmpdir cfg.basename (dbg_str ()))) in
     (* (match Logs.level () with | Some Logs.Debug -> assert (Sys_unix.command (Format.sprintf "cp %s %s" cfg.dumpfile cfg.workingdir) = 0) | _ -> ()); *)
     if res = 1 then
       failwith "Simulator: Stimulus did not complete!"
@@ -271,7 +312,7 @@ let run_simulator (cfg : cfg_t) =
       failwith "Simulator: Unexpected error :("
     else
       (* If res = 2, simulation diverged and we signal it! *)
-      Result.Ok (res = 2, Vcd.vcd cfg.dumpfile))
+      Result.Ok (res = 2, Prof.time "sul.vcd_parse" (fun () -> Vcd.vcd ~signals:analysed_signals cfg.dumpfile)))
 
 let output_of_signals
   ~(cpu_mode_s : Output_internal.mode_t)
@@ -332,29 +373,31 @@ let output_of_signals
   | PM, PM, `RETI -> failwith "output_of_signals: found `PM, `PM, `RETI. It may be a bug!"
 
 let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) list) (dump : Vcd.vcd_t) : int * (string * string) list * Output_internal.element_t list =
+  Prof.time "sul.analyse_dump" @@ fun () ->
   (* let labels = List.dedup_and_sort labels ~compare:[%derive.ord: string*string] in *)
   (* Find the interesting points in the code, using the labels *)
   Logs.debug (fun p -> p "Verilog.analyse_dump: labels: %s" ([%derive.show: (string*string) list] labels));
   let annot_pcs = List.map labels ~f:(fun (s, e) -> addr_of_label cfg s, addr_of_label cfg e) in
-  let pc_to_label (s, e) = List.find_exn labels ~f:(fun (s', e') -> s = addr_of_label cfg s' && e = addr_of_label cfg e') in
-  let pc_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_pc[15:0]" in
-  let irq_map = Vcd.get_signal dump "TOP.tb_openMSP430.msp_debug_0.irq" in
-  let inst_number_map = Vcd.get_signal dump "TOP.tb_openMSP430.inst_number[31:0]" in
-  let sm_executing_map = Vcd.get_signal dump "TOP.tb_openMSP430.dut.frontend_0.sm_executing" in
-  let e_state_map = Vcd.get_signal dump "TOP.tb_openMSP430.dut.e_state[4:0]" in
-  let r4_map = Vcd.get_signal dump "TOP.tb_openMSP430.r4[15:0]" in
-  let gie_map = Vcd.get_signal dump "TOP.tb_openMSP430.gie" in
-  let timerA_map = Vcd.get_signal dump "TOP.tb_openMSP430.timerA_0.tar[15:0]" in
+  let labels_and_pcs = List.zip_exn labels annot_pcs in
+  let pc_to_label (s, e) = fst (List.find_exn labels_and_pcs ~f:(fun (_, (s', e')) -> s = s' && e = e')) in
+  let pc_map = Vcd.get_signal dump sig_pc in
+  let irq_map = Vcd.get_signal dump sig_irq in
+  let inst_number_map = Vcd.get_signal dump sig_inst_number in
+  let sm_executing_map = Vcd.get_signal dump sig_sm_executing in
+  let e_state_map = Vcd.get_signal dump sig_e_state in
+  let r4_map = Vcd.get_signal dump sig_r4 in
+  let gie_map = Vcd.get_signal dump sig_gie in
+  let timerA_map = Vcd.get_signal dump sig_timerA in
   (* let pmem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem240[15:0]" in *)
-  let umem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem250[15:0]" in
+  let umem_map = Vcd.get_signal dump sig_umem in
   (* Logs.debug (fun m -> m "reg_map : [%s]\n" (List.to_string (Map.to_alist r4_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
   Logs.debug (fun m -> m "gie_map : [%s]\n" (List.to_string (Map.to_alist gie_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
   Logs.debug (fun m -> m "timerA_map : [%s]\n" (List.to_string (Map.to_alist timerA_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
   (* Logs.debug (fun m -> m "pmem_map : [%s]\n" (List.to_string (Map.to_alist pmem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
   (* Logs.debug (fun m -> m "umem_map : [%s]\n" (List.to_string (Map.to_alist umem_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
-  let time_and_pc_map = Map.fold ~init:Int.Map.empty
+  let time_and_pc_map = Map.fold ~init:(Int.Map.empty, String.Set.empty)
     pc_map.tv
-    ~f:(fun ~key:time ~data:raw_data acc_tpm ->
+    ~f:(fun ~key:time ~data:raw_data (acc_tpm, seen) ->
       (* Logs.debug (fun m -> m "Verilog.analyse_dump: time: %d; raw_data: %s; pc: %x; irq: %s; inst_num: %d" time raw_data (Int.of_string ("0b" ^ raw_data)) (Vcd.Signal.at_time irq_map time) (Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map time))); *)
       if not (String.equal raw_data "x") &&
         List.exists annot_pcs ~f:(fun (s, e) -> let pc = Int.of_string ("0b" ^ raw_data) in pc >= s && pc < e) &&
@@ -362,12 +405,12 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
         (* FIXME: find a better way to do this *)
         Int.of_string ("0b" ^ Vcd.Signal.at_time inst_number_map time) >= cfg.last_inst_number &&
         (* time >= cfg.last_time && *)
-        not (Map.exists acc_tpm ~f:(fun data' -> String.equal raw_data data'))
+        not (Set.mem seen raw_data)
       then
-          Map.add_exn acc_tpm ~key:time ~data:raw_data
+          (Map.add_exn acc_tpm ~key:time ~data:raw_data, Set.add seen raw_data)
       else
-        acc_tpm
-    ) in
+        (acc_tpm, seen)
+    ) |> fst in
   (* if Map.length time_and_pc_map >= 1000 then (* An arbitrary limit! *)
     cfg.last_inst_number, [], [Output_internal.OMaybeDiverge]
   else *)
@@ -382,7 +425,13 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
     If that's the case, we keep instructions up to inst_number and inst_number+1 and discard all the rest
   *)
   (* inst_cfg returns the pair (timin, inst_number) for the given inst_number *)
-  let inst_cfg inst_number = Map.min_elt (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
+  (* first_time.(n) is the first time at which inst_number takes value n *)
+  let first_time = Map.fold inst_number_map.tv ~init:Int.Map.empty ~f:(fun ~key:time ~data acc ->
+    if String.equal data "x" then acc
+    else
+      let n = Int.of_string ("0b" ^ data) in
+      if Map.mem acc n then acc else Map.set acc ~key:n ~data:time) in
+  let inst_cfg inst_number = Option.map (Map.find first_time inst_number) ~f:(fun t -> (t, ())) in
   let raw_pc_of_inst_num inst_number = match inst_cfg inst_number with Some (t, _) -> Vcd.Signal.at_time pc_map t | None -> failwith "Should never happen!" in
   (* seen_pcs collects actually seen pcs for left_labels calculation, i.e., we exclude IRQ pcs! *)
   let seen_pcs, inst_numbers = List.fold_until cand_inst_numbers ~init:([], []) ~f:(fun (acc_seen, acc_in) curr_inst_number ->
@@ -420,8 +469,8 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
       ~init:(cfg.last_inst_number, [])
       ~f:(fun (lin, acc) inst_number ->
         (* The below min_elt_exn should never fail, since inst_numbers is not empty here *)
-        let (ref_time_begin, _) = Map.min_elt_exn (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number)) in
-        let end_config = Map.min_elt (Map.filter inst_number_map.tv ~f:(fun data -> not (String.equal data "x") && Int.of_string("0b" ^ data) = inst_number + 1)) in
+        let (ref_time_begin, _) = Option.value_exn (inst_cfg inst_number) in
+        let end_config = inst_cfg (inst_number + 1) in
         let compute_cpu_mode t = if String.equal (Vcd.Signal.at_time sm_executing_map t) "0" then Output_internal.UM else Output_internal.PM in
         match end_config with
         | None ->
@@ -429,13 +478,14 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
           lin, acc @ [ `Out Output_internal.OReset ]
         | Some (ref_time_end, _) ->
             (* Extract the list of all elements from e_state_map whose keys are >= ref_time_begin and < ref_time_end *)
-            let e_status = List.map (Map.to_alist (Map.filter_keys e_state_map.tv ~f:(fun key -> key >= ref_time_begin && key < ref_time_end))) ~f:snd in
+            let e_status = List.map (Map.to_alist (Map.subrange e_state_map.tv ~lower_bound:(Incl ref_time_begin) ~upper_bound:(Excl ref_time_end))) ~f:snd in
             (* Extract the values of registers and memory, as the last value before ref_time_end *)
-            let reg_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys r4_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let gie_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys gie_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
-            let umem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys umem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            let last_before (m : string Int.Map.t) t = snd (Option.value_exn (Map.closest_key m `Less_than t)) in
+            let reg_val = last_before r4_map.tv ref_time_end in
+            let gie_val = last_before gie_map.tv ref_time_end in
+            let umem_val = last_before umem_map.tv ref_time_end in
             (* let pmem_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys pmem_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in *)
-            let timerA_val = List.last_exn (List.map (Map.to_alist (Map.filter_keys timerA_map.tv ~f:(fun key -> key < ref_time_end))) ~f:snd) in
+            let timerA_val = last_before timerA_map.tv ref_time_end in
             let k = (ref_time_end - ref_time_begin) / cfg.sim_cycle_ratio in
             let lin' = inst_number in
             Logs.debug (fun m -> m "===== cfg.last_inst_number %d, lin %d, lin' %d\n" cfg.last_inst_number lin lin');
@@ -532,7 +582,7 @@ let pre (cfg : t) =
   }
 
 let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
-  ignore (Sys_unix.command (Format.sprintf "rm -Rf \"%s/*\"" !cfg.tmpdir));
+  Prof.time (match dry_output with None -> "sul.step(real)" | Some _ -> "sul.step(dry)") @@ fun () ->
   Logs.debug (fun m -> m "\x1B[31mVerilog.step: Invoked with %s\x1B[0m" (Sexp.to_string (Input.sexp_of_t i)));
   if not silent then
   (match Logs.level () with
@@ -582,7 +632,7 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
      If not, return Exception/Reset depending on whether the mode was inside the enclave or not. *)
   Logs.debug (fun m -> m "Verilog.step: Input history: %s" (Sexp.to_string_mach (List.sexp_of_t Input.sexp_of_t !cfg.input_history)));
   Logs.debug (fun m -> m "Verilog.step: Output history: %s" (Sexp.to_string_mach (List.sexp_of_t Output_internal.sexp_of_t !cfg.output_history)));
-  let curr_spec_dfa, matchable = Inputgen.matchable !cfg.initial_spec i !cfg.input_history !cfg.output_history in
+  let curr_spec_dfa, matchable = Prof.time "sul.matchable" (fun () -> Inputgen.matchable !cfg.initial_spec i !cfg.input_history !cfg.output_history) in
   Logs.debug (fun m -> m "Verilog.step: Mode: %s" (Inputgen.mode_show curr_spec_dfa.mode));
   Logs.debug (fun m -> m "Verilog.step: Input: %s" (Input.show i));
   (* (Partial) update of the configuration *)
@@ -605,15 +655,16 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
     (
       (* Logs.debug (fun m -> m "Verilog.step: input matched, running Verilog."); *)
       (* Read the template file, fill it with the new code and write it to the filled file *)
-      let template_code = In_channel.read_all cfg'.templatefile in
-      let labels, code = fill_template template_code cfg' in
-        Logs.debug (fun m -> m "filledfile: %s" cfg'.filledfile);
-        Out_channel.write_all cfg'.filledfile ~data:code;
         (* Now, if dry_output is None, run the simulator and collect results; Otherwise return dry_output directly *)
         (* If the output is one of those for which left_labels might not be empty, ignore the directive! *)
         (* Dry is used only if the output we expect empties the contents of left_labels: *)
         (* let open Output_internal in *)
         let force_no_dry () =
+          (* The program is only needed when we actually simulate: dry steps skip filling the template *)
+          let template_code = In_channel.read_all cfg'.templatefile in
+          let labels, code = Prof.time "sul.fill_template" (fun () -> fill_template template_code cfg') in
+          Logs.debug (fun m -> m "filledfile: %s" cfg'.filledfile);
+          Out_channel.write_all cfg'.filledfile ~data:code;
           let t, ll, e = match run_simulator cfg' with
             | Error o -> cfg'.last_inst_number, [], [o]
             | Ok (diverges, d) ->
