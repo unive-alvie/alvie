@@ -97,10 +97,13 @@ let parse_channel ?signals (ic : In_channel.t) : vcd_t =
 
 let vcd ?signals (filename : string) = In_channel.with_file filename ~f:(parse_channel ?signals)
 
+let matches signal (fn, _) =
+  String.equal fn signal || String.equal (normalize_signal_name fn) (normalize_signal_name signal)
+
+let has_signal (v : vcd_t) (signal : string) = List.exists v.full_names_to_tv ~f:(matches signal)
+
 let get_signal (v : vcd_t) (signal : string) =
   let _, tv =
-    List.find_exn v.full_names_to_tv ~f:(fun (fn, _) ->
-      String.equal fn signal ||
-      String.equal (normalize_signal_name fn) (normalize_signal_name signal))
+    List.find_exn v.full_names_to_tv ~f:(matches signal)
   in
     Signal.make ~tv:tv

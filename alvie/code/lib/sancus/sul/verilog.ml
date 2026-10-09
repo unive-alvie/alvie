@@ -283,16 +283,18 @@ let addr_of_label cfg l =
   | _ -> addr_of_label_script cfg l
 
 (* The only signals analyse_dump looks at: parsing just these is much cheaper than parsing the whole dump *)
-let sig_pc = "TOP.tb_openMSP430.inst_pc[15:0]"
-let sig_irq = "TOP.tb_openMSP430.msp_debug_0.irq"
-let sig_inst_number = "TOP.tb_openMSP430.inst_number[31:0]"
-let sig_sm_executing = "TOP.tb_openMSP430.dut.frontend_0.sm_executing"
-let sig_e_state = "TOP.tb_openMSP430.dut.e_state[4:0]"
-let sig_r4 = "TOP.tb_openMSP430.r4[15:0]"
-let sig_gie = "TOP.tb_openMSP430.gie"
-let sig_timerA = "TOP.tb_openMSP430.timerA_0.tar[15:0]"
-let sig_umem = "TOP.tb_openMSP430.mem250[15:0]"
-let analysed_signals = [ sig_pc; sig_irq; sig_inst_number; sig_sm_executing; sig_e_state; sig_r4; sig_gie; sig_timerA; sig_umem ]
+(* Each signal is listed with its alternative names: internal signals are copied to the top level of
+   the testbench (see generic.v), the original names are used when every signal is traced *)
+let sig_pc = [ "TOP.tb_openMSP430.inst_pc[15:0]" ]
+let sig_irq = [ "TOP.tb_openMSP430.alvie_irq"; "TOP.tb_openMSP430.msp_debug_0.irq" ]
+let sig_inst_number = [ "TOP.tb_openMSP430.inst_number[31:0]" ]
+let sig_sm_executing = [ "TOP.tb_openMSP430.alvie_sm_executing"; "TOP.tb_openMSP430.dut.frontend_0.sm_executing" ]
+let sig_e_state = [ "TOP.tb_openMSP430.alvie_e_state[4:0]"; "TOP.tb_openMSP430.dut.e_state[4:0]" ]
+let sig_r4 = [ "TOP.tb_openMSP430.r4[15:0]" ]
+let sig_gie = [ "TOP.tb_openMSP430.gie" ]
+let sig_timerA = [ "TOP.tb_openMSP430.alvie_timerA_tar[15:0]"; "TOP.tb_openMSP430.timerA_0.tar[15:0]" ]
+let sig_umem = [ "TOP.tb_openMSP430.mem250[15:0]" ]
+let analysed_signals = List.concat [ sig_pc; sig_irq; sig_inst_number; sig_sm_executing; sig_e_state; sig_r4; sig_gie; sig_timerA; sig_umem ]
 
 (*
   Native version of scripts/ihex2mem.tcl: converts the IHEX file produced by build_pmem into the
@@ -334,6 +336,11 @@ let pmem_size cfg =
   match List.find_map conf ~f:(fun l -> String.chop_prefix (String.strip l) ~prefix:"pmemsize=") with
   | Some v -> Int.of_string (String.strip v)
   | None -> failwith "Could not find pmemsize in pmem.sh"
+
+let get_signal dump names =
+  match List.find names ~f:(fun n -> Vcd.has_signal dump n) with
+  | Some n -> Vcd.get_signal dump n
+  | None -> Vcd.get_signal dump (List.last_exn names)
 
 let run_simulator (cfg : cfg_t) =
   (* Call build_pmem to compile and link the code *)
@@ -423,16 +430,16 @@ let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) lis
   let annot_pcs = List.map labels ~f:(fun (s, e) -> addr_of_label cfg s, addr_of_label cfg e) in
   let labels_and_pcs = List.zip_exn labels annot_pcs in
   let pc_to_label (s, e) = fst (List.find_exn labels_and_pcs ~f:(fun (_, (s', e')) -> s = s' && e = e')) in
-  let pc_map = Vcd.get_signal dump sig_pc in
-  let irq_map = Vcd.get_signal dump sig_irq in
-  let inst_number_map = Vcd.get_signal dump sig_inst_number in
-  let sm_executing_map = Vcd.get_signal dump sig_sm_executing in
-  let e_state_map = Vcd.get_signal dump sig_e_state in
-  let r4_map = Vcd.get_signal dump sig_r4 in
-  let gie_map = Vcd.get_signal dump sig_gie in
-  let timerA_map = Vcd.get_signal dump sig_timerA in
+  let pc_map = get_signal dump sig_pc in
+  let irq_map = get_signal dump sig_irq in
+  let inst_number_map = get_signal dump sig_inst_number in
+  let sm_executing_map = get_signal dump sig_sm_executing in
+  let e_state_map = get_signal dump sig_e_state in
+  let r4_map = get_signal dump sig_r4 in
+  let gie_map = get_signal dump sig_gie in
+  let timerA_map = get_signal dump sig_timerA in
   (* let pmem_map = Vcd.get_signal dump "TOP.tb_openMSP430.mem240[15:0]" in *)
-  let umem_map = Vcd.get_signal dump sig_umem in
+  let umem_map = get_signal dump sig_umem in
   (* Logs.debug (fun m -> m "reg_map : [%s]\n" (List.to_string (Map.to_alist r4_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
   Logs.debug (fun m -> m "gie_map : [%s]\n" (List.to_string (Map.to_alist gie_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v)));
   Logs.debug (fun m -> m "timerA_map : [%s]\n" (List.to_string (Map.to_alist timerA_map.tv) ~f:(fun (k, v) -> sprintf "%d, %s;" k v))); *)
