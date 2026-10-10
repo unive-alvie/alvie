@@ -1,5 +1,55 @@
 # Changelog
 
+## Unreleased
+
+### Performance
+
+Learning is much faster; for example, `spec-lib/fast/b4` (`ef753b6`, interrupts,
+secret 0) went from 2235s to about 11s of learning, and all the models of
+`learn_all.sh` are learned in about 6 minutes on 16 cores.
+
+- L#: apartness is cached across the run (it is monotone in the observation
+  tree), frontier-to-basis candidates are tracked incrementally node by node,
+  and the frontier, rule 2 and rule 3 no longer rescan the whole tree after
+  every output query. Learned models and queries are unchanged;
+  `ALVIE_CHECK_APART=1` cross-checks all of this against the original
+  computations.
+- Observation trees are updated incrementally.
+- Verilog SUL: native VCD parser (no more Python), only the analysed signals
+  are traced, the toolchain and the simulator are run without shell scripts,
+  symbols are read from the ELF file, the program image is built with a
+  one-time setup, and a no-op shell command run at every step is gone.
+- Compiled simulators are cached across runs (`ALVIE_SIM_CACHE`).
+- The GC is tuned for learning (`OCAMLRUNPARAM` overrides it).
+- Experiment wrappers run at most `ALVIE_JOBS` experiments at a time
+  (default: number of cores) instead of all of them at once.
+
+### Fixes
+
+- B3 on unpatched Sancus (`ef753b6`, interrupts) did not terminate: the
+  instruction counter used by the SUL was compared as part of the
+  observations, and repeated enclave re-entries kept producing new states.
+  The counter is no longer compared, and the SUL identifies a re-entry
+  segment with an identical one immediately preceding it
+  (`--keep-repeated-reentries` disables this).
+
+### Tooling
+
+- `ALVIE_PROFILE=1` prints a wall-clock profile (also on `SIGUSR1`);
+  `--info` logs PAC rounds and counterexamples.
+- Learning logs end with a statistics line (`--report`), including the
+  learning time.
+- Drops the obsolete `tt_genall` and `tt_derive` programs and the `py` and
+  `Verilog_VCD` dependencies.
+
+### Results
+
+- Regenerates `results/` and `counterexamples/`. Models differ from the
+  CSF'24 ones because of the current toolchain (today's `main` produces the
+  same models) and of the fixes above; witnesses report the same attacks.
+  The models for the attack `a` are now learned from `spec-lib/a.atdl`
+  (the previous ones were copies of those of `b6`/`b7`).
+
 ## 2026.09
 
 This is the first release since the CSF'24 artifact (`csf24.v1`).
