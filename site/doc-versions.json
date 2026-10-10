@@ -1,0 +1,12 @@
+{
+  "versions": [
+    {
+      "name": "2026.09v2",
+      "ref": "de929b7022cd0cafbfe2ba4412eb2d41e9288c55",
+      "label": "2026.09 (extended documentation)"
+    }
+  ],
+  "labels": {
+    "2026.09": "2026.09 (as released)"
+  }
+}

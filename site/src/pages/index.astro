@@ -1,6 +1,6 @@
 ---
 import '../styles/custom.css';
-import { docsVersion, otherVersions, versionUrl } from '../versions.mjs';
+import { docsVersion, otherVersions, versionLabel, versionUrl } from '../versions.mjs';
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 const gettingStartedUrl = `${baseUrl}/getting-started/`;
@@ -44,9 +44,9 @@ const documentationUrl = `${baseUrl}/guides/walkthrough-repro/`;
         <span>Copyright ALVIE team</span>
         {docsVersion && (
           <span>
-            Documentation: {docsVersion === 'dev' ? 'development version' : docsVersion}
+            Documentation: {versionLabel(docsVersion)}
             {otherVersions().map((version) => (
-              <> · <a href={versionUrl(version)}>{version === 'dev' ? 'development version' : version}</a></>
+              <> · <a href={versionUrl(version)}>{versionLabel(version)}</a></>
             ))}
           </span>
         )}

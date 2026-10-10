@@ -6,6 +6,8 @@ import { getCollection } from 'astro:content';
 // Starlight allows one badge per sidebar link, and the level badge (A) owns it.
 // Add a purple "New" badge after the link text of pages marked `isNew: true`.
 const pages = await getCollection('docs');
+// Older documentation versions have no level badges: show the legend only when some page has one
+const hasLevels = pages.some((page) => page.data.sidebar?.badge);
 const selectors = pages
   .filter((page) => page.data.isNew)
   .map((page) => `.sidebar-content a[href="${import.meta.env.BASE_URL}/${page.id}/"]::after`);
@@ -30,9 +32,11 @@ ${selectors.map((selector) => selector.replace('a[href', 'a[aria-current="page"]
 
 <Default {...Astro.props}><slot /></Default>
 <style is:global set:html={newBadgeCss} />
-<aside class="level-legend" aria-label="Reading levels">
-  <p><Badge text="A" variant="caution" /> - Advanced: assumes some ALVIE knowledge</p>
-</aside>
+{hasLevels && (
+  <aside class="level-legend" aria-label="Reading levels">
+    <p><Badge text="A" variant="caution" /> - Advanced: assumes some ALVIE knowledge</p>
+  </aside>
+)}
 
 <style>
   /* The sidebar container adds a 1rem gap above this note; pull it back toward the entries. */

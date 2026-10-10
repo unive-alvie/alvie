@@ -4,23 +4,27 @@
 
 const env = (name) => (process.env[name] ?? '').trim();
 
-// The version being built: a release tag (e.g. 2026.09) or "dev" (the main branch)
+// The version being built: a version of scripts/doc-versions.mjs (e.g. 2026.09) or "dev" (main)
 export const docsVersion = env('ALVIE_DOCS_VERSION') || null;
-// The most recent release, served at the root of the site
+// The current version, served at the root of the site
 export const latestRelease = env('ALVIE_DOCS_LATEST') || null;
-// All releases with documentation, oldest first
-export const releases = env('ALVIE_DOCS_RELEASES').split(/\s+/).filter(Boolean);
-// Where the site is served, without trailing slash (the latest release lives there)
+// All the versions with their labels, newest first
+const versions = JSON.parse(env('ALVIE_DOCS_VERSIONS') || '[]');
+// Where the site is served, without trailing slash
 export const siteRoot = (env('ALVIE_DOCS_ROOT') || '/alvie').replace(/\/$/, '');
+
+// Human-readable name of a version
+export function versionLabel(version) {
+  if (version === 'dev') return 'development version';
+  return versions.find(({ name }) => name === version)?.label ?? version;
+}
 
 // URL of the home page of the given version
 export function versionUrl(version) {
   return version === latestRelease ? `${siteRoot}/` : `${siteRoot}/${version}/`;
 }
 
-// The other versions a reader may want to switch to, newest first
+// The other versions a reader may want to switch to: the development version, then newest first
 export function otherVersions() {
-  const all = [...releases].reverse();
-  if (docsVersion !== 'dev') all.unshift('dev');
-  return all.filter((version) => version !== docsVersion);
+  return ['dev', ...versions.map(({ name }) => name)].filter((version) => version !== docsVersion);
 }
