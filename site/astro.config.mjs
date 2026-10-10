@@ -1,9 +1,11 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+// scripts/build-versions.sh builds the site once per documentation version, each under its own base
 export default defineConfig({
   site: 'https://unive-alvie.github.io',
-  base: '/alvie',
+  base: process.env.ALVIE_DOCS_BASE || '/alvie',
+  outDir: process.env.ALVIE_DOCS_OUTDIR || './dist',
   integrations: [
     starlight({
       title: 'ALVIE',
@@ -12,6 +14,8 @@ export default defineConfig({
       components: {
         PageTitle: './src/components/PageTitle.astro',
         Sidebar: './src/components/Sidebar.astro',
+        // Shows which version of the documentation is being read
+        Banner: './src/components/VersionBanner.astro',
       },
       sidebar: [
         { label: 'Getting Started', slug: 'getting-started' },
