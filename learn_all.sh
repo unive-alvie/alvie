@@ -134,13 +134,13 @@ do
       echo "$name_int ... [OK - Done before]"
     else
       # Invoke the learning process in background and send the stderr/stdout to the log file
-      alvie_run_background "$name_int" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_int\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > \"$logfile_int\" 2>&1" "$logfile_int"
+      alvie_run_background "$name_int" "_build/default/bin/learn.exe --report --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_int\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > \"$logfile_int\" 2>&1" "$logfile_int"
     fi
 
     if [ -f "$resfile_nint" ]; then
       echo "$name_nint ... [OK - Done before]"
     else
-      alvie_run_background "$name_nint" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_nint\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac --ignore-interrupts > \"$logfile_nint\" 2>&1" "$logfile_nint"
+      alvie_run_background "$name_nint" "_build/default/bin/learn.exe --report --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile_nint\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac --ignore-interrupts > \"$logfile_nint\" 2>&1" "$logfile_nint"
     fi
 done
 

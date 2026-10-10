@@ -46,9 +46,8 @@ digraph G {
   5210 [shape=circle, ];
   5650 [shape=circle, ];
   5665 [shape=circle, ];
-  6240 [shape=circle, ];
-  7363 [shape=circle, ];
-  7398 [shape=circle, ];
+  7190 [shape=circle, ];
+  7225 [shape=circle, ];
   
   
   0 -> 9 [label="((IAttacker(CTimerEnable 1))(((OTime((k 15)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()8))",
@@ -209,19 +208,17 @@ digraph G {
                 ];
   2638 -> 5210 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
                 ];
-  5199 -> 6240 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+  5199 -> 5210 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
                 ];
   5210 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()44))",
              ];
-  5650 -> 7363 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 42)(timerA_counter 0)(mode UM))))()39))",
+  5650 -> 7190 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  5665 -> 7398 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
+  5665 -> 7225 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  6240 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()45))",
+  7190 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()45))",
              ];
-  7363 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 42)(timerA_counter 0)(mode UM))))()45))",
-             ];
-  7398 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()45))",
+  7225 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()45))",
              ];
   
   }

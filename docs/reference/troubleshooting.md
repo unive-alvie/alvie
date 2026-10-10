@@ -53,15 +53,17 @@ These messages start with `ALVIE error:`.
 A parse error appears at once, before the simulator starts.
 This makes it a fast way to check a specification.
 To check a specification and your setup without learning, add `--dry` to `learn.exe`.
-The tool prepares the simulator, which takes about 20 seconds, and writes a model with one state.
+The tool prepares the simulator, which takes about 20 seconds the first time (about 1 second when the compiled simulator is in the cache), and writes a model with one state.
 
 ## While a run is going
 
 | Symptom | Likely cause | Action |
 | --- | --- | --- |
 | The output shows many `†` symbols. | This is normal. `†` means "input not allowed here". ALVIE sends 20% of its inputs without the guidance of the specification (`--bad-probability`) on purpose. | Do nothing. ALVIE removes these transitions from the final model. |
-| Nothing appears for 20 to 30 seconds at the start. | ALVIE prepares the simulator. | Wait. |
-| A run takes many hours. | The complete specifications with the `pac` oracle are large. | Use `spec-lib/fast/` and `randomwalk` while you develop. See [Choosing Learner Settings](/alvie/guides/learning-settings/). |
+| Nothing appears for about 20 seconds at the start. | ALVIE compiles the simulator. Runs that share the `--tmpdir` directory (or `ALVIE_SIM_CACHE`) reuse it. | Wait. Reuse the same temporary directory for later runs. |
+| A run is slower than expected. | Most models take seconds to a few minutes; the slowest complete ones about 5 minutes. | Run with `ALVIE_PROFILE=1` to see where the time goes, and use `spec-lib/fast/` while you develop. See [Choosing Learner Settings](/alvie/guides/learning-settings/). |
+| A run does not finish, and with `--info` the hypothesis grows at every round. | The observable behavior has no finite model in practice, for example an enclave that can be resumed again and again. | Check that `--keep-repeated-reentries` is not set. Otherwise bound the run with `--round-limit`, or restrict the specification. See [Choosing Learner Settings](/alvie/guides/learning-settings/#repeated-enclave-re-entries). |
+| A change to the testbench or to the simulator scripts seems to have no effect. | A cached simulator is used. The cache detects changes to the processor sources, the stimulus, the compilation script and Verilator, not to other files. | Run once with `ALVIE_SIM_CACHE=0`, or delete `simv-cache` in the temporary directory. |
 | A wrapper prints `[OK - Done before]` and does nothing. | The result file exists. The wrapper skips finished work. | Use a new namespace, or delete the old result files. |
 | `Comparison incomplete: no secret-0 interrupt-enabled models found` | The `results/<namespace>/` directory has no models. | Run the learning wrapper first. Use the same namespace. |
 | `Comparison incomplete: missing no-interrupt model` | One of the four models is missing. | Learn the missing model. The comparison needs all four. |
@@ -76,7 +78,7 @@ The tool prepares the simulator, which takes about 20 seconds, and writes a mode
 | The witness file has one state and no transitions. | The comparison found no difference. | This is a result, not an error. See the limits in [How ALVIE Works](/alvie/guides/concepts/#what-a-result-means). |
 | The model has fewer states than expected. | The oracle stopped too early. A short random walk can accept a model that has merged two states. | Learn again with a larger `--step-limit`, or use `pac`. |
 | Two runs of the same command give the same model. | `learn.exe` uses a fixed random seed. This is by design. | To try a different search, change a limit. |
-| The numbers differ from a checked-in model. | The state numbers are arbitrary. Timing values can differ between ALVIE versions and toolchains. | Compare the structure first. A fresh example run can show `k = 648` for `create` where the checked-in model shows `k = 600`. |
+| The numbers differ from a checked-in model. | The state numbers are arbitrary. Timing values can differ between ALVIE versions and toolchains. | Compare the structure first, then the timings. |
 | The violation count differs from the [Attack Catalogue](/alvie/reference/attack-catalogue/). | New models can differ when the oracle or the limits differ. | Run the comparison on the checked-in models first. If that count is wrong, check the build and mCRL2. |
 | `exec.exe` shows `†` for an input that you copied from a model. | The secret in the input does not match `--secret`. | Use the same secret in the input and in the option. |
 | The last commit `bf89c0b` still gives witnesses. | The known problems B8 and B9 have no fix in any commit. | This is the expected result. See the [Attack Catalogue](/alvie/reference/attack-catalogue/). |

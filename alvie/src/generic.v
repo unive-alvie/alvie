@@ -33,3 +33,11 @@ initial
       // Forcefully set the r15 register to the "end of test" value
       dut.execution_unit_0.register_file_0.r15 = 16'hdead;
    end
+
+// Top-level copies of the internal signals analysed by ALVIE: scripts/verilog_compile only
+// traces the top level of the testbench (unless ALVIE_FULL_TRACE=1), which makes simulation
+// and dump analysis much cheaper.
+wire        alvie_irq          = msp_debug_0.irq;
+wire        alvie_sm_executing = dut.frontend_0.sm_executing;
+wire  [4:0] alvie_e_state      = dut.e_state;
+wire [15:0] alvie_timerA_tar   = timerA_0.tar;

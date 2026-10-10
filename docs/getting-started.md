@@ -98,15 +98,14 @@ cd -
 rm -rf /tmp/verilator
 ```
 
-Set up the OCaml switch and Python VCD parser:
+Set up the OCaml switch:
 
 ```bash
-python3 -m pip install --user Verilog_VCD
 opam init --disable-sandboxing -y
 eval "$(opam env)"
 opam switch create 4.13.1 -y
 eval "$(opam env)"
-opam install -y dune py core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
+opam install -y dune core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
 ```
 
 Clone ALVIE/Sancus and the Sancus simulator checkout:

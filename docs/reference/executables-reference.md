@@ -46,11 +46,22 @@ This is the main experiment driver.
 | `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
 | `--bad-probability <float>` | `0.20` | Probability of generating an input not driven by the specification |
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
+| `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/guides/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
 | `--sancus-master-key <hex>` | _(default key)_ | Master key passed to the Sancus simulator |
 | `--dry` | false | Dry run: set up the simulator but do not learn |
-| `--report` | false | Print the learning statistics table |
+| `--report` | false | Print a line of learning statistics on stderr (see the [log output reference](../log-output-reference/#learning-statistics)) |
 | `--debug` | false | Enable debug-level logging |
-| `--info` | false | Enable info-level logging |
+| `--info` | false | Enable info-level logging: one line per equivalence-query round and one per counterexample (see the [log output reference](../log-output-reference/#info-level-output)) |
+
+### Environment variables
+
+| Variable | Effect |
+|----------|--------|
+| `ALVIE_SIM_CACHE` | Directory where compiled simulators are kept and reused (default: `simv-cache` inside `--tmpdir`); `0` always compiles. Also used by `exec.exe` and `pbt.exe` |
+| `ALVIE_PROFILE` | With `1`, print on stderr, at the end of the run, the time spent in each part of the learner and of the simulator; `SIGUSR1` prints it during the run |
+| `ALVIE_CHECK_APART` | With `1`, check every answer of the learner's caches against a computation from scratch, and stop at the first difference. Very slow: for testing changes to the learner |
+| `ALVIE_FULL_TRACE` | With `1`, the simulator dumps every signal instead of the top level of the testbench (useful to inspect the VCD files); used when the simulator is compiled |
+| `OCAMLRUNPARAM` | Garbage collector settings; when it is set, `learn.exe` does not apply its own |
 
 ### Output
 

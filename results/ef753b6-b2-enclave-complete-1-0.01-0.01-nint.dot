@@ -56,7 +56,6 @@ digraph G {
   2346 [shape=circle, ];
   2347 [shape=circle, ];
   2360 [shape=circle, ];
-  2412 [shape=circle, ];
   2415 [shape=circle, ];
   2427 [shape=circle, ];
   2429 [shape=circle, ];
@@ -244,8 +243,8 @@ digraph G {
                ];
   679 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 2)(mode UM))))()29))",
              ];
-  679 -> 2412 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 2)(mode PM))))()29))",
-               ];
+  679 -> 539 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 2)(mode PM))))()29))",
+              ];
   682 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 3)(mode UM))))()29))",
              ];
   682 -> 2415 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 3)(mode PM))))()29))",
@@ -268,13 +267,13 @@ digraph G {
               ];
   2117 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 2)(mode UM))))()30))",
               ];
-  2155 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 42)(timerA_counter 3)(mode UM))))()30))",
+  2155 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 3)(mode UM))))()30))",
               ];
   2183 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 4)(mode UM))))()30))",
               ];
   2199 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()30))",
               ];
-  2215 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 42)(timerA_counter 5)(mode UM))))()30))",
+  2215 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 5)(mode UM))))()30))",
               ];
   2219 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 1)(mode UM))))()30))",
               ];
@@ -288,13 +287,11 @@ digraph G {
               ];
   2347 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 2)(mode UM))))()30))",
               ];
-  2360 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 42)(timerA_counter 4)(mode UM))))()30))",
-              ];
-  2412 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 5)(mode UM))))()30))",
+  2360 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 4)(mode UM))))()30))",
               ];
   2415 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()30))",
               ];
-  2427 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 42)(timerA_counter 1)(mode UM))))()30))",
+  2427 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 1)(mode UM))))()30))",
               ];
   2429 -> 18 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 1)(mode UM))))()30))",
               ];

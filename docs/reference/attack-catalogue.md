@@ -100,15 +100,15 @@ New models learned with a different oracle or different limits can give a differ
 
 | Attack | `ef753b6` | Fixing commit | `bf89c0b` |
 | --- | --- | --- | --- |
-| B1 | 81 | 48 (`e8cf011`) | 25 |
+| B1 | 237 | 62 (`e8cf011`) | 33 |
 | B2 | 18 | 11 (`3170d5d`) | 6 |
-| B3 | 701 | 8 (`6475709`) | 6 |
-| B4 | 34 | 16 (`3636536`) | 6 |
+| B3 | 768 | 8 (`6475709`) | 6 |
+| B4 | 32 | 16 (`3636536`) | 6 |
 | B6 | 15 | 10 (`d54f031`) | 6 |
 | B7 | 15 | 6 (`264f135`) | 6 |
 | B8 | 15 | — | 6 |
 | B9 | 15 | — | 6 |
-| `a.atdl` | 15 | — | 6 |
+| `a.atdl` | 13 | — | 0 |
 
 Two points help you to read this table:
 
@@ -116,6 +116,11 @@ Two points help you to read this table:
   The enclave family includes `rst` and a read from unprotected memory.
   They trigger B8 and B9 on every commit, including `bf89c0b`.
   A count of 6 on `bf89c0b` is the expected "fixed" result.
+- **`a.atdl` reports nothing on `bf89c0b`.**
+  It uses one timer value only.
+  It is the attacker used to observe the behavior of Section IV.D of the paper: when the enclave jumps to its data section, the CPU loops instead of resetting.
+  The learned models show this behavior, but it is visible without interrupts too, so the comparison removes it.
+  The paper reports it as not exploitable.
 - **A count is not a number of vulnerabilities.**
   It is the number of witness traces.
   Compare the counts of one attack across commits, not across attacks.

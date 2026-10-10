@@ -10,6 +10,8 @@ fi
 ###############################################################################
 tmpdir="$1"
 basename="$2"
+# With --no-mem the IHEX -> MEMH conversion is left to the caller
+mode="$3"
 
 scriptsdir=../scripts
 srcdir=../src
@@ -32,9 +34,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     alias sed="gsed"
 fi
 
+# Everything but the program itself is the same for every build in $tmpdir:
+# prepare it only once (the marker is written last, after a successful setup)
+setup_marker=$tmpdir/.build_pmem_setup_done
+
+cp $asmfile $tmpdir/pmem.s43
+
+if [ ! -f "$setup_marker" ]; then
 # Copy necessary files
 cp $srcdir/$sancus_macro $tmpdir/$sancus_macro
-cp $asmfile $tmpdir/pmem.s43
 cp $scriptsdir/omsp_config.sh $tmpdir/omsp_config.sh
 
 cp $incfilev  $incfile
@@ -54,13 +62,22 @@ if command -v msp430-gcc >/dev/null; then
 else
     msp430-elf-gcc -E -P -x c $tmpdir/omsp_config.sh > $tmpdir/pmem.sh
 fi
+fi
 
 # Source the extracted configuration file
 source $tmpdir/pmem.sh
 
 # Compile assembler code
 echo "Compile, link & generate IHEX file (Program Memory: $pmemsize B, Data Memory: $dmemsize B, Peripheral Space: $persize B)..."
-$scriptsdir/asm2ihex.sh $tmpdir/pmem $tmpdir/pmem.s43 $linkfile $headfile $pmemsize $dmemsize $persize "$tmpdir"
+if [ -f "$setup_marker" ]; then
+    export ASM2IHEX_SKIP_DEFS=1
+fi
+$scriptsdir/asm2ihex.sh $tmpdir/pmem $tmpdir/pmem.s43 $linkfile $headfile $pmemsize $dmemsize $persize "$tmpdir" || exit 1
+touch "$setup_marker"
+
+if [ "$mode" == "--no-mem" ]; then
+    exit 0
+fi
 
 # # Generate Program memory file
 echo "Convert IHEX file to Verilog MEMH format..."

@@ -144,6 +144,11 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
+    and keep_repeated_reentries =
+      flag
+        "--keep-repeated-reentries"
+        no_arg
+        ~doc:"Do not identify a segment of execution between two enclave re-entries (reti) with an identical segment immediately preceding it. Without this flag, attackers that can resume an enclave repeatedly (e.g., B3) yield finite models."
 (* and precompute =
       flag
       "--precompute"
@@ -154,6 +159,10 @@ let command =
       Cli_diagnostics.protect ~debug:dbg (fun () ->
         (* Random.self_init (); *)
         Random.init 0;
+        (* Learning keeps a large heap alive while allocating many short-lived values: a larger minor
+           heap and a less eager major GC make runs ~13% faster (same results). OCAMLRUNPARAM wins. *)
+        if Option.is_none (Sys.getenv "OCAMLRUNPARAM") then
+          Gc.set { (Gc.get ()) with minor_heap_size = 8 * 1024 * 1024; space_overhead = 200 };
         Logs.set_reporter (Logs_fmt.reporter ());
 
         if dbg then Logs.set_level (Some Logs.Debug)
@@ -205,6 +214,7 @@ let command =
             ~dumpfile:"tb_openMSP430.vcd"
             ~initial_spec:spec_dfa
             ~ignore_interrupts:ignore_interrupts
+            ~collapse_reentries:(not keep_repeated_reentries)
             () in
         (* (3) prepare the oracle *)
         let attacker_atoms =

@@ -81,6 +81,9 @@ PMEM_SIZE=$5
 PMEM_BASE=$((0x10000-$PMEM_SIZE))
 STACK_INIT=$((PER_SIZE+0x0080))
 
+# The linker script and definitions only depend on the arguments: callers that already
+# generated them in $8 can set ASM2IHEX_SKIP_DEFS=1 to skip this step
+if [ "$ASM2IHEX_SKIP_DEFS" != "1" ]; then
 cp  $3  "$8/pmem.x"
 cp  $4  "$8/pmem_defs.asm"
 sed -ie "s/PMEM_BASE/$PMEM_BASE/g"         "$8/pmem.x"
@@ -99,6 +102,7 @@ else
     sed -ie "s/PER_SIZE/$PER_SIZE/g"       "$8/pmem_defs.asm"
     sed -ie "s/PMEM_BASE_VAL/$PMEM_BASE/g" "$8/pmem_defs.asm"
     sed -ie "s/PMEM_EDE_SIZE/$PMEM_SIZE/g" "$8/pmem_defs.asm"
+fi
 fi
 
 

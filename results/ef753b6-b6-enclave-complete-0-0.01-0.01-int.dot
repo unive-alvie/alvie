@@ -67,9 +67,6 @@ digraph G {
   7408 [shape=circle, ];
   10099 [shape=circle, ];
   10100 [shape=circle, ];
-  10703 [shape=circle, ];
-  11260 [shape=circle, ];
-  11286 [shape=circle, ];
   
   
   0 -> 9 [label="((IAttacker(CTimerEnable 1))(((OTime((k 15)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()8))",
@@ -264,33 +261,27 @@ digraph G {
   2372 -> 6770 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
                 ];
   2407 -> 1 [label="((IAttacker(CInst I_NOP))((OMaybeDiverge)()35))", ];
-  6760 -> 11260 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
-                 ];
+  6760 -> 6770 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+                ];
   6770 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()41))",
              ];
-  6956 -> 11286 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 1)(mode UM))))()30))",
-                 ];
+  6956 -> 7335 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 1)(mode UM))))()30))",
+                ];
   6969 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 4)(mode UM))))()32))",
              ];
-  7300 -> 10703 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
-                 ];
+  7300 -> 7335 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+                ];
   7330 -> 10100 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
                  ];
   7335 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()41))",
              ];
-  7392 -> 10099 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 42)(timerA_counter 0)(mode UM))))()39))",
+  7392 -> 10099 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()39))",
                  ];
-  7408 -> 10703 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
-                 ];
-  10099 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 42)(timerA_counter 0)(mode UM))))()42))",
+  7408 -> 7335 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+                ];
+  10099 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()42))",
               ];
   10100 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()42))",
-              ];
-  10703 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()42))",
-              ];
-  11260 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()42))",
-              ];
-  11286 -> 1 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()33))",
               ];
   
   }

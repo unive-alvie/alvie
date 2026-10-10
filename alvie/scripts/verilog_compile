@@ -18,4 +18,12 @@ cp $verfile $tmpdir/stimulus.v
 echo "Compiling $verfile => $tmpdir/simv"
 # iverilog -o $tmpdir/simv -I $tmpdir -c $submitfile
 
-verilator -O3 --noassert -I$tmpdir -f $submitfile --binary -j 0 -Wno-fatal --trace --Mdir $tmpdir/sancus-core-gap/obj_dir -o simv
+# Only the top level of the testbench is traced (it includes copies of the internal signals
+# ALVIE needs, see generic.v): set ALVIE_FULL_TRACE=1 to dump every signal instead.
+if [ "$ALVIE_FULL_TRACE" == "1" ]; then
+    trace_depth=""
+else
+    trace_depth="--trace-depth 1"
+fi
+
+verilator -O3 --noassert -I$tmpdir -f $submitfile --binary -j 0 -Wno-fatal --trace $trace_depth --Mdir $tmpdir/sancus-core-gap/obj_dir -o simv

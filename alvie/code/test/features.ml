@@ -251,6 +251,17 @@ let test_payload_merge () =
   Alcotest.(check int) "new register value is retained" 7 merged.reg_val;
   Alcotest.(check string) "new mode is retained" "UM" (Output_internal.show_mode_t merged.mode)
 
+let test_output_ignores_inst_number () =
+  let obs = [ Output_internal.OTime (payload PM) ] in
+  let o = (obs, [], 12) and o' = (obs, [], 34) in
+  Alcotest.(check bool) "instruction numbers are not compared" true (Output_internal.equal o o');
+  Alcotest.(check int) "nor ordered" 0 (Output_internal.compare o o');
+  Alcotest.(check int) "nor hashed" (Output_internal.hash o) (Output_internal.hash o');
+  Alcotest.(check bool) "observations are still compared" false
+    (Output_internal.equal o ([ Output_internal.OTime (payload UM) ], [], 12));
+  Alcotest.(check bool) "labels are still compared" false
+    (Output_internal.equal o (obs, [ ("a", "b") ], 12))
+
 let () =
   Alcotest.run "ALVIE isolated features" [
     "TestDL parsing", [
@@ -283,5 +294,6 @@ let () =
       Alcotest.test_case "round-trip observations" `Quick test_observation_round_trip;
       Alcotest.test_case "round-trip inputs" `Quick test_input_sexp_round_trip;
       Alcotest.test_case "merge timing payloads" `Quick test_payload_merge;
+      Alcotest.test_case "ignore instruction numbers" `Quick test_output_ignores_inst_number;
     ];
   ]

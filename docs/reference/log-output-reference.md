@@ -174,6 +174,30 @@ Learning ends when the selected equivalence oracle accepts the current hypothesi
 ALVIE/Sancus writes the model to the `.dot` result file when learning completes.
 No explicit "done" message appears in the stream; check the process status and expected output file.
 
+### Info-Level Output
+
+With `--info`, `learn.exe` also logs the progress of the equivalence oracle.
+The PAC oracle writes one line at the start of each round, for example:
+
+```text
+learn.exe: [INFO] [53.2s] (PAC) equivalence query #17: hypothesis with 40 states, 1639 samples to draw (so far: 88 samples, 9593 output queries, 9681 resets, 9643 SUL steps, 70001 dry steps)
+```
+
+The time in brackets is measured from the start of the learner.
+A hypothesis that keeps growing from round to round, with no sign of stopping, is the first thing to check when a run does not finish.
+
+For each counterexample, the oracle writes its inputs, the two outputs that differ (from the system and from the hypothesis), and the inputs again as an S-expression that `exec.exe --sexp-input` can replay.
+
+### Learning Statistics
+
+With `--report` (always passed by the experiment wrappers), `learn.exe` ends by printing one line of comma-separated statistics on stderr, for example:
+
+```text
+pac, 1, 0.010000, 0.010000, 500, 0.050000, 12049, 10764, 80881, 10212, 18, 4.912357, 10.952036, 10310
+```
+
+The fields are: oracle, PAC bound, epsilon, delta, step limit, reset probability, SUL resets, simulated SUL steps, SUL steps answered from the observation tree, output queries, equivalence queries, mean and variance of the length of the equivalence-query samples, and learning time in milliseconds (setup excluded).
+
 ---
 
 ## Comparison Phase Output (`fa.exe`)
@@ -221,6 +245,7 @@ Log files mirror the terminal stream and are written per experiment.
 `logs/<namespace>/learn-<name>.log` — full learning progress for one model.
 
 - Contains the same symbol stream as the terminal output.
+- Ends with the [learning statistics](#learning-statistics) line, including the learning time.
 - Use `cat` or a terminal that handles ANSI escape codes to read with colours; use `sed 's/\x1B\[[0-9;]*m//g'` to strip them.
 
 ### Comparison logs

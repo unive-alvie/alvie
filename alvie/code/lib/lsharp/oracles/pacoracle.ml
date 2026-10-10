@@ -33,6 +33,8 @@ struct
     stats : stats_t
   }
 
+  let start_time = Time_now.nanoseconds_since_unix_epoch ()
+
   let make ?(round_limit) ?(epsilon = 0.001) ?(delta = 0.001) ~next_input () : t =
     {
       round_limit=round_limit;
@@ -100,16 +102,17 @@ struct
 
   (* Given the sequence [il], resets [sul] using [pre], executes the prescribed steps and returns the result. *)
   let output_query (oracle : t) (ot : IIOObservationTree.t) (sul : S.t) (il : I.t list) : IIOObservationTree.t * (I.t * O.t) list =
+    Prof.time "oracle.output_query" @@ fun () ->
     oracle.stats.outputquery_cnt <- oracle.stats.outputquery_cnt + 1;
     pre_with_stats oracle sul;
-    let ot', iol, _ = List.fold il
+    let ot', rev_iol, _ = List.fold il
       ~init:(ot, [], ot.s0)
-      ~f:(fun (ot_acc, ol_acc, prev_ot_state) i ->
+      ~f:(fun (ot_acc, rev_ol_acc, prev_ot_state) i ->
         let ot_acc', o_ot, next_state = ot_updater oracle ot_acc sul prev_ot_state i in
-          (ot_acc', ol_acc @ [(i, o_ot)], next_state)
+          (ot_acc', (i, o_ot) :: rev_ol_acc, next_state)
       ) in
     S.post sul;
-    (ot', iol)
+    (ot', List.rev rev_iol)
 
   let rec sample_and_run
     (oracle : t)
@@ -120,20 +123,23 @@ struct
     (prev_ot_state : int)
     is
     os =
-      let new_i = oracle.next_input ot is os in
+      let new_i = Prof.time "oracle.next_input" (fun () -> oracle.next_input ot is os) in
       let sz = List.length is in
       match new_i with
       | `Stop ->
         (* This counterexample ends here, no cex found! *)
         `Equivalent sz
       | `Next new_i ->
-        let ot', o, next_state = ot_updater oracle ot sul prev_ot_state new_i in
+        let ot', o, next_state = Prof.time "oracle.ot_updater" (fun () -> ot_updater oracle ot sul prev_ot_state new_i) in
         let o_hyp_opt = IIOMealy.transition hyp (prev_state, new_i) in
         match o_hyp_opt with
         | None ->
             failwith (Format.sprintf "equiv_query - this may be a bug: %d -- %s/?? --> ?? in hyp!"
               prev_state (Sexp.to_string (I.sexp_of_t new_i)))
         | Some (o_hyp, _) when not (O.equal o o_hyp) ->
+            Logs.info (fun m -> m "(PAC) counterexample of length %d: %s\n  SUL output:        %s\n  hypothesis output: %s\n  inputs (sexp): %s"
+              (sz + 1) (List.to_string ~f:I.show (is @ [new_i])) (O.show o) (O.show o_hyp)
+              (Sexp.to_string_mach (List.sexp_of_t I.sexp_of_t (is @ [new_i]))));
             S.post sul;
             `Cex (ot', is@[new_i], sz+1) (* We found a counter example! *)
         | Some (o_hyp, s_hyp) ->
@@ -154,6 +160,8 @@ struct
     | _ ->
       (let r = ref (Float.to_int (Float.round_up ((1.0 /. oracle.epsilon) *. (log (1.0 /. oracle.delta) +. ((log 2.0) *. (Float.of_int(oracle.round) +. 1.0)))))) in
         oracle.round <- oracle.round + 1;
+        Logs.info (fun m -> m "[%.1fs] (PAC) equivalence query #%d: hypothesis with %d states, %d samples to draw (so far: %d samples, %d output queries, %d resets, %d SUL steps, %d dry steps)"
+          (Float.of_int63 Int63.(Time_now.nanoseconds_since_unix_epoch () - start_time) /. 1e9) oracle.round (Set.length hyp.states) !r oracle.stats.equivquery_samples oracle.stats.outputquery_cnt oracle.stats.sul_reset_cnt oracle.stats.sul_step_cnt oracle.stats.sul_step_dry_cnt);
         Logs.debug (fun m -> m "(PAC) equiv_query (eps: %f, delta: %f): samples: %d, round #%d, sampling %d paths" oracle.epsilon oracle.delta oracle.stats.equivquery_samples oracle.round !r);
         let result = ref `Equivalent in
         let first = ref true in

@@ -29,7 +29,6 @@
   ppx_hash
   ppx_jane
   ppx_sexp_conv
-  py
   qcheck
   shexp)
  (tags

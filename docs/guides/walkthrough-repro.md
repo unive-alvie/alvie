@@ -20,7 +20,7 @@ docker run --rm -it alvie
 
 The Dockerfile installs mCRL2 from its Ubuntu PPA on `amd64` and builds it from source on `arm64`, so the default build works natively on both architectures.
 We specify `--platform` only when intentionally cross-building for another architecture.
-For a native setup, we need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, Python 3 with `Verilog_VCD`, mCRL2, and the Sancus simulator checkout.
+For a native setup, we need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, mCRL2, and the Sancus simulator checkout.
 
 For either setup, we verify the OCaml build before running an experiment:
 
@@ -101,7 +101,10 @@ Learning time varies substantially with the machine and specification, so we kee
 ./check_all.sh all-sim
 ```
 
-The learning wrapper launches simulator jobs in parallel.
+The learning wrapper launches simulator jobs in parallel, at most as many at a time as the machine has cores.
+We set `ALVIE_JOBS` to choose a different limit (`0` removes it), for example `ALVIE_JOBS=8 ./learn_all.sh all-sim`.
+Each processor version is compiled only once: compiled simulators are kept in `simv-cache` inside the temporary directory, and later runs reuse them.
+We set `ALVIE_SIM_CACHE` to use a different cache directory, or `ALVIE_SIM_CACHE=0` to always recompile.
 We use a machine with enough memory and disk space for the temporary VCD and program files.
 
 ## Fast specifications

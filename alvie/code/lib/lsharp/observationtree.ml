@@ -31,12 +31,18 @@ module ObservationTree (S : EltType) (I : EltType) (O : EltType) = struct
 
   let access (ot : t) (s : S.t) : I.t list = transfer_sequence ot ot.s0 s
 
+  (* Same result as rebuilding with [make], but updates the predecessor map incrementally instead of recomputing it *)
   let update (ot : t) (s : S.t) (i : I.t) (o : O.t) (s' : S.t) : t =
-    make
-      ~states:(Set.add ot.states s')
-      ~s0:(ot.s0)
-      ~input_alphabet:(ot.input_alphabet)
-      ~transition:(let upd = Map.remove ot.transition (s, i) in Map.add_exn upd ~key:(s, i) ~data:(o, s'))
+    let pred_map = match Map.find ot.transition (s, i) with
+      | Some (_, old_succ) -> Map.remove ot.pred_map old_succ
+      | None -> ot.pred_map in
+    {
+      ot with
+      states = Set.add ot.states s';
+      transition = Map.set ot.transition ~key:(s, i) ~data:(o, s');
+      (* add_exn enforces the tree property, as build_predecessor_map does *)
+      pred_map = Map.add_exn pred_map ~key:s' ~data:(s, i);
+    }
 
   (* Returns `NotApart if s and s' are not apart in ot; Otherwise returns `Apart w, with w a witness of apartness. *)
   let apart_with_witness (ot : t) (s : S.t) (s' : S.t) =
