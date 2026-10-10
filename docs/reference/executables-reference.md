@@ -1,6 +1,8 @@
 ---
 title: Executables Reference
 description: Command-line reference for ALVIE/Sancus tools.
+sidebar:
+  order: 6
 ---
 
 All executables are built with `dune build` from inside `alvie/code/` and run as:
@@ -106,7 +108,9 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 ### Output
 
 `<witness-file-basename>_int.dot` — a `.dot` graph whose paths are distinguishing traces (attack witnesses).
-If no counterexample exists (the models are equivalent), the file is empty.
+If no counterexample exists, the file contains one state and no transitions.
+The tool prints the number of violations only with `--debug`.
+See [Reading and Checking a Witness](/alvie/guides/interpreting-results/) for how to read the graph.
 
 ### Quick example
 
@@ -123,7 +127,7 @@ _build/default/bin/fa.exe \
 ```
 
 Produces `/tmp/example-orig-witness_int.dot` containing up to 3 distinguishing attack traces.
-The tool also reports the number of flow-analysis violations on stderr.
+Add `--debug` to print the number of flow-analysis violations (`=== Results: found N FA violations.`).
 
 ---
 

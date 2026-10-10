@@ -1,6 +1,11 @@
 ---
 title: Extending TestDL Actions
 description: Add a new attacker or enclave action to ALVIE/Sancus.
+sidebar:
+  order: 7
+  badge:
+    text: A
+    variant: caution
 ---
 
 In this tutorial, we add a TestDL action called `trace_marker` and verify that ALVIE/Sancus accepts, compiles, and displays it.

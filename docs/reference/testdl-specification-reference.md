@@ -1,6 +1,8 @@
 ---
 title: TestDL Specification Reference
 description: Syntax, semantics, and constraints for existing TestDL specifications.
+sidebar:
+  order: 4
 ---
 
 This reference explains how to read, create, and modify ALVIE/Sancus specifications using the existing TestDL language.
