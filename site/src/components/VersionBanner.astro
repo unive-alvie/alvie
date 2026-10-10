@@ -1,0 +1,37 @@
+---
+// Replaces Starlight's Banner: tells which version of the documentation is being read and links
+// the others, then renders the page's own banner (if any) as Starlight would.
+import DefaultBanner from '@astrojs/starlight/components/Banner.astro';
+import { docsVersion, latestRelease, otherVersions, versionLabel, versionUrl } from '../versions.mjs';
+
+// The current version is already linked in the text when reading another version
+const others = otherVersions().filter((version) => docsVersion === latestRelease || version !== latestRelease);
+---
+
+{docsVersion && (
+  <div class="alvie-version-banner" role="note">
+    {docsVersion === 'dev' ? (
+      <span>
+        You are reading the documentation of the <strong>development version</strong> (main branch):
+        it may describe changes that are not released yet.
+        {latestRelease && <> Current documentation: <a href={versionUrl(latestRelease)}>{versionLabel(latestRelease)}</a>.</>}
+      </span>
+    ) : docsVersion === latestRelease ? (
+      <span>You are reading the current documentation of ALVIE: <strong>{versionLabel(docsVersion)}</strong>.</span>
+    ) : (
+      <span>
+        You are reading the documentation of ALVIE <strong>{versionLabel(docsVersion)}</strong>.
+        {latestRelease && <> Current documentation: <a href={versionUrl(latestRelease)}>{versionLabel(latestRelease)}</a>.</>}
+      </span>
+    )}
+    {others.length > 0 && (
+      <span class="alvie-version-list">
+        Other versions:{' '}
+        {others.map((version, i) => (
+          <>{i > 0 && ', '}<a href={versionUrl(version)}>{versionLabel(version)}</a></>
+        ))}
+      </span>
+    )}
+  </div>
+)}
+<DefaultBanner />

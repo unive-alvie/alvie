@@ -3,6 +3,8 @@ name: Deploy website
 on:
   push:
     branches: [main]
+    # A new release adds its documentation to the site
+    tags: ['[0-9][0-9][0-9][0-9].[0-9][0-9]*']
   workflow_dispatch:
 
 permissions:
@@ -23,6 +25,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # The development documentation always comes from main, also when a tag triggers the
+          # build; the release tags are needed to build the documentation of each release
+          ref: main
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -32,14 +39,9 @@ jobs:
       - name: Install dependencies
         working-directory: site
         run: npm ci
-      - name: Copy canonical documentation
-        run: |
-          rm -rf site/src/content/docs
-          mkdir -p site/src/content/docs
-          cp -R docs/. site/src/content/docs/
-      - name: Build Astro Starlight site
+      - name: Build the documentation of every version
         working-directory: site
-        run: npm run build
+        run: bash scripts/build-versions.sh
       - name: Publish organization site
         uses: peaceiris/actions-gh-pages@v4
         with:

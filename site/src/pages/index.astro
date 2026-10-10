@@ -1,9 +1,12 @@
 ---
 import '../styles/custom.css';
+import { docsVersion, otherVersions, versionLabel, versionUrl } from '../versions.mjs';
 
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 const gettingStartedUrl = `${baseUrl}/getting-started/`;
 const documentationUrl = `${baseUrl}/guides/walkthrough-repro/`;
+// With versioned documentation, the Documentation button lists the versions, the current one first
+const docVersions = docsVersion ? [docsVersion, ...otherVersions()] : [];
 ---
 
 <html lang="en">
@@ -27,6 +30,20 @@ const documentationUrl = `${baseUrl}/guides/walkthrough-repro/`;
         </p>
         <div class="alvie-actions">
           <a class="alvie-button alvie-primary" href={gettingStartedUrl}>Getting started</a>
+          {docVersions.length > 0 ? (
+            <details class="alvie-paper">
+              <summary class="alvie-button">Documentation</summary>
+              <div class="alvie-paper-menu" role="menu">
+                {docVersions.map((version) => (
+                  <a href={`${versionUrl(version)}guides/walkthrough-repro/`} role="menuitem">
+                    {versionLabel(version)}{version === docsVersion && ' (this site)'}
+                  </a>
+                ))}
+              </div>
+            </details>
+          ) : (
+            <a class="alvie-button" href={documentationUrl}>Documentation</a>
+          )}
           <a class="alvie-button" href="https://github.com/unive-alvie/alvie">Repository</a>
           <details class="alvie-paper">
             <summary class="alvie-button">Paper</summary>
@@ -41,6 +58,14 @@ const documentationUrl = `${baseUrl}/guides/walkthrough-repro/`;
       <footer class="alvie-footer">
         <a href="https://github.com/unive-alvie/alvie/blob/main/LICENSE">MIT License</a>
         <span>Copyright ALVIE team</span>
+        {docsVersion && (
+          <span>
+            Documentation: {versionLabel(docsVersion)}
+            {otherVersions().map((version) => (
+              <> · <a href={versionUrl(version)}>{versionLabel(version)}</a></>
+            ))}
+          </span>
+        )}
       </footer>
     </main>
   </body>
