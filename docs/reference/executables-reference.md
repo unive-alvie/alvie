@@ -46,7 +46,7 @@ This is the main experiment driver.
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
 | `--sancus-master-key <hex>` | _(default key)_ | Master key passed to the Sancus simulator |
 | `--dry` | false | Dry run: set up the simulator but do not learn |
-| `--report` | false | Print the learning statistics table |
+| `--report` | false | Print a line of learning statistics on stderr (see the [log output reference](log-output-reference.md#learning-statistics)) |
 | `--debug` | false | Enable debug-level logging |
 | `--info` | false | Enable info-level logging |
 

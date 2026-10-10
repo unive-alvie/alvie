@@ -56,7 +56,7 @@ do
       echo "$name/$name ... [OK - Done before]"
     else
       # Invoke the learning process in background and send the stderr/stdout to the log file
-      alvie_run_background "$name" "_build/default/bin/learn.exe --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > \"$logfile\" 2>&1" "$logfile"
+      alvie_run_background "$name" "_build/default/bin/learn.exe --report --att-spec \"$SPEC_DIR/$attack_name.atdl\" --encl-spec \"$SPEC_DIR/$enclave_name.etdl\" --res \"$resfile\" --tmpdir \"$TMP_DIR\" --commit $commit --sancus \"$SCG_DIR\" --secret $secret --epsilon $EPS --delta $DELTA --oracle pac > \"$logfile\" 2>&1" "$logfile"
     fi
 done
 

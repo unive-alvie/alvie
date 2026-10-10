@@ -172,6 +172,16 @@ Learning ends when the selected equivalence oracle accepts the current hypothesi
 ALVIE/Sancus writes the model to the `.dot` result file when learning completes.
 No explicit "done" message appears in the stream; check the process status and expected output file.
 
+### Learning Statistics
+
+With `--report` (always passed by the experiment wrappers), `learn.exe` ends by printing one line of comma-separated statistics on stderr, for example:
+
+```text
+pac, 1, 0.010000, 0.010000, 500, 0.050000, 12049, 10764, 80881, 10212, 18, 4.912357, 10.952036, 10310
+```
+
+The fields are: oracle, PAC bound, epsilon, delta, step limit, reset probability, SUL resets, simulated SUL steps, SUL steps answered from the observation tree, output queries, equivalence queries, mean and variance of the length of the equivalence-query samples, and learning time in milliseconds (setup excluded).
+
 ---
 
 ## Comparison Phase Output (`fa.exe`)
@@ -218,6 +228,7 @@ Log files mirror the terminal stream and are written per experiment.
 `logs/<namespace>/learn-<name>.log` — full learning progress for one model.
 
 - Contains the same symbol stream as the terminal output.
+- Ends with the [learning statistics](#learning-statistics) line, including the learning time.
 - Use `cat` or a terminal that handles ANSI escape codes to read with colours; use `sed 's/\x1B\[[0-9;]*m//g'` to strip them.
 
 ### Comparison logs
