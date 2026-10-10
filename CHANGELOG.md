@@ -42,6 +42,13 @@ secret 0) went from 2235s to about 11s of learning, and all the models of
 - Drops the obsolete `tt_genall` and `tt_derive` programs and the `py` and
   `Verilog_VCD` dependencies.
 
+### Documentation
+
+- Documents the new options and environment variables (`--keep-repeated-reentries`,
+  `ALVIE_SIM_CACHE`, `ALVIE_JOBS`, `ALVIE_PROFILE`, `ALVIE_CHECK_APART`,
+  `ALVIE_FULL_TRACE`) and the `--info` output, and updates the measured
+  times and the expected results.
+
 ### Results
 
 - Regenerates `results/` and `counterexamples/`. Models differ from the

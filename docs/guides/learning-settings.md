@@ -80,6 +80,9 @@ The first round samples these numbers of paths:
 - `--round-limit` limits the number of rounds.
   Without it, the oracle runs until a round finds no difference.
 
+With `--info`, `learn.exe` logs one line for each round, with the size of the hypothesis and the number of queries so far, and one line for each counterexample that a round finds.
+See the [Log and Output Reference](/alvie/reference/log-output-reference/#info-level-output).
+
 The guarantee is for one model.
 An ALVIE experiment uses four models, so the combined bounds are weaker.
 The paper gives (1 − δ)⁴ for the confidence and (1 − ε)⁴ for the accuracy.
@@ -99,24 +102,24 @@ Use this oracle only for a small alphabet, for example in a test of a new action
 
 ## Measured examples
 
-The table below shows real runs of the Getting Started example (secret 0, commit `bf89c0b`) on one workstation.
-Five runs shared the machine, so the times are rough.
+The table below shows real runs of the Getting Started example (secret 0, commit `bf89c0b`) on one workstation, one run at a time.
 The complete model has 6 states and 5 transitions.
+The learning time does not include the preparation of the simulator (see below).
 
-| Settings | SUL steps | Time | Result |
+| Settings | SUL steps | Learning time | Result |
 | --- | --- | --- | --- |
-| `randomwalk --step-limit 20` | 141 | 33 s | 5 states. **Incomplete.** |
-| `randomwalk --step-limit 100` | 146 | 31 s | 5 states. **Incomplete.** |
-| `randomwalk --step-limit 500` | 228 | 34 s | 6 states. Complete. |
-| `pac --epsilon 0.01 --delta 0.01` | 278 | 40 s | 6 states. Complete. |
-| `pac` (default 0.001) | 1119 | 83 s | 6 states. Complete. |
+| `randomwalk --step-limit 20` | 136 | 0.2 s | 5 states. **Incomplete.** |
+| `randomwalk --step-limit 100` | 200 | 0.2 s | 6 states. Complete. |
+| `randomwalk --step-limit 500` | 220 | 0.3 s | 6 states. Complete. |
+| `pac --epsilon 0.01 --delta 0.01` | 287 | 0.4 s | 6 states. Complete. |
+| `pac` (default 0.001) | 1116 | 0.9 s | 6 states. Complete. |
 
-The two short random walks accepted a model that had merged two states.
+The shortest random walk accepted a model that had merged two states.
 ALVIE did not report an error.
 This is the main risk of a weak oracle.
 
 To run the comparison yourself, use a loop from `alvie/code`.
-Each run takes about 20 to 40 seconds:
+The first run takes about 20 seconds, and the next ones about 1 second each:
 
 ```bash
 cd alvie/code
@@ -128,7 +131,7 @@ for limit in 20 100 500; do
     --secret 0 \
     --commit bf89c0b \
     --res /tmp/rw-$limit.dot \
-    --tmpdir /tmp/alvie-rw-$limit \
+    --tmpdir /tmp/alvie-rw \
     --sancus "$PWD/../../sancus-core-gap" \
     --report
 done
@@ -136,11 +139,13 @@ wc -l /tmp/rw-*.dot
 cd ../..
 ```
 
-The runs with limits 20 and 100 write 20 lines, and the run with limit 500 writes 21 lines.
+The run with limit 20 writes 20 lines, and the runs with limits 100 and 500 write 21 lines.
 The `--report` option prints one line of statistics for each run.
 
-Part of the time in each run is fixed.
-ALVIE needs 20 to 25 seconds to prepare the simulator before it asks the first query.
+Part of the time in each run is fixed: ALVIE prepares the simulator before it asks the first query.
+The first run in a temporary directory compiles the simulator, which takes about 17 seconds.
+The compiled simulator is kept in `simv-cache` inside the `--tmpdir` directory, so later runs that use the same `--tmpdir` prepare the simulator in about 1 second.
+Set `ALVIE_SIM_CACHE` to use another cache directory, or `ALVIE_SIM_CACHE=0` to always compile.
 
 ## How to choose
 
@@ -159,8 +164,8 @@ ALVIE needs 20 to 25 seconds to prepare the simulator before it asks the first q
 4. **State your settings.**
    Write the oracle, the limits, and the specification names next to every result.
 
-The complete specifications can need many hours for each model.
-Start the run on a machine that you can leave running.
+With the complete specifications, most models take from a few seconds to about 2 minutes, and the slowest ones (B1 and B3 with interrupts on `ef753b6`) about 5 minutes.
+All the models of `learn_all.sh` take about 6 minutes on a machine with 16 cores.
 
 ## Repeatable runs
 
@@ -183,7 +188,7 @@ average-path-length, path-length-variance, time-in-milliseconds
 Example (the `randomwalk --step-limit 500` run above):
 
 ```text
-randomwalk, 1, 0.001000, 0.001000, 500, 0.050000, 324, 228, 1011, 184, 6, 3.962687, 4.409055, 6242
+randomwalk, 1, 0.001000, 0.001000, 500, 0.050000, 295, 220, 1031, 186, 6, 4.310680, 4.078235, 267
 ```
 
 - `steps` is the number of inputs that ran on the simulator.
@@ -198,6 +203,29 @@ The action no longer enables the timer interrupt, so the timer cannot interrupt 
 Use it to learn the baseline models for a four-model comparison.
 Always give the baseline run the same oracle and limits as the main run.
 The [Reading and Checking a Witness](/alvie/guides/interpreting-results/) guide explains how the comparison uses them.
+
+## Repeated enclave re-entries
+
+When an attacker can resume an enclave with `reti` more than once (B3 on the unpatched commit `ef753b6`), it can repeat the same piece of enclave execution again and again.
+Each repetition makes the trace longer, and the simulation stops only when it reaches its time limit.
+Without a special treatment, the learner sees every repetition as a new state and does not finish.
+
+By default, the simulator identifies a segment of execution between two re-entries with an identical segment immediately before it: same inputs, same outputs, and the same state of the input generator.
+The first repetition stays in the model, so the vulnerability is still visible.
+`--keep-repeated-reentries` turns this off.
+Use it only to study the unrolled behavior, together with `--round-limit`, because the learning may not finish.
+
+## Speed
+
+These settings change the speed of a run but not its result:
+
+- `ALVIE_SIM_CACHE` chooses where compiled simulators are kept (see above).
+- `ALVIE_JOBS` limits how many experiments the wrapper scripts run at the same time.
+  The default is the number of cores.
+- `learn.exe` tunes the OCaml garbage collector for learning.
+  Set `OCAMLRUNPARAM` to choose other settings.
+- `ALVIE_PROFILE=1` prints at the end of a run how much time each part of the learner and of the simulator took.
+  Send the signal `SIGUSR1` to a running `learn.exe` to print the profile so far.
 
 ## Related pages
 

@@ -32,12 +32,12 @@ Keep them independent of external tools, so that every contributor can run them.
 ### Isolated features (`tt_features`)
 
 This suite tests the ALVIE parts in isolation.
-It has 23 tests in four groups:
+It has 24 tests in four groups:
 
 - TestDL parsing (syntax, operators, rejected input).
 - Specification semantics (secret expansion, code generation, derivatives).
 - Input generation (sections, interrupts, `reti`, illegal outputs).
-- Models and observations (the observation tree, serialization, payload merge).
+- Models and observations (the observation tree, serialization, payload merge, output equality).
 
 ### Diagnostics (`diagnostics.exe`)
 
@@ -65,8 +65,12 @@ dune exec test/attack.exe -- test --color=never b6
 One group of four tests took about 3 minutes in a measured run.
 Run the complete suite before you change anything that touches the simulator interface.
 
-The files `derive.ml` and `genall.ml` in `test/` are not supported as general tests.
-`derive.ml` has paths that belong to one machine.
+### Checking changes to the learner
+
+The learner keeps several caches so that it does not recompute apartness and the frontier after every query.
+Set `ALVIE_CHECK_APART=1` to check every answer of these caches against a computation from scratch: `learn.exe` stops at the first difference.
+The run becomes much slower, so use a small specification, for example `spec-lib/fast/b4.atdl` or the Getting Started example.
+A change that only makes the learner faster must also give the same model and the same `--report` statistics as before.
 
 ## What continuous integration runs
 

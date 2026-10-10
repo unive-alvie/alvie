@@ -20,11 +20,13 @@ This document describes the ALVIE/Sancus implementation.
 3. `Inputgen` tracks which specification actions are legal after an observed input/output history and proposes the next input symbols.
 4. `Sancus.Verilog` implements the SUL (system under learning).
    It generates a program, runs the Sancus Verilog testbench, parses the VCD dump, and turns the trace into `Output_internal` observations.
+   Compiled simulators are cached across runs, and only the top level of the testbench is traced.
 5. `Lsharp.LSharp` learns a Mealy machine using output queries and an equivalence oracle.
 6. `Interop` serializes the learned machine as a Graphviz `.dot` file.
 7. `fa.exe` converts learned machines to LTSs and uses mCRL2 to enumerate distinguishing traces.
 
 The learner is parameterized by the SUL and oracle interfaces.
+It keeps caches of apartness, frontier and frontier-to-basis candidates across the run, updated incrementally as the observation tree grows; they rely on the oracles numbering new tree nodes increasingly.
 The production configuration in `learn.exe` uses `Sancus.Verilog` with one of the oracle implementations in `lib/lsharp/oracles/`.
 
 ## Main modules
@@ -40,6 +42,8 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/lsharp/lsharp.ml` | L# learning loop |
 | `lib/lsharp/observationtree.ml` | Observation tree and basis/frontier operations |
 | `lib/lsharp/oracles/` | PAC, random-walk, exhaustive, and incremental oracles |
+| `lib/vcd/vcd.ml` | VCD parser |
+| `lib/prof/prof.ml` | Optional profiler (`ALVIE_PROFILE=1`) |
 | `lib/ltscomparator/cexfinder.ml` | Model conversion and witness extraction |
 | `bin/learn.ml` | Experiment orchestration and model writing |
 | `bin/fa.ml` | Four-model flow-analysis comparison |
@@ -57,6 +61,8 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 L# uses these to separate observable steps from internal bookkeeping and to avoid rerunning a known output when exploring the observation tree.
 
 The simulator backend keeps a configuration record containing the generated program, the current specification state, labels, and the last instruction number. `pre` resets that configuration.
+The last instruction number is part of the returned output so that dry steps can restore it, but it is bookkeeping: output equality ignores it.
+When an enclave is resumed with `reti`, the backend also identifies a segment of execution between two re-entries with an identical segment immediately before it, so that an enclave that can be resumed repeatedly still has a finite model (see `--keep-repeated-reentries`).
 A step updates the specification state, generates the corresponding MSP430 program, runs the simulator, parses the VCD, and analyzes the trace at the instruction boundaries relevant to the input.
 
 ## Outputs and observability

@@ -174,6 +174,20 @@ Learning ends when the selected equivalence oracle accepts the current hypothesi
 ALVIE/Sancus writes the model to the `.dot` result file when learning completes.
 No explicit "done" message appears in the stream; check the process status and expected output file.
 
+### Info-Level Output
+
+With `--info`, `learn.exe` also logs the progress of the equivalence oracle.
+The PAC oracle writes one line at the start of each round, for example:
+
+```text
+learn.exe: [INFO] [53.2s] (PAC) equivalence query #17: hypothesis with 40 states, 1639 samples to draw (so far: 88 samples, 9593 output queries, 9681 resets, 9643 SUL steps, 70001 dry steps)
+```
+
+The time in brackets is measured from the start of the learner.
+A hypothesis that keeps growing from round to round, with no sign of stopping, is the first thing to check when a run does not finish.
+
+For each counterexample, the oracle writes its inputs, the two outputs that differ (from the system and from the hypothesis), and the inputs again as an S-expression that `exec.exe --sexp-input` can replay.
+
 ### Learning Statistics
 
 With `--report` (always passed by the experiment wrappers), `learn.exe` ends by printing one line of comma-separated statistics on stderr, for example:

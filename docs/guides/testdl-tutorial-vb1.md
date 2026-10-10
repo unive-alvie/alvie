@@ -287,11 +287,11 @@ The wrapper learns secret 0/1 models with and without interrupts for the vulnera
 `check_one.sh b1 fast` compares the secret pairs and subtracts no-interrupt witnesses.
 
 Results, logs, and temporary files are placed under `results/fast/`, `logs/fast/`, and `tmp/fast/`.
-This can take many hours, so it is not part of the one-hour tutorial.
+It takes a few minutes on a machine with several cores, so it is not part of the one-hour tutorial.
 See [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/) for wrapper behavior and [Executables Reference](/alvie/reference/executables-reference/) for the underlying commands.
 
 For the full paper profile, replace `fast` with a separate namespace and use the complete specifications.
-Expect it to take substantially longer.
+Expect it to take longer: the slowest complete models take about 5 minutes each.
 
 ## 8. Make a small change
 
