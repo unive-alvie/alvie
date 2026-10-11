@@ -80,6 +80,8 @@ The learner does not compare secrets directly.
 Run it separately for secret 0 and secret 1, with and without interrupt actions, producing four models.
 The comparison tool receives the two interrupt-enabled models and the two no-interrupt models.
 It removes witnesses already present without interrupts, then reports the remaining flow-analysis violations in `<basename>_int.dot`.
+Each witness pairs two runs, one for each secret, with the same attacker inputs.
+The runs are taken from the models as complete paths: a run ends at a reset, a divergence, a state without successors, or a state the same run has already visited, never because another run reached that state first.
 
 This is why a single successful learning run is not a complete attack result: the four-model matrix and the comparison phase are both required.
 

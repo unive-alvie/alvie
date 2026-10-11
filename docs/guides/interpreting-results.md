@@ -35,7 +35,7 @@ grep "Results" logs/b6-sim/compare-*.log
 The line looks like this:
 
 ```text
-=== Results: found 15 FA violations. See …/ef753b6-b6_int.dot for details.
+=== Results: found 49 FA violations. See …/ef753b6-b6_int.dot for details.
 ```
 
 For the example, run the comparison again with `--debug`.
@@ -268,9 +268,9 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 237 | 33 |
-| B3 | 768 | 6 |
-| B6 | 15 | 6 |
+| B1 | 330 | 6 |
+| B3 | 3619 | 6 |
+| B6 | 49 | 6 |
 
 If your counts are different, check the build and the mCRL2 installation first.
 See [Troubleshooting](/alvie/reference/troubleshooting/).

@@ -45,26 +45,26 @@ digraph G {
   4 -> 5 [fontcolor="#000000", color="#000000",
           label="cmp #0, r4/Time (k = 1, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
           style="dashed", ];
-  4 -> 8 [fontcolor="#A40000", color="#A40000",
+  4 -> 7 [fontcolor="#A40000", color="#A40000",
           label="cmp #1, r4/Time (k = 1, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
           style="dotted", ];
   5 -> 6 [fontcolor="#000000", color="#000000",
-          label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 4, mode = PM)",
-          style="dashed", ];
-  5 -> 11 [fontcolor="#000000", color="#000000",
-           label="ifz [ rst; nop;], [ nop; rst;]/Reset", style="dashed", ];
-  6 -> 7 [fontcolor="#000000", color="#000000",
-          label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0x2a, reg_val = 0, timerA_counter = 3, mode = UM)",
-          style="dashed", ];
-  8 -> 9 [fontcolor="#A40000", color="#A40000",
-          label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+          label="ifz [ rst; nop;], [ nop; rst;]/Reset", style="dashed", ];
+  5 -> 10 [fontcolor="#000000", color="#000000",
+           label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 4, mode = PM)",
+           style="dashed", ];
+  7 -> 8 [fontcolor="#A40000", color="#A40000",
+          label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
           style="dotted", ];
-  8 -> 12 [fontcolor="#A40000", color="#A40000",
-           label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+  7 -> 12 [fontcolor="#A40000", color="#A40000",
+           label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
            style="dotted", ];
-  9 -> 10 [fontcolor="#A40000", color="#A40000",
-           label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
-           style="dotted", ];
+  8 -> 9 [fontcolor="#A40000", color="#A40000",
+          label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
+          style="dotted", ];
+  10 -> 11 [fontcolor="#000000", color="#000000",
+            label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0x2a, reg_val = 0, timerA_counter = 3, mode = UM)",
+            style="dashed", ];
   12 -> 13 [fontcolor="#A40000", color="#A40000",
             label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
             style="dotted", ];
