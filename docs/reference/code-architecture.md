@@ -61,7 +61,7 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 L# uses these to separate observable steps from internal bookkeeping and to avoid rerunning a known output when exploring the observation tree.
 
 The simulator backend keeps a configuration record containing the generated program, the current specification state, labels, and the last instruction number. `pre` resets that configuration.
-The last instruction number is part of the returned output so that dry steps can restore it, but it is bookkeeping: output equality ignores it.
+The pending labels and the last instruction number are part of the returned output so that dry steps can restore them, but they are bookkeeping: output equality ignores them, so that states are told apart only by what is observed.
 When an enclave is resumed with `reti`, the backend also identifies a segment of execution between two re-entries with an identical segment immediately before it, so that an enclave that can be resumed repeatedly still has a finite model (see `--keep-repeated-reentries`).
 A step updates the specification state, generates the corresponding MSP430 program, runs the simulator, parses the VCD, and analyzes the trace at the instruction boundaries relevant to the input.
 
