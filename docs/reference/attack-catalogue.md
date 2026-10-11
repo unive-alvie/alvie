@@ -100,15 +100,15 @@ New models learned with a different oracle or different limits can give a differ
 
 | Attack | `ef753b6` | Fixing commit | `bf89c0b` |
 | --- | --- | --- | --- |
-| B1 | 237 | 62 (`e8cf011`) | 33 |
+| B1 | 330 | 31 (`e8cf011`) | 6 |
 | B2 | 18 | 11 (`3170d5d`) | 6 |
-| B3 | 768 | 8 (`6475709`) | 6 |
-| B4 | 32 | 16 (`3636536`) | 6 |
-| B6 | 15 | 10 (`d54f031`) | 6 |
-| B7 | 15 | 6 (`264f135`) | 6 |
-| B8 | 15 | — | 6 |
+| B3 | 3619 | 21 (`6475709`) | 6 |
+| B4 | 55 | 10 (`3636536`) | 6 |
+| B6 | 49 | 14 (`d54f031`) | 6 |
+| B7 | 49 | 6 (`264f135`) | 6 |
+| B8 | 49 | — | 6 |
 | B9 | 15 | — | 6 |
-| `a.atdl` | 13 | — | 0 |
+| `a.atdl` | 20 | — | 0 |
 
 Two points help you to read this table:
 

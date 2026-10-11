@@ -184,44 +184,46 @@ let update_cex_graph (cex_lts : i_lts_t) (path_m1 : Obs.t list) (path_m2 : Obs.t
           ) in
           upd
 
+(*
+  All the maximal paths of m without repeated states whose attacker inputs agree with the ones of cex
+  (one is a prefix of the other). A path ends at a reset or a divergence, at a state without
+  successors, or when it would enter a state it has already visited. Paths are simple, so their
+  length is bounded by the number of states of m.
+
+  A state is "visited" only for the path that visited it: different paths may share a state (and
+  do so more often in minimal models), and stopping a path there would truncate it artificially,
+  i.e., make it look like the behavior ends there.
+*)
 let all_acyclic_cexs ~attributes (m : i_lts_t) (cex : Obs.t list): Obs.t list list =
   let att_inputs p = List.filter_map p ~f:(function Obs.IO (InputExt.IAttacker i, _, _) -> Some (InputExt.IAttacker i) | Obs.IO (InputExt.IInterrupt, _, _) -> Some (InputExt.IInterrupt) | _ -> None) in
-  let same_att_inputs ol ol' = not (List.is_empty ol) && not (List.is_empty ol') && List.is_prefix ~equal:InputExt.equal (att_inputs ol) ~prefix:(att_inputs ol') || List.is_prefix ~equal:InputExt.equal (att_inputs ol') ~prefix:(att_inputs ol) in
-  let q = Queue.create () in
-  let visited = ref ILTS.LTSSSet.empty in
+  let cex_att = att_inputs cex in
+  let compatible att = List.is_prefix ~equal:InputExt.equal att ~prefix:cex_att || List.is_prefix ~equal:InputExt.equal cex_att ~prefix:att in
+  let same_att_inputs ol = not (List.is_empty ol) && not (List.is_empty cex) && compatible (att_inputs ol) in
+  let successors = Map.fold m.transition ~init:Int.Map.empty ~f:(fun ~key:(s, obs) ~data acc ->
+    let IO (i, o, _) = obs in
+    Map.add_multi acc ~key:s ~data:(Obs.make ~attributes i o, data)) in
   let all : Obs.t list list ref = ref [] in
-  Queue.enqueue q (m.initial, []);
-
-  while not (Queue.is_empty q) do
-    let curr_state, curr_path = Queue.dequeue_exn q in
-    let is_final = match List.last curr_path with
-      | Some Obs.IO(_, o, _) -> OutputExt.equal o OReset || OutputExt.equal o ODiverge
-      | _ -> false
-    in
-    if is_final || Set.mem !visited curr_state || not (Map.existsi m.transition ~f:(fun ~key:(cand_curr, _) ~data:_ -> cand_curr = curr_state)) then
-      (
-        (* Logs.debug (fun p -> p "[all_acyclic_cexs] curr_path:");
-        List.iter curr_path ~f:(fun o -> Logs.debug (fun p -> p "\t\t%s" (Obs.human_show o))); *)
-        if
-          same_att_inputs curr_path cex
-        then
-          all := curr_path :: !all
-        else
-          ()
-      )
-    else
-      (
-        visited := Set.add !visited curr_state;
-        Map.iteri m.transition ~f:(fun ~key:(cand_curr, obs) ~data:cand_next ->
-          let IO (i, o, _) = obs in
-          let obs = Obs.make ~attributes i o in
-          if cand_curr = curr_state then
-            Queue.enqueue_all q (List.map ~f:(fun next -> (next, curr_path @ [obs])) (Set.to_list cand_next))
-          else
-            ()
-        )
-      )
-  done;
+  let record path = if same_att_inputs path then all := path :: !all in
+  (* Depth-first, keeping the states on the current path (on_path); rev_path and rev_att are the path and its attacker inputs, reversed *)
+  let rec visit curr_state on_path rev_path rev_att =
+    let is_final = match rev_path with
+      | Obs.IO(_, o, _) :: _ -> OutputExt.equal o OReset || OutputExt.equal o ODiverge
+      | [] -> false in
+    match Map.find successors curr_state with
+    | None -> record (List.rev rev_path)
+    | Some _ when is_final -> record (List.rev rev_path)
+    | Some succ ->
+      List.iter (List.rev succ) ~f:(fun (obs, next_set) ->
+        let rev_att' = match obs with
+          | Obs.IO ((InputExt.IAttacker _ | InputExt.IInterrupt) as i, _, _) -> i :: rev_att
+          | _ -> rev_att in
+        (* Extensions of a path whose attacker inputs disagree with cex's are all discarded: stop early *)
+        if compatible (List.rev rev_att') then
+          Set.iter next_set ~f:(fun next ->
+            if Set.mem on_path next then record (List.rev (obs :: rev_path))
+            else visit next (Set.add on_path next) (obs :: rev_path) rev_att'))
+  in
+  visit m.initial (ILTS.LTSSSet.singleton m.initial) [] [];
   !all
 
 let encl_prefix p = List.take_while p ~f:(function
