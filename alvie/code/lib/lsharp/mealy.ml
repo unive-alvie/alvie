@@ -53,7 +53,7 @@ module Mealy (S : EltType) (I : EltType) (O : EltType) = struct
       match transition m (s, i) with
       | None -> None
       | Some (o, s') ->
-        (if List.length is = 0 then
+        (if List.is_empty is then
           Some (o, s')
         else
           transition_all m s' is)
