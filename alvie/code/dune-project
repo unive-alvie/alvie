@@ -2,7 +2,7 @@
 
 (name alvie)
 
-(version 2026.09)
+(version 2026.10)
 
 (generate_opam_files true)
 
