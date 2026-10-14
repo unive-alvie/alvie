@@ -42,6 +42,15 @@ secret 0) went from 2235s to about 11s of learning, and all the models of
 - Drops the obsolete `tt_genall` and `tt_derive` programs and the `py` and
   `Verilog_VCD` dependencies.
 
+### Known issues
+
+- `equal_public_payload_t` in `alvie/code/lib/ltscomparator/cexfinder.ml` tests
+  `p.mode` twice and never `p'.mode`, so the comparison of public payloads is
+  asymmetric and too permissive: when the first payload is in PM it returns
+  true whatever the second one is. It can suppress genuine violations in the
+  analysis run by `fa.exe`. It is present in 2026.09 as well and is not fixed
+  here, because fixing it changes the recorded witness counts.
+
 ### Documentation
 
 - Documents the new options and environment variables (`--keep-repeated-reentries`,
