@@ -4,7 +4,7 @@ ALVIE is an open-source security-analysis framework that learns finite-state mod
 It combines active automata learning with model checking to produce witness traces when selected behaviors are distinguishable.
 **ALVIE/Sancus** is the current backend and workflow for Sancus/openMSP430 systems.
 
-[Homepage](https://unive-alvie.github.io/alvie/) · [Documentation](https://unive-alvie.github.io/alvie/guides/walkthrough-repro/) · [Getting Started](https://unive-alvie.github.io/alvie/getting-started/) · [Docker Hub](https://hub.docker.com/r/matteobusi/alvie) · [ALVIE UI](https://github.com/unive-alvie/alvie-ui) · [Paper](https://ieeexplore.ieee.org/abstract/document/10664425)
+[Homepage](https://unive-alvie.github.io/alvie/) · [Documentation](https://unive-alvie.github.io/alvie/getting-started/) · [Getting Started](https://unive-alvie.github.io/alvie/getting-started/) · [Docker Hub](https://hub.docker.com/r/matteobusi/alvie) · [ALVIE UI](https://github.com/unive-alvie/alvie-ui) · [Paper](https://ieeexplore.ieee.org/abstract/document/10664425)
 
 Documentation versions: [2026.10](https://unive-alvie.github.io/alvie/2026.10/) (current) · [development version](https://unive-alvie.github.io/alvie/dev/) (`main`, including unreleased changes) · [2026.09, extended documentation](https://unive-alvie.github.io/alvie/2026.09v2/) · [2026.09 as released](https://unive-alvie.github.io/alvie/2026.09/)
 
