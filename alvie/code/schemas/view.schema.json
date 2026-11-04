@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/view.schema.json",
+  "title": "ALVIE plugin attacker view",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "match": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ],
+            "description": "The kinds of observations the rule applies to (all if absent)"
+          },
+          "when": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "The values of fields the rule requires"
+          },
+          "show": {
+            "anyOf": [
+              { "enum": [ "hidden", "tag", "distinct", "all" ] },
+              {
+                "type": "object",
+                "properties": {
+                  "fields": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "The fields that the attacker sees"
+                  }
+                },
+                "required": [ "fields" ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "hidden, tag, distinct, all or { fields: [...] }",
+            "description": "What the attacker sees"
+          }
+        },
+        "required": [ "show" ],
+        "additionalProperties": false
+      },
+      "description": "The rules, in order: the first that matches applies"
+    }
+  },
+  "required": [ "format", "rules" ],
+  "additionalProperties": false
+}
