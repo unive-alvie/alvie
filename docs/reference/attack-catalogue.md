@@ -100,32 +100,36 @@ New models learned with a different oracle or different limits can give a differ
 
 | Attack | `ef753b6` | Fixing commit | `bf89c0b` |
 | --- | --- | --- | --- |
-| B1 | 330 | 31 (`e8cf011`) | 6 |
-| B2 | 18 | 11 (`3170d5d`) | 6 |
-| B3 | 3619 | 21 (`6475709`) | 6 |
-| B4 | 55 | 10 (`3636536`) | 6 |
-| B6 | 49 | 14 (`d54f031`) | 6 |
-| B7 | 49 | 6 (`264f135`) | 6 |
-| B8 | 49 | — | 6 |
-| B9 | 15 | — | 6 |
-| `a.atdl` | 20 | — | 0 |
+| B1 | 26 | 7 (`e8cf011`) | 3 |
+| B2 | 6 | 4 (`3170d5d`) | 3 |
+| B3 | 351 | 6 (`6475709`) | 9 |
+| B4 | 7 | 5 (`3636536`) | 3 |
+| B6 | 8 | 11 (`d54f031`) | 9 |
+| B7 | 8 | 9 (`264f135`) | 9 |
+| B8 | 8 | — | 9 |
+| B9 | 6 | — | 3 |
+| `a.atdl` | 3 | — | 0 |
 
 `./regression.sh witnesses` checks these counts on the checked-in models (they are also in `alvie/code/test/regression/witness-counts.txt`; update both together).
 
-Three points help you to read this table:
+Four points help you to read this table:
 
 - **The counts do not fall to zero.**
-  The enclave family includes `rst` and a read from unprotected memory.
+  The enclave family includes `rst`, and a read and a write of unprotected memory.
   They trigger B8 and B9 on every commit, including `bf89c0b`.
-  A count of 6 on `bf89c0b` is the expected "fixed" result.
+  On `bf89c0b` they are the only witnesses: one for each of these actions and for each timer value at which the attacker sees it, so 3 or 9 witnesses depending on the attacker.
+  This is the expected "fixed" result.
 - **`a.atdl` reports nothing on `bf89c0b`.**
   It uses one timer value only.
   It is the attacker used to observe the behavior of Section IV.D of the paper: when the enclave jumps to its data section, the CPU loops instead of resetting.
   The learned models show this behavior, but it is visible without interrupts too, so the comparison removes it.
   The paper reports it as not exploitable.
 - **A count is not a number of vulnerabilities.**
-  It is the number of witness traces.
-  Compare the counts of one attack across commits, not across attacks.
+  It is the number of distinct witnesses: pairs of runs, one for each secret, with the same attacker inputs and outputs that the attacker can tell apart.
+  The comparison looks for them in both directions (behaviors of the secret 0 model that the secret 1 model does not have, and the other way round), and counts each witness once.
+- **Compare witnesses, not counts.**
+  A fix removes the witnesses of its attack, but the other witnesses of a commit can change too, because each commit has its own learned models.
+  For example, B6 and B7 have more witnesses on their fixing commits than on `ef753b6`: the witnesses of the attack are gone, and more witnesses of B8 and B9 remain.
 
 To check one fix, compare the original commit with the fixing commit.
 The witnesses that disappear are the effect of the fix.

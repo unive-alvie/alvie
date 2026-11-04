@@ -152,7 +152,7 @@ Run the suites yourself before you push a change that needs them, as the next ta
 
 `./regression.sh witnesses` checks all the checked-in models at once.
 To check one attack by hand, run `fa.exe` with `--debug` on its four checked-in models.
-For example, for B6 on the original commit, the count must be 49.
+For example, for B6 on the original commit, the count must be 8.
 The command is in [Reading and Checking a Witness](/alvie/guides/interpreting-results/#8-run-a-known-answer-check).
 
 ## Documentation check

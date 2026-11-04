@@ -2479,6 +2479,34 @@ digraph G {
   2477 [shape=circle, ];
   2478 [shape=circle, ];
   2479 [shape=circle, ];
+  2480 [shape=circle, ];
+  2481 [shape=circle, ];
+  2482 [shape=circle, ];
+  2483 [shape=circle, ];
+  2484 [shape=circle, ];
+  2485 [shape=circle, ];
+  2486 [shape=circle, ];
+  2487 [shape=circle, ];
+  2488 [shape=circle, ];
+  2489 [shape=circle, ];
+  2490 [shape=circle, ];
+  2491 [shape=circle, ];
+  2492 [shape=circle, ];
+  2493 [shape=circle, ];
+  2494 [shape=circle, ];
+  2495 [shape=circle, ];
+  2496 [shape=circle, ];
+  2497 [shape=circle, ];
+  2498 [shape=circle, ];
+  2499 [shape=circle, ];
+  2500 [shape=circle, ];
+  2501 [shape=circle, ];
+  2502 [shape=circle, ];
+  2503 [shape=circle, ];
+  2504 [shape=circle, ];
+  2505 [shape=circle, ];
+  2506 [shape=circle, ];
+  2507 [shape=circle, ];
   
   
   0 -> 1 [fontcolor="#000000", color="#000000",
@@ -3418,6 +3446,8 @@ digraph G {
   327 -> 334 [fontcolor="#000000", color="#000000",
               label="mov &data_s, r4/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dashed", ];
+  328 -> 2480 [fontcolor="#000000", color="#000000",
+               label="br #enc_e/JmpOut", style="dashed", ];
   329 -> 330 [fontcolor="#A40000", color="#A40000",
               label="reti/Time (k = 14, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
@@ -3440,6 +3470,8 @@ digraph G {
               style="dashed", ];
   335 -> 337 [fontcolor="#000000", color="#000000", label="br #enc_e/JmpOut",
               style="dashed", ];
+  336 -> 2482 [fontcolor="#A40000", color="#A40000",
+               label="br #enc_e/JmpOut", style="dotted", ];
   337 -> 338 [fontcolor="#000000", color="#000000", label="reti/⇑",
               style="dashed", ];
   339 -> 340 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
@@ -3719,6 +3751,8 @@ digraph G {
   438 -> 445 [fontcolor="#000000", color="#000000",
               label="mov &data_s, r4/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dashed", ];
+  439 -> 2483 [fontcolor="#000000", color="#000000",
+               label="br #enc_e/JmpOut", style="dashed", ];
   440 -> 441 [fontcolor="#A40000", color="#A40000",
               label="reti/Time (k = 14, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
@@ -3741,6 +3775,8 @@ digraph G {
               style="dashed", ];
   446 -> 448 [fontcolor="#000000", color="#000000", label="br #enc_e/JmpOut",
               style="dashed", ];
+  447 -> 2485 [fontcolor="#A40000", color="#A40000",
+               label="br #enc_e/JmpOut", style="dotted", ];
   448 -> 449 [fontcolor="#000000", color="#000000", label="reti/⇑",
               style="dashed", ];
   450 -> 451 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
@@ -5216,6 +5252,9 @@ digraph G {
   980 -> 1620 [fontcolor="#000000", color="#000000",
                label="ifz [ dint; nop;], [ nop; dint;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
                style="dashed", ];
+  980 -> 2486 [fontcolor="#000000", color="#000000",
+               label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+               style="dashed", ];
   981 -> 982 [fontcolor="#000000", color="#000000",
               label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
@@ -5268,6 +5307,9 @@ digraph G {
                style="dotted", ];
   991 -> 1630 [fontcolor="#A40000", color="#A40000",
                label="ifz [ dint; nop;], [ nop; dint;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+               style="dotted", ];
+  991 -> 2489 [fontcolor="#A40000", color="#A40000",
+               label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
                style="dotted", ];
   992 -> 993 [fontcolor="#A40000", color="#A40000",
               label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
@@ -6795,6 +6837,8 @@ digraph G {
   1555 -> 1562 [fontcolor="#000000", color="#000000",
                 label="mov &data_s, r4/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
                 style="dashed", ];
+  1556 -> 2491 [fontcolor="#000000", color="#000000",
+                label="br #enc_e/JmpOut", style="dashed", ];
   1557 -> 1558 [fontcolor="#A40000", color="#A40000",
                 label="reti/Time (k = 14, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
                 style="dotted", ];
@@ -6817,6 +6861,8 @@ digraph G {
                 style="dashed", ];
   1563 -> 1565 [fontcolor="#000000", color="#000000",
                 label="br #enc_e/JmpOut", style="dashed", ];
+  1564 -> 2493 [fontcolor="#A40000", color="#A40000",
+                label="br #enc_e/JmpOut", style="dotted", ];
   1565 -> 1566 [fontcolor="#000000", color="#000000", label="reti/⇑",
                 style="dashed", ];
   1567 -> 1568 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
@@ -7096,6 +7142,8 @@ digraph G {
   1666 -> 1673 [fontcolor="#000000", color="#000000",
                 label="mov &data_s, r4/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
                 style="dashed", ];
+  1667 -> 2494 [fontcolor="#000000", color="#000000",
+                label="br #enc_e/JmpOut", style="dashed", ];
   1668 -> 1669 [fontcolor="#A40000", color="#A40000",
                 label="reti/Time (k = 14, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
                 style="dotted", ];
@@ -7118,6 +7166,8 @@ digraph G {
                 style="dashed", ];
   1674 -> 1676 [fontcolor="#000000", color="#000000",
                 label="br #enc_e/JmpOut", style="dashed", ];
+  1675 -> 2496 [fontcolor="#A40000", color="#A40000",
+                label="br #enc_e/JmpOut", style="dotted", ];
   1676 -> 1677 [fontcolor="#000000", color="#000000", label="reti/⇑",
                 style="dashed", ];
   1678 -> 1679 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
@@ -7284,6 +7334,9 @@ digraph G {
   1732 -> 2372 [fontcolor="#000000", color="#000000",
                 label="ifz [ dint; nop;], [ nop; dint;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
                 style="dashed", ];
+  1732 -> 2497 [fontcolor="#000000", color="#000000",
+                label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+                style="dashed", ];
   1733 -> 1734 [fontcolor="#000000", color="#000000",
                 label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
                 style="dashed", ];
@@ -7336,6 +7389,9 @@ digraph G {
                 style="dotted", ];
   1743 -> 2382 [fontcolor="#A40000", color="#A40000",
                 label="ifz [ dint; nop;], [ nop; dint;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+                style="dotted", ];
+  1743 -> 2500 [fontcolor="#A40000", color="#A40000",
+                label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
                 style="dotted", ];
   1744 -> 1745 [fontcolor="#A40000", color="#A40000",
                 label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
@@ -8863,6 +8919,8 @@ digraph G {
   2307 -> 2314 [fontcolor="#000000", color="#000000",
                 label="mov &data_s, r4/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
                 style="dashed", ];
+  2308 -> 2502 [fontcolor="#000000", color="#000000",
+                label="br #enc_e/JmpOut", style="dashed", ];
   2309 -> 2310 [fontcolor="#A40000", color="#A40000",
                 label="reti/Time (k = 14, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
                 style="dotted", ];
@@ -8885,6 +8943,8 @@ digraph G {
                 style="dashed", ];
   2315 -> 2317 [fontcolor="#000000", color="#000000",
                 label="br #enc_e/JmpOut", style="dashed", ];
+  2316 -> 2504 [fontcolor="#A40000", color="#A40000",
+                label="br #enc_e/JmpOut", style="dotted", ];
   2317 -> 2318 [fontcolor="#000000", color="#000000", label="reti/⇑",
                 style="dashed", ];
   2319 -> 2320 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
@@ -9164,6 +9224,8 @@ digraph G {
   2418 -> 2425 [fontcolor="#000000", color="#000000",
                 label="mov &data_s, r4/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
                 style="dashed", ];
+  2419 -> 2505 [fontcolor="#000000", color="#000000",
+                label="br #enc_e/JmpOut", style="dashed", ];
   2420 -> 2421 [fontcolor="#A40000", color="#A40000",
                 label="reti/Time (k = 14, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
                 style="dotted", ];
@@ -9186,6 +9248,8 @@ digraph G {
                 style="dashed", ];
   2426 -> 2428 [fontcolor="#000000", color="#000000",
                 label="br #enc_e/JmpOut", style="dashed", ];
+  2427 -> 2507 [fontcolor="#A40000", color="#A40000",
+                label="br #enc_e/JmpOut", style="dotted", ];
   2428 -> 2429 [fontcolor="#000000", color="#000000", label="reti/⇑",
                 style="dashed", ];
   2430 -> 2431 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
@@ -9316,5 +9380,33 @@ digraph G {
                 style="dashed", ];
   2478 -> 2479 [fontcolor="#A40000", color="#A40000", label="reti/⇑",
                 style="dotted", ];
+  2480 -> 2481 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2483 -> 2484 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2486 -> 2487 [fontcolor="#000000", color="#000000",
+                label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+                style="dashed", ];
+  2487 -> 2488 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2489 -> 2490 [fontcolor="#A40000", color="#A40000",
+                label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+                style="dotted", ];
+  2491 -> 2492 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2494 -> 2495 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2497 -> 2498 [fontcolor="#000000", color="#000000",
+                label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
+                style="dashed", ];
+  2498 -> 2499 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2500 -> 2501 [fontcolor="#A40000", color="#A40000",
+                label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
+                style="dotted", ];
+  2502 -> 2503 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
+  2505 -> 2506 [fontcolor="#000000", color="#000000", label="reti/Reset",
+                style="dashed", ];
   
   }
