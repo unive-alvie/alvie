@@ -39,6 +39,16 @@
   `OUnsupported`. The specifications of the attack catalogue have a single
   choice in `cleanup`, so their models and witnesses do not change.
 
+### Scripts
+
+- `learn_all.sh` also learns the attacker `a`, so that it learns every model
+  of `results/` ("All attacks" in the reproduction guide).
+
+### Documentation
+
+- The testing guide gives the current time of `tt_attack` (about 2 minutes
+  with cached simulators).
+
 ## 2026.10
 
 ### Performance
