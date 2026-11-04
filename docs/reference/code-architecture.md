@@ -16,9 +16,9 @@ The code in `alvie/code` is split into three opam packages, defined in `dune-pro
 
 | Package | Directory | Libraries | Contents |
 | --- | --- | --- | --- |
-| `alvie-core` | `lib/core/` | `learninglib`, `prof`, `interop`, `ltscompare` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, and the comparison engine. It has no backend. |
+| `alvie-core` | `lib/core/` | `learninglib`, `prof`, `interop`, `ltscompare`, `alvie_plugin` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, the comparison engine, and the plugin files and spec language. It has no backend. |
 | `alvie-rtl-util` | `lib/rtl-util/` | `vcd` | Helpers for backends that simulate RTL designs: the VCD parser. It is not part of Core. |
-| `alvie-sancus` | `lib/sancus/`, `lib/sancus-compare/`, `bin/`, `test/` | `sancus`, `ltscomparator` | The Sancus backend, its comparison hooks, the executables and the test suites. |
+| `alvie-sancus` | `lib/sancus/`, `lib/sancus-compare/`, `plugins/sancus/`, `bin/`, `test/` | `sancus`, `ltscomparator` | The Sancus backend, its plugin files and comparison hooks, the executables and the test suites. |
 
 `alvie-core` does not depend on the other two packages: CI builds it on its own with `dune build -p alvie-core`, which fails if a library of `alvie-core` uses one of `alvie-sancus` or `alvie-rtl-util`.
 `dune build` builds all three, and the executables keep their paths (`_build/default/bin/learn.exe` and so on).
@@ -27,6 +27,27 @@ The comparison engine (`Ltscompare.Cexfinder.Make`) does not know what the input
 A backend tells it through the `Ltscompare.Hooks.S` signature: which inputs the attacker chooses, which outputs the attacker cannot see, which outputs end a run, when two outputs look the same to the attacker, which outputs come from the victim, and which victim code a run executes.
 `lib/sancus-compare/obs.ml` gives the Sancus answers, and `fa.exe` uses the resulting instance.
 These hooks are temporary: they become the declarative attacker view of the plugin files in a later release of ALVIE/Core.
+
+### Plugin files and values
+
+`alvie_plugin` reads the files that declare a plugin (see the [Plugin Files Reference](../plugin-files/)) and parses specs with them:
+
+| Module | Responsibility |
+| --- | --- |
+| `Value` | The values of atoms and observations, their JSON form, and interning |
+| `Yaml_tree`, `Shape` | YAML with positions, and the decoders that check each file and generate its JSON Schema |
+| `Manifest_file`, `Sections_file`, `Atoms_file`, `Observations_file`, `Rules_file` | One file format each |
+| `Grammar` | The atom grammar: parsing and printing from the syntax templates, type checks, secret expansion |
+| `Plugin` | Loading a plugin directory and the checks across its files |
+| `Spec` | The spec language over values |
+
+The parser is not generated as code: `Grammar` interprets the syntax templates.
+It finds every way a type matches at a position, keeps the first declared alternative for each end position, and memoises on (type, position), so it runs in polynomial time even when templates are ambiguous.
+In a spec body, an atom must be followed by an operator or by the end of its parenthesis or section; of the ways to read an atom, the parser takes the longest one that is.
+
+Interned values (`Value.Interned`) hash and compare equal by their id.
+They keep the structural order, which learning depends on, and compare by id when both were preloaded together (as the atoms of a spec will be before learning).
+On the atoms of `spec-lib/`, interned values sort, hash and compare faster than today's derived functions on `Input.t` (see `test/value_bench.ml`); plain values are slower, mostly because their tags are strings.
 
 ## End-to-end pipeline
 

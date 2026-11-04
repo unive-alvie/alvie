@@ -53,6 +53,27 @@
 - CI runs the corpus check with the fast checks, and runs `regression.sh all`
   and `tt_attack` in the published Docker image.
 
+### Plugin files (preview)
+
+- ALVIE/Core reads the YAML files that declare a plugin: the manifest, the
+  sections, the atoms with their syntax templates, the observations, the
+  phase rules and the attacker view. It checks each file and the files
+  against each other, and reports every error with its file, line and
+  column, with a suggestion after a typo. Unquoted YAML 1.1 booleans (`on`,
+  `yes`, ...) are rejected. See the new Plugin Files Reference.
+- `plugins/sancus/` declares ALVIE/Sancus in these files. Every spec in
+  `spec-lib/` parses with its grammar to the same values as with
+  `testdl.ml`. Learning and comparison do not use the files yet.
+- The spec language is generic: named sections, the regular operators of
+  TestDL, and the secret as a typed hole. `constraint`, `threads` and `step`
+  blocks are reserved and rejected with an explanation.
+- `alvie/code/schemas/` has a JSON Schema for each plugin file, for editors.
+- New suite `tt_plugin` (fast, run in CI) and benchmark `test/value_bench.exe`.
+- New dependencies: `yaml` and `yojson` (alvie-core), `qcheck-core`
+  (alvie-sancus tests). The Dockerfile and the native installation
+  instructions install them; CI adds them to the published image until it is
+  rebuilt.
+
 ### Code structure
 
 - The OCaml project is split into three opam packages: `alvie-core` (the L#

@@ -74,6 +74,9 @@ jobs:
       - name: Check the input generator against its corpus
         working-directory: alvie/code
         run: opam exec -- dune exec tt_inputgen_golden -- check
+      - name: Run the plugin files suite
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_plugin -- test --color=never
 
   # The simulator-backed suites need Verilator, the MSP430 toolchain and mCRL2: they run in the published image,
   # as its own user (alvie), on a checkout that this user can write.
@@ -90,16 +93,22 @@ jobs:
           fetch-depth: 0
       - name: Pull the ALVIE image
         run: docker pull matteobusi/alvie:latest
+      # The published image may predate the dependencies of this checkout: add them (a no-op once it has them)
+      - name: Add the OCaml dependencies of this checkout to the image
+        run: |
+          printf '%s\n' 'FROM matteobusi/alvie:latest' \
+            'RUN eval "$(opam env --switch=4.13.1)" && opam install -y yaml yojson' \
+            | docker build -t alvie-ci -
       - name: Let the image user write to the checkout
         run: chmod -R a+rwX "$GITHUB_WORKSPACE"
       - name: Run the witness and learning regression
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work matteobusi/alvie:latest bash -c \
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work alvie-ci bash -c \
             'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && ./regression.sh all'
       - name: Run the simulator regression suite
         if: success() || failure()
         run: |
-          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code matteobusi/alvie:latest bash -c \
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
             'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_attack -- test --color=never'
       - name: Keep the logs of a failed run
         if: failure()
