@@ -79,6 +79,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
+          # The experiments check out older Sancus commits: the submodule needs its whole history
+          fetch-depth: 0
       - name: Pull the ALVIE image
         run: docker pull matteobusi/alvie:latest
       - name: Let the image user write to the checkout
@@ -88,6 +90,7 @@ jobs:
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work matteobusi/alvie:latest bash -c \
             'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && ./regression.sh all'
       - name: Run the simulator regression suite
+        if: success() || failure()
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code matteobusi/alvie:latest bash -c \
             'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_attack -- test --color=never'
