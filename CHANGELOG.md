@@ -4,6 +4,13 @@
 
 ### Fixes
 
+- `equal_public_payload_t` in `cexfinder.ml` compared the mode of the first
+  payload twice (the known issue of 2026.10): two payloads were equal
+  whenever the first one was in PM. It now requires both to be in PM, and so
+  does the public equality of `tt_attack`, which had the same typo. No witness
+  count changes; two witness graphs change (B3 on `ef753b6`, and the Getting
+  Started example), because a witness now ends at the first output that the
+  attacker can tell apart instead of one step later.
 - A `cleanup` section that runs more than once now replays its earlier run,
   as the enclave and the ISR already did. `cleanup` runs again when it
   re-enters the enclave (with `reti` or `jin`) and the enclave jumps out

@@ -238,7 +238,7 @@ let encl_inputs p = List.filter_map p ~f:(function
 
 let share_code_encl w w' = List.is_prefix ~equal:InputExt.equal (encl_inputs (encl_prefix w)) ~prefix:(encl_inputs (encl_prefix w')) || List.is_prefix ~equal:InputExt.equal (encl_inputs (encl_prefix w')) ~prefix:(encl_inputs (encl_prefix w))
 
-let equal_public_payload_t (p : OutputExt.payload_t)  (p' : OutputExt.payload_t) = let open Sancus.Output_internal in (equal_mode_t p.mode PM && equal_mode_t p.mode PM) || (Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode)
+let equal_public_payload_t (p : OutputExt.payload_t)  (p' : OutputExt.payload_t) = let open Sancus.Output_internal in (equal_mode_t p.mode PM && equal_mode_t p'.mode PM) || (Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode)
 
 (* FIXME: this is a bit ad-hoc but we easily reimplement if we keep track of S_SECRET in the inputs *)
 let share_code_encl_up_to_secret w w' =

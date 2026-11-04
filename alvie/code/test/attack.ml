@@ -84,7 +84,7 @@ let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sa
   We compare elements using their payload ( *EXCLUDING* k, which is there just for humans looking at the trace!).gie
   Since we want to mimick attackers, payloads s.t. both are PM are trivially equal.
 *)
-let equal_public_payload_t p p' = (equal_mode_t p.mode PM && equal_mode_t p.mode PM) || Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode
+let equal_public_payload_t p p' = (equal_mode_t p.mode PM && equal_mode_t p'.mode PM) || Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode
 let equal_public_element_t e e' =
   match e, e' with
   | OMaybeDiverge, OMaybeDiverge | OIllegal, OIllegal | OReset, OReset | OSilent, OSilent | OUnsupported, OUnsupported -> true
