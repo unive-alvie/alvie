@@ -10,6 +10,8 @@
   commands of the documentation, or a Docker bind mount): a local clone
   hard-links the objects, so the backend now copies them when hard links are
   not possible. The message, when the clone does fail, says what to check.
+- `Could not check out Sancus commit` now says that a shallow checkout of
+  `sancus-core-gap` lacks the older commits, and how to fetch them.
 - `fa.exe` looked for witnesses in one direction only: mCRL2 checks that the
   traces of the first model are traces of the second one, so a behavior that
   only the second model (secret 1) has was found only by chance. It now

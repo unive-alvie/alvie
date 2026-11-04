@@ -122,7 +122,8 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
   if Sys_unix.command (Format.sprintf "cd %s; git checkout %s %s"
       (Filename.quote cloned_repo) (Filename.quote commit) (dbg_str ())) <> 0 then
-    failwith (Format.sprintf "Could not check out Sancus commit %s" commit);
+    failwith (Format.sprintf "Could not check out Sancus commit %s from %s. Check the commit name; a shallow checkout misses older commits: run git -C %s fetch --unshallow (CI: actions/checkout with fetch-depth: 0)."
+      commit sancus_repo (Filename.quote sancus_repo));
   (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
   Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
   let security = Int.max 20 (4 * String.length sancus_master_key) in
