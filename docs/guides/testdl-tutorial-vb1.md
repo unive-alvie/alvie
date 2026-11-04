@@ -198,7 +198,7 @@ export ALVIE_OUTPUT=/output
 mkdir -p "$ALVIE_OUTPUT/vb1-fa"
 dune exec bin/fa.exe -- \
   --m1-int ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-int.dot \
-  --m2-int ../../results/ef753b6-b1-enclave-complete-1-0-0.01-0.01-int.dot \
+  --m2-int ../../results/ef753b6-b1-enclave-complete-1-0.01-0.01-int.dot \
   --m1-nint ../../results/ef753b6-b1-enclave-complete-0-0.01-0.01-nint.dot \
   --m2-nint ../../results/ef753b6-b1-enclave-complete-1-0.01-0.01-nint.dot \
   --tmpdir "$ALVIE_OUTPUT/vb1-fa" \
@@ -215,7 +215,7 @@ The four model arguments are what make this a security comparison rather than a 
   For native use, we can set it to `/tmp/alvie-output` instead.
   `--tmpdir` is a disposable work directory for mCRL2 intermediate files.
 - `--witness-file-basename` chooses the output prefix; ALVIE/Sancus writes `$ALVIE_OUTPUT/vb1-fa/witness_int.dot`.
-- `--cex-limit 1` asks for one witness, which keeps this introductory result focused and fast.
+- `--cex-limit 1` stops the search after its first round, which keeps this introductory result small and fast. The first round already finds several witnesses, among them the V-B1 one.
 
 For the complete comparison interface, see [Executables Reference](/alvie/reference/executables-reference/#2-faexe--find-flow-analysis-ni-violations-between-two-models).
 

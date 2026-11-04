@@ -107,7 +107,7 @@ The counts are in the [Attack Catalogue](/alvie/reference/attack-catalogue/).
 A change to the comparison code must keep them unless the change is on purpose.
 
 Run `fa.exe` with `--debug` on the checked-in models of one attack.
-For example, for B6 on the original commit, the count must be 15.
+For example, for B6 on the original commit, the count must be 8.
 The command is in [Reading and Checking a Witness](/alvie/guides/interpreting-results/#8-run-a-known-answer-check).
 
 If a count changes, find out why before you accept it.

@@ -35,7 +35,7 @@ grep "Results" logs/b6-sim/compare-*.log
 The line looks like this:
 
 ```text
-=== Results: found 49 FA violations. See …/ef753b6-b6_int.dot for details.
+=== Results: found 8 FA violations. See …/ef753b6-b6_int.dot for details.
 ```
 
 For the example, run the comparison again with `--debug`.
@@ -63,8 +63,8 @@ grep -c -- '->' counterexamples/example/bf89c0b-attacker_int.dot
 | 0 | No difference found. The witness file contains one state and no transitions. |
 | 1 or more | The tool found differences. Open the witness file. |
 
-The count is the number of traces, not the number of vulnerabilities.
-The option `--cex-limit` caps it.
+`grep -c` counts transitions, not witnesses. The number of witnesses, reported with `--debug`, is the number of distinct pairs of runs that the attacker can tell apart, not the number of vulnerabilities.
+The option `--cex-limit` stops the search early, so it limits the number of witnesses (see the [Executables Reference](/alvie/reference/executables-reference/)).
 
 ## 2. Draw the witness
 
@@ -270,9 +270,9 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 330 | 6 |
-| B3 | 3619 | 6 |
-| B6 | 49 | 6 |
+| B1 | 26 | 3 |
+| B3 | 351 | 9 |
+| B6 | 8 | 9 |
 
 If your counts are different, check the build and the mCRL2 installation first.
 See [Troubleshooting](/alvie/reference/troubleshooting/).

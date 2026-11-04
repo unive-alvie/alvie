@@ -4,6 +4,17 @@
 
 ### Fixes
 
+- `fa.exe` looked for witnesses in one direction only: mCRL2 checks that the
+  traces of the first model are traces of the second one, so a behavior that
+  only the second model (secret 1) has was found only by chance. It now
+  searches both directions and reports the union. It also counted the same
+  witness again each time a later round of the search found it: each witness
+  is now counted once. The witness counts change accordingly (for example B3
+  on `ef753b6` goes from 3619 to 351, and `bf89c0b` gives 3 or 9 instead of
+  6); the witness graphs gain the witnesses of the reverse direction, e.g. the
+  B8/B9 witnesses for the timer values 1 and 2. `--debug` logs the numbers of
+  each direction, and every witness with the directions that found it.
+  `counterexamples/` and the attack catalogue are regenerated.
 - `equal_public_payload_t` in `cexfinder.ml` compared the mode of the first
   payload twice (the known issue of 2026.10): two payloads were equal
   whenever the first one was in PM. It now requires both to be in PM, and so

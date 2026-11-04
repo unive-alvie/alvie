@@ -113,7 +113,7 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 | `--m2-nint <file>` | optional | secret=1 no-interrupt model (`.dot`) |
 | `--witness-file-basename <base>` | _(required)_ | Output path prefix; produces `<base>_int.dot` |
 | `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files |
-| `--cex-limit <int>` | unlimited | Maximum number of counterexamples to enumerate |
+| `--cex-limit <int>` | unlimited | Stops the search after the round that finds this many witnesses, in each of the two directions. One round can find several witnesses, so the result can have more. |
 | `--debug` | false | Enable debug-level logging |
 
 ### Output

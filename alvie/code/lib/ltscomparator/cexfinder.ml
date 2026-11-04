@@ -263,7 +263,15 @@ let is_PM io =
 
 
 
-(* We avoid recursion here, since we may go too deep *)
+(* In a witness graph, the run of the first model is black and dashed, the run of the second one red and dotted *)
+let m1_attributes = [`Color 0x000000; `Style `Dashed; `Fontcolor 0x000000;]
+let m2_attributes = [`Color 0xA40000; `Style `Dotted; `Fontcolor 0xA40000;]
+
+(*
+  Returns the witnesses of the traces of m1 that m2 does not have (m1 ⊆ m2 fails), as pairs (run of m1, run of m2),
+  with their number and their graph. See find_all_cex_sym for the symmetric check.
+  We avoid recursion here, since we may go too deep.
+*)
 let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * i_lts_t * (Obs.t list * Obs.t list) list =
   let all_witnesses = ref [] in
   let cex_graph = ref ({ initial = 0; states = ILTS.LTSSSet.singleton 0; transition = ILTS.LTSMap.empty } : i_lts_t) in
@@ -278,8 +286,8 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
         finished := true
     | Some aut_cex ->
         Logs.debug (fun p -> p "[find_all_cex] %s ⊆ %s : false" m1_name m2_name);
-        let cand_m1 = all_acyclic_cexs ~attributes:[`Color 0x000000; `Style `Dashed; `Fontcolor 0x000000;] !m1r aut_cex in
-        let cand_m2 = all_acyclic_cexs ~attributes:[`Color 0xA40000; `Style `Dotted; `Fontcolor 0xA40000;] !m2r aut_cex in
+        let cand_m1 = all_acyclic_cexs ~attributes:m1_attributes !m1r aut_cex in
+        let cand_m2 = all_acyclic_cexs ~attributes:m2_attributes !m2r aut_cex in
         List.iter cand_m1 ~f:(fun curr_m1 ->
           List.iter cand_m2 ~f:(fun curr_m2 ->
           let until_next_um t =
@@ -343,3 +351,40 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
     Logs.debug (fun p -> p "===== FINDALL ITERATION END =====\n\n");
   done;
   !cex_count, !cex_graph, !all_witnesses
+
+
+module WitnessSet = Set.Make (struct type t = Obs.t list * Obs.t list [@@deriving ord, sexp] end)
+
+(*
+  Noninterference is symmetric: a trace of m2 that m1 does not have distinguishes the two models as much as a trace
+  of m1 that m2 does not have, but find_all_cex finds only the latter. This runs find_all_cex in both directions
+  and returns the union of the witnesses, always as pairs (run of m1, run of m2) and in the colours of m1 and m2.
+  to_remove is given in the same form, and is swapped for the reverse direction.
+
+  Each witness is counted once: find_all_cex can report the same witness in several rounds, and a witness can be
+  found in both directions (the edge attributes are not compared). A limit applies to each direction as in
+  find_all_cex: the search stops after the round that reaches it, and a round can find several witnesses. The info log gives the numbers of each direction, the debug log every witness and
+  the directions that found it.
+*)
+let find_all_cex_sym ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * i_lts_t * (Obs.t list * Obs.t list) list =
+  let swap = List.map ~f:(fun (w1, w2) -> (w2, w1)) in
+  let restyle attributes w = List.map w ~f:(fun (Obs.IO (i, o, _)) -> Obs.make ~attributes i o) in
+  let _, _, forward = find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () in
+  let _, _, reverse = find_all_cex ?limit ~to_remove:(swap to_remove) ~tmpdir ~m1_name:m2_name ~m2_name:m1_name ~m1:m2 ~m2:m1 () in
+  let reverse = List.map reverse ~f:(fun (w2, w1) -> (restyle m1_attributes w1, restyle m2_attributes w2)) in
+  (* find_all_cex returns the most recent witness first: keep the order in which the witnesses were found *)
+  let _, rev_union = List.fold (List.rev forward @ List.rev reverse) ~init:(WitnessSet.empty, []) ~f:(fun (seen, acc) w ->
+    if Set.mem seen w then (seen, acc) else (Set.add seen w, w :: acc)) in
+  let union = List.rev rev_union in
+  let distinct ws = Set.length (WitnessSet.of_list ws) in
+  Logs.info (fun m -> m "[find_all_cex_sym] %s vs %s: %d witnesses found in the forward direction (%d distinct), %d in the reverse direction (%d distinct), %d distinct in all"
+    m1_name m2_name (List.length forward) (distinct forward) (List.length reverse) (distinct reverse) (List.length union));
+  let in_forward = WitnessSet.of_list forward and in_reverse = WitnessSet.of_list reverse in
+  List.iter union ~f:(fun ((w1, w2) as w) ->
+    let found_in = match Set.mem in_forward w, Set.mem in_reverse w with
+      | true, true -> "both directions" | true, false -> "forward direction only" | _ -> "reverse direction only" in
+    let show run = String.concat ~sep:"; " (List.map run ~f:Obs.human_show) in
+    Logs.debug (fun m -> m "[find_all_cex_sym] witness (%s):\n  %s: %s\n  %s: %s" found_in m1_name (show w1) m2_name (show w2)));
+  let empty_graph : i_lts_t = { initial = 0; states = ILTS.LTSSSet.singleton 0; transition = ILTS.LTSMap.empty } in
+  let graph = List.fold union ~init:empty_graph ~f:(fun g (w1, w2) -> update_cex_graph g w1 w2) in
+  List.length union, graph, List.rev union
