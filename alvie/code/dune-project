@@ -11,13 +11,50 @@
 
 (license LICENSE)
 
+; ALVIE is split into three packages (see docs/reference/code-architecture.md):
+; - alvie-core: the learner, the oracles, the model files and the comparison engine, with no backend;
+; - alvie-rtl-util: helpers for backends that simulate RTL (the VCD parser), not part of Core;
+; - alvie-sancus: the Sancus backend, its executables and the test suites.
+; alvie-core must not depend on the other two: CI builds it on its own (dune build -p alvie-core).
+
 (package
- (name alvie)
- (synopsis "Code accompanying the paper \"Bridging the Gap: Automated Analysis of Sancus
-\" to appear at IEEE CSF 2024")
+ (name alvie-core)
+ (synopsis "ALVIE/Core: active automata learning (L#) and model comparison, with no backend")
+ (description "The L# learner and its equivalence oracles, the model file format, and the comparison engine that finds witnesses with mCRL2. A backend (such as alvie-sancus) provides the system under learning.")
+ (depends
+  (ocaml (>= "4.13"))
+  core
+  core_unix
+  logs
+  ocamlgraph
+  ppx_deriving
+  ppx_hash
+  ppx_jane
+  ppx_sexp_conv
+  shexp)
+ (tags
+  ("automata learning" "formal verification" "alvie")))
+
+(package
+ (name alvie-rtl-util)
+ (synopsis "Helpers for ALVIE backends that simulate RTL designs (VCD parser)")
  (description "")
  (depends
   (ocaml (>= "4.13"))
+  core
+  logs
+  ppx_deriving)
+ (tags
+  ("vcd" "rtl" "alvie")))
+
+(package
+ (name alvie-sancus)
+ (synopsis "ALVIE/Sancus: the Sancus backend of ALVIE, from the paper \"Bridging the Gap: Automated Analysis of Sancus\" (IEEE CSF 2024)")
+ (description "")
+ (depends
+  (ocaml (>= "4.13"))
+  (alvie-core (= :version))
+  (alvie-rtl-util (= :version))
   alcotest
   angstrom
   core

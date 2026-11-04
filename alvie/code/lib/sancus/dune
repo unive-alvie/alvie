@@ -2,6 +2,7 @@
 
 (library
  (name sancus)
+  (public_name alvie-sancus.sancus)
   (modules input output_internal testdl enclave common inputgen attacker verilog)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_deriving.fold ppx_sexp_conv ppx_hash))
   (libraries prof core logs angstrom core_unix.sys_unix core_unix vcd shexp.process ocamlgraph)
