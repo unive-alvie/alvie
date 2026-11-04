@@ -22,3 +22,20 @@
     (flags (:standard -warn-error -A))
   )
 )
+
+(executable
+  (name plugin)
+  (public_name tt_plugin)
+  (package alvie-sancus)
+  (modules plugin)
+  (libraries alcotest qcheck-core alvie_plugin sancus core core_unix core_unix.filename_unix core_unix.sys_unix yojson)
+  (preprocess (pps ppx_jane))
+)
+
+; Not installed: a benchmark, run by hand (dune exec test/value_bench.exe)
+(executable
+  (name value_bench)
+  (modules value_bench)
+  (libraries alvie_plugin sancus core core_unix core_unix.sys_unix)
+  (preprocess (pps ppx_jane))
+)
