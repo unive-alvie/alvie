@@ -99,7 +99,7 @@ A change that only makes the learner faster must also give the same model and th
 Run it from the repository root.
 
 - `./regression.sh witnesses` compares the checked-in models of `results/` again with `fa.exe`.
-  Every witness graph must be identical to the one in `counterexamples/`, and every witness count must be the one in `alvie/code/test/regression/witness-counts.txt`.
+  Every witness graph, including the one of the Getting Started example, must be identical to the one in `counterexamples/`, and every witness count must be the one in `alvie/code/test/regression/witness-counts.txt`.
   These are the counts of the [Attack Catalogue](/alvie/reference/attack-catalogue/).
 - `./regression.sh learning` learns every checked-in model again, with the settings of the wrapper scripts.
   Every model must be identical, byte for byte, to the checked-in one: learning is deterministic, because the learner uses a fixed random seed.

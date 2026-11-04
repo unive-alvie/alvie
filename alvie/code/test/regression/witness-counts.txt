@@ -1,6 +1,6 @@
 # Witness counts reported by fa.exe for the checked-in models (attack, commit, count).
 # They are the counts of the attack catalogue (docs/reference/attack-catalogue.md): update both together.
-# regression.sh checks them.
+# regression.sh checks them. "example" is the Getting Started example (two interrupt-enabled models only).
 b1 ef753b6 330
 b1 e8cf011 31
 b1 bf89c0b 6
@@ -25,3 +25,4 @@ b9 ef753b6 15
 b9 bf89c0b 6
 a ef753b6 20
 a bf89c0b 0
+example bf89c0b 1

@@ -76,7 +76,7 @@ compare_models() {
 # witnesses written to counterexamples/<subdirectory> with the checked-in ones
 check_witnesses() {
   local sub=$1 expected actual att commit log count expected_count n=0
-  rm -rf "counterexamples/$sub" "logs/$sub"/compare-*.log
+  rm -rf "counterexamples/$sub" "logs/$sub"/compare-*.log "logs/$sub"/example/compare-*.log
   if ! ./check_all.sh "$sub"; then
     echo "Regression incomplete: check_all.sh failed. See logs/$sub." >&2
     exit 2
@@ -94,11 +94,28 @@ check_witnesses() {
     fi
   done
   shopt -u nullglob
+  # The Getting Started example compares two interrupt-enabled models only, as check_example.sh does
+  if [ -d "results/$sub/example" ]; then
+    mkdir -p "counterexamples/$sub/example" "logs/$sub/example"
+    log="logs/$sub/example/compare-bf89c0b-example.log"
+    if ! (cd "$MM_DIR" && _build/default/bin/fa.exe --tmpdir "$SCRIPT_DIR/tmp/$sub/example" \
+          --m1-int "$SCRIPT_DIR/results/$sub/example/bf89c0b-attacker-enclave-0-$EPS-$DELTA.dot" \
+          --m2-int "$SCRIPT_DIR/results/$sub/example/bf89c0b-attacker-enclave-1-$EPS-$DELTA.dot" \
+          --witness-file-basename "$SCRIPT_DIR/counterexamples/$sub/example/bf89c0b-attacker" --debug > "$SCRIPT_DIR/$log" 2>&1); then
+      echo "Regression incomplete: the comparison of the example failed. See $log." >&2
+      exit 2
+    fi
+    n=$((n + 1))
+    if ! cmp -s counterexamples/example/bf89c0b-attacker_int.dot "counterexamples/$sub/example/bf89c0b-attacker_int.dot"; then
+      difference "witness graph counterexamples/$sub/example/bf89c0b-attacker_int.dot differs from counterexamples/example/bf89c0b-attacker_int.dot"
+    fi
+  fi
   echo "Compared $n witness graphs"
   # The counts are those of the attack catalogue (docs/reference/attack-catalogue.md)
   while read -r att commit expected_count; do
     case "$att" in ''|'#'*) continue ;; esac
     log="logs/$sub/compare-$commit-$att.log"
+    [ "$att" = example ] && log="logs/$sub/example/compare-bf89c0b-example.log"
     count=$(sed -n 's/.*found \([0-9]*\) FA violations.*/\1/p' "$log" 2>/dev/null | tail -1)
     if [ -z "$count" ]; then
       difference "no witness count for $att at $commit (see $log)"
@@ -116,6 +133,8 @@ run_witnesses() {
   rm -rf "results/$sub"
   mkdir -p "results/$sub"
   cp results/*.dot "results/$sub/"
+  mkdir -p "results/$sub/example"
+  cp results/example/*.dot "results/$sub/example/"
   check_witnesses "$sub"
 }
 
