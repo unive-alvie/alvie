@@ -7,6 +7,17 @@
   (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
 )
 
+; The model loader lives with the executables in bin/ for now
+(copy_files# ../bin/interop.ml)
+
+(executable
+  (name inputgen_golden)
+  (public_name tt_inputgen_golden)
+  (modules inputgen_golden interop)
+  (libraries sancus learninglib core core_unix core_unix.command_unix core_unix.filename_unix core_unix.sys_unix ocamlgraph)
+  (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
+)
+
 (env
   (dev
     (flags (:standard -warn-error -A))
