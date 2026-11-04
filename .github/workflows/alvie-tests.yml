@@ -5,15 +5,31 @@ on:
     paths:
       - '.github/workflows/alvie-tests.yml'
       - 'alvie/**'
+      - 'check_all.sh'
       - 'check_one.sh'
+      - 'learn_all.sh'
+      - 'learn_one_nospecial.sh'
+      - 'regression.sh'
       - 'script_helpers.sh'
+      - 'results/**'
+      - 'counterexamples/**'
+      - 'spec-lib/**'
+      - 'sancus-core-gap'
   push:
-    branches: [main]
+    branches: [main, alvie-ng]
     paths:
       - '.github/workflows/alvie-tests.yml'
       - 'alvie/**'
+      - 'check_all.sh'
       - 'check_one.sh'
+      - 'learn_all.sh'
+      - 'learn_one_nospecial.sh'
+      - 'regression.sh'
       - 'script_helpers.sh'
+      - 'results/**'
+      - 'counterexamples/**'
+      - 'spec-lib/**'
+      - 'sancus-core-gap'
   workflow_dispatch:
 
 permissions:
@@ -48,3 +64,39 @@ jobs:
       - name: Run CLI diagnostics
         working-directory: alvie/code
         run: opam exec -- bash test/cli_diagnostics.sh
+      - name: Check the input generator against its corpus
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_inputgen_golden -- check
+
+  # The simulator-backed suites need Verilator, the MSP430 toolchain and mCRL2: they run in the published image,
+  # as its own user (alvie), on a checkout that this user can write.
+  simulator-tests:
+    name: Run simulator-backed regression suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Pull the ALVIE image
+        run: docker pull matteobusi/alvie:latest
+      - name: Let the image user write to the checkout
+        run: chmod -R a+rwX "$GITHUB_WORKSPACE"
+      - name: Run the witness and learning regression
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work matteobusi/alvie:latest bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && ./regression.sh all'
+      - name: Run the simulator regression suite
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code matteobusi/alvie:latest bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_attack -- test --color=never'
+      - name: Keep the logs of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-logs
+          path: |
+            logs/regression/
+            alvie/code/_build/_tests/
+          if-no-files-found: ignore
