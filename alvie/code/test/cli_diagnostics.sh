@@ -55,6 +55,18 @@ expect_status 2 'Could not parse the TestDL specifications' \
   --secret 0 \
   --oracle randomwalk
 
+# A --sancus directory that is not a git checkout (e.g., the submodule was never initialized)
+expect_status 1 'Could not clone Sancus repository from .* Check that it is a git checkout' \
+  _build/default/bin/learn.exe \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
+  --res "$TMP_DIR/model.dot" \
+  --tmpdir "$TMP_DIR/not-a-checkout" \
+  --sancus "$TMP_DIR/sancus" \
+  --commit bf89c0b \
+  --secret 0 \
+  --oracle randomwalk
+
 expect_status 2 '--test-count must be greater than zero' \
   _build/default/bin/pbt.exe \
   --encl-spec ../../spec-lib/example/enclave.etdl \

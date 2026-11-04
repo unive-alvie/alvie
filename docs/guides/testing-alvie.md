@@ -21,7 +21,7 @@ Run `dune build` first.
 | --- | --- | --- | --- |
 | Isolated features | `dune exec test/features.exe -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Diagnostics | `dune exec test/diagnostics.exe -- --color=never` | Nothing outside OCaml. | Under 1 second. |
-| CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml. | A few seconds. |
+| CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml, except `git`. | A few seconds. |
 | Input generation corpus | `dune exec tt_inputgen_golden -- check` | Nothing outside OCaml. | About 1 second. |
 | Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 2 minutes. |
 | Witness regression | `./regression.sh witnesses` (from the repository root) | mCRL2. | A few minutes. |
