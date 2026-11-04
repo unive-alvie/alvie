@@ -39,6 +39,20 @@
   `OUnsupported`. The specifications of the attack catalogue have a single
   choice in `cleanup`, so their models and witnesses do not change.
 
+### Tests and CI
+
+- Adds `regression.sh`, which checks that a change leaves the checked-in
+  results unchanged: `witnesses` compares the checked-in models again and
+  checks every witness graph and count; `learning` learns every model again
+  and checks that it is identical to the checked-in one (learning is
+  deterministic), then checks its witnesses. It also records the learning
+  time of each model.
+- Adds `tt_inputgen_golden`, which checks the input generator against a
+  corpus of histories taken from the learned models
+  (`alvie/code/test/golden/inputgen.sexp`). It needs no external tool.
+- CI runs the corpus check with the fast checks, and runs `regression.sh all`
+  and `tt_attack` in the published Docker image.
+
 ### Scripts
 
 - `learn_all.sh` also learns the attacker `a`, so that it learns every model
@@ -48,6 +62,8 @@
 
 - The testing guide gives the current time of `tt_attack` (about 2 minutes
   with cached simulators).
+- The testing guide documents the new suites, what to run after each kind of
+  change, and what CI runs.
 
 ## 2026.10
 

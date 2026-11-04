@@ -110,6 +110,8 @@ New models learned with a different oracle or different limits can give a differ
 | B9 | 6 | — | 3 |
 | `a.atdl` | 3 | — | 0 |
 
+`./regression.sh witnesses` checks these counts on the checked-in models (they are also in `alvie/code/test/regression/witness-counts.txt`; update both together).
+
 Four points help you to read this table:
 
 - **The counts do not fall to zero.**
