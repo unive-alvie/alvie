@@ -9,6 +9,7 @@ old
 
 # ocamlbuild working directory
 **/_build/
+**/_build-alvie-*/
 
 # ocamlbuild targets
 *.byte

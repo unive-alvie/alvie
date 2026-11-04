@@ -53,6 +53,26 @@
 - CI runs the corpus check with the fast checks, and runs `regression.sh all`
   and `tt_attack` in the published Docker image.
 
+### Code structure
+
+- The OCaml project is split into three opam packages: `alvie-core` (the L#
+  learner and its oracles, the profiler, reading and writing `.dot` models,
+  and the comparison engine; no backend), `alvie-rtl-util` (the VCD parser)
+  and `alvie-sancus` (the Sancus backend, the executables and the test
+  suites). The libraries move to `lib/core/`, `lib/rtl-util/` and
+  `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
+  executables, their options and their outputs do not change, and
+  `regression.sh all` finds the same models, witness graphs and counts.
+- The comparison engine of `fa.exe` is generic: what it needs to know about
+  the Sancus inputs and outputs (attacker inputs, public equality, hidden
+  outputs, victim code) comes from a hooks module
+  (`lib/sancus-compare/obs.ml`). The hooks are temporary, until the
+  declarative attacker view replaces them.
+- CI checks that `alvie-core` and `alvie-rtl-util` build on their own.
+- `opam install . --deps-only --with-test` installs the dependencies of all
+  three packages; `alvie.opam` is replaced by `alvie-core.opam`,
+  `alvie-rtl-util.opam` and `alvie-sancus.opam`.
+
 ### Scripts
 
 - `learn_all.sh` also learns the attacker `a`, so that it learns every model
