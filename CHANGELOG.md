@@ -1,5 +1,54 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- The simulator backend no longer fails with `Could not clone Sancus
+  repository` when the temporary directory is on another file system than the
+  `sancus-core-gap` checkout (for example `--tmpdir /tmp`, as in the direct
+  commands of the documentation, or a Docker bind mount): a local clone
+  hard-links the objects, so the backend now copies them when hard links are
+  not possible. The message, when the clone does fail, says what to check.
+- `Could not check out Sancus commit` now says that a shallow checkout of
+  `sancus-core-gap` lacks the older commits, and how to fetch them.
+- `fa.exe` looked for witnesses in one direction only: mCRL2 checks that the
+  traces of the first model are traces of the second one, so a behavior that
+  only the second model (secret 1) has was found only by chance. It now
+  searches both directions and reports the union. It also counted the same
+  witness again each time a later round of the search found it: each witness
+  is now counted once. The witness counts change accordingly (for example B3
+  on `ef753b6` goes from 3619 to 351, and `bf89c0b` gives 3 or 9 instead of
+  6); the witness graphs gain the witnesses of the reverse direction, e.g. the
+  B8/B9 witnesses for the timer values 1 and 2. `--debug` logs the numbers of
+  each direction, and every witness with the directions that found it.
+  `counterexamples/` and the attack catalogue are regenerated.
+- `equal_public_payload_t` in `cexfinder.ml` compared the mode of the first
+  payload twice (the known issue of 2026.10): two payloads were equal
+  whenever the first one was in PM. It now requires both to be in PM, and so
+  does the public equality of `tt_attack`, which had the same typo. No witness
+  count changes; two witness graphs change (B3 on `ef753b6`, and the Getting
+  Started example), because a witness now ends at the first output that the
+  attacker can tell apart instead of one step later.
+- A `cleanup` section that runs more than once now replays its earlier run,
+  as the enclave and the ISR already did. `cleanup` runs again when it
+  re-enters the enclave (with `reti` or `jin`) and the enclave jumps out
+  again. Before, the second run could choose different actions, e.g. `nop`
+  instead of `reti` with `spec-lib/complete.atdl`; the generated program then
+  no longer matched the earlier steps, and the simulator reported
+  `OUnsupported`. The specifications of the attack catalogue have a single
+  choice in `cleanup`, so their models and witnesses do not change.
+
+### Scripts
+
+- `learn_all.sh` also learns the attacker `a`, so that it learns every model
+  of `results/` ("All attacks" in the reproduction guide).
+
+### Documentation
+
+- The testing guide gives the current time of `tt_attack` (about 2 minutes
+  with cached simulators).
+
 ## 2026.10
 
 ### Performance

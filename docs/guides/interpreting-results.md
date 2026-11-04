@@ -35,7 +35,7 @@ grep "Results" logs/b6-sim/compare-*.log
 The line looks like this:
 
 ```text
-=== Results: found 49 FA violations. See …/ef753b6-b6_int.dot for details.
+=== Results: found 8 FA violations. See …/ef753b6-b6_int.dot for details.
 ```
 
 For the example, run the comparison again with `--debug`.
@@ -63,8 +63,8 @@ grep -c -- '->' counterexamples/example/bf89c0b-attacker_int.dot
 | 0 | No difference found. The witness file contains one state and no transitions. |
 | 1 or more | The tool found differences. Open the witness file. |
 
-The count is the number of traces, not the number of vulnerabilities.
-The option `--cex-limit` caps it.
+`grep -c` counts transitions, not witnesses. The number of witnesses, reported with `--debug`, is the number of distinct pairs of runs that the attacker can tell apart, not the number of vulnerabilities.
+The option `--cex-limit` stops the search early, so it limits the number of witnesses (see the [Executables Reference](/alvie/reference/executables-reference/)).
 
 ## 2. Draw the witness
 
@@ -127,8 +127,8 @@ Stop at the first step where the output is different.
 In the Getting Started example, the two paths separate at the secret comparison:
 
 ```text
-black: cmp #0, r4 / Time (k = 1, …, timerA_counter = 2, mode = PM)
-red:   cmp #1, r4 / Time (k = 1, …, timerA_counter = 2, mode = PM)
+black: cmp #0, r4 / Time (k = 1, …, timerA_counter = 3, mode = PM)
+red:   cmp #1, r4 / Time (k = 1, …, timerA_counter = 3, mode = PM)
 ```
 
 The outputs are equal here, so this step is not the difference.
@@ -137,12 +137,14 @@ The inputs differ only because the secret is in the input.
 The next steps show the difference:
 
 ```text
-black: ubr / Time (k = 7, …, timerA_counter = 9, mode = PM)
-red:   ubr / Time (k = 2, …, timerA_counter = 4, mode = UM)
+black: ubr / Time (k = 7, …, timerA_counter = 10, mode = PM)
+       ubr / Time (k = 2, …, timerA_counter = 12, mode = UM)
+red:   ubr / Time (k = 2, …, timerA_counter = 5, mode = UM)
 ```
 
-For secret 0, the enclave runs 7 cycles.
-For secret 1, it runs 2 cycles.
+For secret 0, the enclave runs 7 more cycles in protected mode before it leaves.
+For secret 1, it leaves at once.
+The attacker does not see the outputs in protected mode, so the witness continues each path up to its next output in unprotected mode: there the timer reads 12 for secret 0 and 5 for secret 1.
 The attacker reads the timer and learns the secret.
 
 The exact cycle numbers can change with the toolchain and the ALVIE version.
@@ -268,9 +270,9 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 330 | 6 |
-| B3 | 3619 | 6 |
-| B6 | 49 | 6 |
+| B1 | 26 | 3 |
+| B3 | 351 | 9 |
+| B6 | 8 | 9 |
 
 If your counts are different, check the build and the mCRL2 installation first.
 See [Troubleshooting](/alvie/reference/troubleshooting/).

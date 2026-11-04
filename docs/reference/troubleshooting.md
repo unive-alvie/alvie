@@ -67,6 +67,8 @@ The tool prepares the simulator, which takes about 20 seconds the first time (ab
 | A wrapper prints `[OK - Done before]` and does nothing. | The result file exists. The wrapper skips finished work. | Use a new namespace, or delete the old result files. |
 | `Comparison incomplete: no secret-0 interrupt-enabled models found` | The `results/<namespace>/` directory has no models. | Run the learning wrapper first. Use the same namespace. |
 | `Comparison incomplete: missing no-interrupt model` | One of the four models is missing. | Learn the missing model. The comparison needs all four. |
+| `ALVIE backend error: Could not clone Sancus repository from …` | The `--sancus` directory is not a git checkout of `sancus-core-gap` (for example, the submodule was never initialized), or the temporary directory is not writable. | Run `git submodule update --init sancus-core-gap`, pass the absolute path of the checkout, and check `--tmpdir`. Add `--debug` to see the output of `git`. |
+| `ALVIE backend error: Could not check out Sancus commit …` | The `--commit` name is wrong, or the `sancus-core-gap` checkout is shallow and lacks the older commits (for example a clone with `--depth 1`, or `actions/checkout` without `fetch-depth: 0`). | Check the commit name, then run `git -C sancus-core-gap fetch --unshallow`. |
 | A wrapper prints `[KO - <logfile>]` | One background job failed. | Read the log file that the message names. |
 
 ## Results that look wrong

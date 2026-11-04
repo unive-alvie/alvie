@@ -21,8 +21,8 @@ Run `dune build` first.
 | --- | --- | --- | --- |
 | Isolated features | `dune exec test/features.exe -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Diagnostics | `dune exec test/diagnostics.exe -- --color=never` | Nothing outside OCaml. | Under 1 second. |
-| CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml. | A few seconds. |
-| Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | Minutes for each group. |
+| CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml, except `git`. | A few seconds. |
+| Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 2 minutes. |
 
 The first three suites are the fast checks.
 They do not need the simulator, mCRL2, or a `sancus-core-gap` checkout.
@@ -32,11 +32,11 @@ Keep them independent of external tools, so that every contributor can run them.
 ### Isolated features (`tt_features`)
 
 This suite tests the ALVIE parts in isolation.
-It has 24 tests in four groups:
+It has 25 tests in four groups:
 
 - TestDL parsing (syntax, operators, rejected input).
 - Specification semantics (secret expansion, code generation, derivatives).
-- Input generation (sections, interrupts, `reti`, illegal outputs).
+- Input generation (sections, interrupts, `reti`, replayed sections, illegal outputs).
 - Models and observations (the observation tree, serialization, payload merge, output equality).
 
 ### Diagnostics (`diagnostics.exe`)
@@ -55,14 +55,14 @@ This suite replays attack traces on the simulator.
 It compares the output with the expected output for each processor commit, secret, and interrupt mode.
 It needs `sancus-core-gap` at `../../sancus-core-gap` from `alvie/code`.
 
-The suite has 38 tests in groups named after the attacks (`example`, `b1`, `b2`, …).
+The suite has 40 tests in groups named after the attacks (`example`, `b1`, `b2`, …) and the `cleanup re-entry` group.
 Run one group by its name:
 
 ```bash
 dune exec test/attack.exe -- test --color=never b6
 ```
 
-One group of four tests took about 3 minutes in a measured run.
+The complete suite took about 2 minutes on a 16-core machine, once the simulators were compiled and cached (see `ALVIE_SIM_CACHE`).
 Run the complete suite before you change anything that touches the simulator interface.
 
 ### Checking changes to the learner
@@ -107,7 +107,7 @@ The counts are in the [Attack Catalogue](/alvie/reference/attack-catalogue/).
 A change to the comparison code must keep them unless the change is on purpose.
 
 Run `fa.exe` with `--debug` on the checked-in models of one attack.
-For example, for B6 on the original commit, the count must be 15.
+For example, for B6 on the original commit, the count must be 8.
 The command is in [Reading and Checking a Witness](/alvie/guides/interpreting-results/#8-run-a-known-answer-check).
 
 If a count changes, find out why before you accept it.

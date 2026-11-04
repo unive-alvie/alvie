@@ -55,6 +55,32 @@ expect_status 2 'Could not parse the TestDL specifications' \
   --secret 0 \
   --oracle randomwalk
 
+# A --sancus directory that is not a git checkout (e.g., the submodule was never initialized)
+expect_status 1 'Could not clone Sancus repository from .* Check that it is a git checkout' \
+  _build/default/bin/learn.exe \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
+  --res "$TMP_DIR/model.dot" \
+  --tmpdir "$TMP_DIR/not-a-checkout" \
+  --sancus "$TMP_DIR/sancus" \
+  --commit bf89c0b \
+  --secret 0 \
+  --oracle randomwalk
+
+# A checkout that lacks the requested commit (e.g., a shallow clone)
+git init -q "$TMP_DIR/shallow-sancus"
+git -C "$TMP_DIR/shallow-sancus" -c user.name=ALVIE -c user.email=alvie@example.invalid commit -q --allow-empty -m init
+expect_status 1 'Could not check out Sancus commit bf89c0b .* fetch --unshallow' \
+  _build/default/bin/learn.exe \
+  --att-spec ../../spec-lib/example/attacker.atdl \
+  --encl-spec ../../spec-lib/example/enclave.etdl \
+  --res "$TMP_DIR/model.dot" \
+  --tmpdir "$TMP_DIR/missing-commit" \
+  --sancus "$TMP_DIR/shallow-sancus" \
+  --commit bf89c0b \
+  --secret 0 \
+  --oracle randomwalk
+
 expect_status 2 '--test-count must be greater than zero' \
   _build/default/bin/pbt.exe \
   --encl-spec ../../spec-lib/example/enclave.etdl \

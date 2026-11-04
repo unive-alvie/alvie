@@ -105,17 +105,25 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "Chosen temporary directory: %s" r_tmpdir);
-  (* Clone Sancus so a submodule source retains a valid Git directory. *)
+  (* Clone Sancus so a submodule source retains a valid Git directory. A local clone hard-links the objects, which
+     fails when the temporary directory is on another file system than the checkout (e.g., --tmpdir /tmp, or a
+     Docker bind mount): then the objects are copied instead. *)
   Logs.debug (fun m -> m "Cloning: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
   let cloned_repo = r_tmpdir ^ "/sancus-core-gap" in
-  if Sys_unix.command (Format.sprintf "git clone --local %s %s %s"
-      (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) <> 0 then
-    failwith (Format.sprintf "Could not clone Sancus repository from %s" sancus_repo);
+  let clone mode = Sys_unix.command (Format.sprintf "git clone %s %s %s %s"
+      mode (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) = 0 in
+  if not (clone "--local") then (
+    Logs.debug (fun m -> m "The local clone failed, copying the objects instead");
+    ignore (Sys_unix.command (Format.sprintf "rm -rf %s" (Filename.quote cloned_repo)));
+    if not (clone "--no-hardlinks") then
+      failwith (Format.sprintf "Could not clone Sancus repository from %s into %s. Check that it is a git checkout (git submodule update --init sancus-core-gap) and that --tmpdir is writable; --debug shows the git output."
+        sancus_repo r_tmpdir));
   (* Use the required commit *)
   Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
   if Sys_unix.command (Format.sprintf "cd %s; git checkout %s %s"
       (Filename.quote cloned_repo) (Filename.quote commit) (dbg_str ())) <> 0 then
-    failwith (Format.sprintf "Could not check out Sancus commit %s" commit);
+    failwith (Format.sprintf "Could not check out Sancus commit %s from %s. Check the commit name; a shallow checkout misses older commits: run git -C %s fetch --unshallow (CI: actions/checkout with fetch-depth: 0)."
+      commit sancus_repo (Filename.quote sancus_repo));
   (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
   Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
   let security = Int.max 20 (4 * String.length sancus_master_key) in
@@ -282,13 +290,24 @@ let fill_template template_code (cfg : cfg_t) =
     let actual_isr = curr_isr @ List.drop first_isr (List.length curr_isr) in
         (* Logs.debug (fun p -> p "ISR: %s" ([%derive.show: Attacker.atom_t annot list] actual_isr)); *)
         actual_isr in
-  (* - Cleanup: when exiting with a jmpout more than once! --- FIXME: this is a hack *)
+  (*
+    - Cleanup: it runs more than once when it leaves with reti or jin and the enclave jumps out again. Every run
+    starts from the beginning of the same code, and the input generator makes each run replay the longest earlier
+    one (Inputgen.get_options). al holds the actions of all runs, one after the other, and a run ends with the
+    reti or jin that leaves the section: the code is the current run (which holds the labelled action), followed
+    by the rest of the longest earlier run.
+  *)
   let relevant_cleanup al =
-    if List.is_empty al then []
-    else
-    (
-      List.rev (List.take_while (List.rev (List.drop_last_exn al)) ~f:(function (Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _)) -> false | _ -> true))@[List.last_exn al]
-    )
+    let leaves = function Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _) -> true | _ -> false in
+    let rev_runs = List.fold al ~init:[] ~f:(fun rev_runs a ->
+      match rev_runs with
+      | run :: older when not (List.exists run ~f:leaves) -> (run @ [a]) :: older
+      | _ -> [a] :: rev_runs) in
+    match rev_runs with
+    | [] -> []
+    | current :: earlier ->
+      let longest = List.fold earlier ~init:[] ~f:(fun acc run -> if List.length run > List.length acc then run else acc) in
+      current @ List.drop longest (List.length current)
   in
   let enclave_labels, enclave_code = Enclave.compile (relevant_enclave cfg.enclave_history) in
   Logs.debug (fun p -> p "Enclave labels: %s" ([%derive.show: (string*string) list] enclave_labels));

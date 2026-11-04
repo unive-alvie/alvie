@@ -133,7 +133,10 @@ The observed Sancus behavior selects which section is active:
 
 An action written in another section is therefore not available merely because it occurs somewhere in the combined specification.
 Within the active section, ALVIE/Sancus uses the derivative of the expression after the existing prefix and discards actions whose derivative has an empty language.
-Re-entered enclave and ISR executions may also replay a previously observed action path so that the same generated program remains consistent across repeated execution.
+Every section is code that stays in memory, so a section that runs again runs the same instructions.
+The enclave runs again after a jump-in or a `reti`, the `isr` after each interrupt, and `cleanup` after each jump-out (for example when `cleanup` re-enters the enclave with `reti` or `jin`).
+When a section runs again, ALVIE/Sancus replays the actions of its longest earlier run, and offers new actions only after that run ends.
+For example, with `cleanup { (nop | reti); nop }`, if the first run of `cleanup` chose `reti`, a second run of `cleanup` must start with `reti` too.
 
 Illegal or unsupported observations invalidate the current generated path; reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the active section as described above.
 This is how `.atdl` and `.etdl` files limit both the learner's alphabet and the order in which inputs can be queried.

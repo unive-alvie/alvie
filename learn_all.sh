@@ -89,6 +89,10 @@ declare -a EXPERIMENTS=(
   "b9 enclave-complete 0 bf89c0b"
   "b9 enclave-complete 1 ef753b6"
   "b9 enclave-complete 1 bf89c0b"
+  "a enclave-complete 0 ef753b6"
+  "a enclave-complete 0 bf89c0b"
+  "a enclave-complete 1 ef753b6"
+  "a enclave-complete 1 bf89c0b"
   # B1 experiments
   "b1 enclave-complete 0 ef753b6"
   "b1 enclave-complete 0 e8cf011"

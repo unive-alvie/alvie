@@ -149,7 +149,7 @@ It compares only two `int` models, so it can report program flaws as well.
 
 The comparison step reports a number and a graph.
 
-- **The number** is how many distinguishing traces the comparison found.
+- **The number** is how many distinct distinguishing traces the comparison found, looking at both models in turn.
   It is not a count of separate vulnerabilities.
   Many traces can have the same cause.
 - **The graph** is the witness.

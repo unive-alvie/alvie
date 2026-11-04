@@ -84,7 +84,7 @@ let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sa
   We compare elements using their payload ( *EXCLUDING* k, which is there just for humans looking at the trace!).gie
   Since we want to mimick attackers, payloads s.t. both are PM are trivially equal.
 *)
-let equal_public_payload_t p p' = (equal_mode_t p.mode PM && equal_mode_t p.mode PM) || Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode
+let equal_public_payload_t p p' = (equal_mode_t p.mode PM && equal_mode_t p'.mode PM) || Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode
 let equal_public_element_t e e' =
   match e, e' with
   | OMaybeDiverge, OMaybeDiverge | OIllegal, OIllegal | OReset, OReset | OSilent, OSilent | OUnsupported, OUnsupported -> true
@@ -159,6 +159,10 @@ let () =
         test_case "(original commit) w interrupts, b9 + encl" `Slow (exec ~att_spec_name:"b9" ~input_str:input_b9_encl_int ~ignore_interrupts:false ~commit:orig_commit ~expected:[("0", output_b9_encl0_int_orig); ("1", output_b9_encl1_int_orig)]);
         test_case "(last commit) w/o interrupts, b9 + encl" `Slow (exec ~att_spec_name:"b9" ~input_str:input_b9_encl_noint_last ~ignore_interrupts:true ~commit:last_commit ~expected:[("0", output_b9_encl_noint_last); ("1", output_b9_encl_noint_last)]);
         test_case "(last commit -- vulnerable) w interrupts, b9 + encl" `Slow (exec ~att_spec_name:"b9" ~input_str:input_b9_encl_int_last ~ignore_interrupts:false ~commit:last_commit ~expected:[("0", output_b9_encl0_int_last); ("1", output_b9_encl1_int_last)]);
+      ];
+      "cleanup re-entry", [
+        test_case "(original commit) w interrupts, cleanup replays reti" `Slow (exec ~att_spec_name:"complete" ~input_str:input_cleanup_reentry_replay ~ignore_interrupts:false ~commit:orig_commit ~expected:[("0", output_cleanup_reentry_replay)]);
+        test_case "(original commit) w interrupts, cleanup cannot choose nop" `Slow (exec ~att_spec_name:"complete" ~input_str:input_cleanup_reentry_other ~ignore_interrupts:false ~commit:orig_commit ~expected:[("0", output_cleanup_reentry_other)]);
       ];
       "new anomaly", [
         test_case "(original commit) w/o interrupts, new anomaly + encl" `Slow (exec ~att_spec_name:"a" ~input_str:input_a_encl_noint ~ignore_interrupts:true ~commit:orig_commit ~expected:[("0", output_a_encl_noint); ("1", output_a_encl_noint)]);

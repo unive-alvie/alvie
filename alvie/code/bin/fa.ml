@@ -11,7 +11,8 @@ open Core
 module IOInterop = Interop (Sancus.Input) (Sancus.Output_internal)
 module IIOMealyExt = Mealy (ShowableInt) (InputExt) (OutputExt)
 
-let filename s = List.hd_exn (String.split (List.last_exn (String.split s ~on:'/')) ~on:'.')
+(* The model name used in the logs: the file name without the directory and the .dot extension *)
+let filename s = String.chop_suffix_if_exists (Filename.basename s) ~suffix:".dot"
 
 (* Load models from the filesystem *)
 let load_and_convert fn : IIOMealyExt.t =
@@ -124,11 +125,11 @@ let command =
             let m2_nint, m2_nint_name =
               i_lts_of_mealy (load_and_convert (sprintf "%s" m2_nint_file)), filename m2_nint_file in
             (* Compute interferences in the non-interruptible system *)
-            trd3 (find_all_cex ~to_remove:[] ?limit ~tmpdir:tmpdir ~m1_name:m1_nint_name ~m2_name:m2_nint_name ~m1:m1_nint ~m2:m2_nint ())
+            trd3 (find_all_cex_sym ~to_remove:[] ?limit ~tmpdir:tmpdir ~m1_name:m1_nint_name ~m2_name:m2_nint_name ~m1:m1_nint ~m2:m2_nint ())
           | _ -> []) in
         (* Extract also those that are violations of RNI in the models wo interrupts *)
         let cex_int_cnt, cex_int_graph, _ =
-          find_all_cex ?limit ~to_remove:cex_nint_witnesses ~tmpdir:tmpdir ~m1_name:m1_int_name ~m2_name:m2_int_name ~m1:m1_int ~m2:m2_int () in
+          find_all_cex_sym ?limit ~to_remove:cex_nint_witnesses ~tmpdir:tmpdir ~m1_name:m1_int_name ~m2_name:m2_int_name ~m1:m1_int ~m2:m2_int () in
         (* Output the results :) *)
         let graph_int = ILTS.to_dot cex_int_graph in
         ILTS.Dot.output_graph (Stdlib.open_out_bin (sprintf "%s_int.dot" cex_file)) graph_int;
