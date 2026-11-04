@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/view.schema.json
+# What the attacker of Sancus sees: everything that unprotected mode can observe, but not the cycle count k, and
+# nothing while the processor is in protected mode. These rules state the hooks of lib/sancus-compare/obs.ml; the
+# comparison starts using them in a later milestone (M5), which checks them against the checked-in witnesses.
+format: 1
+rules:
+  - { match: [Silent, Unsupported], show: hidden }
+  - { match: [JmpIn, JmpOut, Reti, Time], when: { mode: PM }, show: hidden }
+  - { match: [JmpIn, JmpOut, Reti, Time], show: { fields: [gie, umem_val, reg_val, timerA_counter, mode] } }
+  - match: [JmpOut_Handle, Time_Handle]
+    show:
+      fields:
+        - time.gie
+        - time.umem_val
+        - time.reg_val
+        - time.timerA_counter
+        - time.mode
+        - handle.gie
+        - handle.umem_val
+        - handle.reg_val
+        - handle.timerA_counter
+        - handle.mode
+  - { match: [Reset, Illegal], show: tag }
+  - { match: Diverge, show: distinct }

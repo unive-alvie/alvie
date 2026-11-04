@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=../../schemas/atoms.schema.json
+# The atoms of Sancus specs: MSP430 instructions and the actions of the attacker. The values they parse to are
+# those of lib/sancus/attacker.ml and enclave.ml (see lib/sancus/atom_value.ml for the correspondence).
+format: 1
+
+types:
+  reg:
+    syntax: ["r{i}", "R{i}"]
+    args: { i: { int: [0, 14] } }
+    doc: A register of the MSP430
+
+  # Variants are listed in the order of the constructors of lib/sancus/common.ml, attacker.ml and enclave.ml: Core
+  # orders atoms by declaration, and learning depends on that order. Where two variants can read the same text
+  # (&r5 as a register or a symbol), the first one wins.
+  src:
+    variants:
+      reg:    { syntax: "{r}", args: { r: reg } }
+      imm:    { syntax: "#{v}", args: { v: symbol }, doc: An immediate value or the address of a symbol }
+      at:     { syntax: "@{r}", args: { r: reg }, doc: Indirect register (the word that the register points to) }
+      amp:    { syntax: "&{s}", args: { s: symbol }, doc: Absolute (the word at a symbol) }
+      secret: { syntax: "?", secret: { expand: "#{value}" }, doc: The secret; it becomes an immediate value }
+
+  dst:
+    variants:
+      reg:     { syntax: "{r}", args: { r: reg } }
+      amp_reg: { syntax: "&{r}", args: { r: reg }, doc: The word whose address is in the register }
+      amp_mem: { syntax: "&{s}", args: { s: symbol }, doc: The word at a symbol }
+
+  inst:
+    variants:
+      nop:  { syntax: nop }
+      dint: { syntax: dint, doc: Disables interrupts }
+      mov:  { syntax: "mov {src}, {dst}", args: { src: src, dst: dst } }
+      add:  { syntax: "add {src}, {dst}", args: { src: src, dst: dst } }
+      cmp:  { syntax: "cmp {src}, {dst}", args: { src: src, dst: dst } }
+      push: { syntax: "push {src}", args: { src: src } }
+      jmp:  { syntax: "jmp {dst}", args: { dst: src }, doc: Branches to the operand (br) }
+
+atoms:
+  attacker:
+    rst:            { syntax: rst, doc: Resets the system (watchdog) }
+    rst_nz:         { syntax: rst_nz, doc: Resets the system unless the zero flag is set }
+    jin:            { syntax: "jin {s}", args: { s: symbol }, doc: Jumps into the enclave at a symbol }
+    create:
+      syntax: "create <{ts}, {te}, {ds}, {de}>"
+      args: { ts: symbol, te: symbol, ds: symbol, de: symbol }
+      doc: Creates the enclave with these text and data sections (start and end symbols)
+    timer_enable:   { syntax: "timer_enable {t}", args: { t: { int: [0, 65535] } }, doc: "Starts the timer, which interrupts after t cycles" }
+    start_counting: { syntax: "start_counting {t}", args: { t: { int: [0, 65535] } }, doc: Starts the timer without interrupts }
+    reti:           { syntax: reti, doc: Returns from the interrupt (resumes the enclave) }
+    ifz:
+      syntax: "ifz ({then}) ({else})"
+      args:
+        then: { list: attacker, exclude: [ifz] }
+        else: { list: attacker, exclude: [ifz] }
+      doc: Runs the first list if the zero flag is set, the second otherwise
+    inst:           { syntax: "{i}", args: { i: inst } }
+
+  enclave:
+    inst: { syntax: "{i}", args: { i: inst } }
+    ubr:  { syntax: ubr, doc: An unbalanced branch }
+    rst:  { syntax: rst, doc: Resets the system (watchdog) }
+    ifz:
+      syntax: "ifz ({then}) ({else})"
+      args:
+        then: { list: enclave, exclude: [ifz] }
+        else: { list: enclave, exclude: [ifz] }
+      doc: Runs the first list if the zero flag is set, the second otherwise
+    balanced_ifz:
+      syntax: "balanced_ifz ({body})"
+      args: { body: { list: inst } }
+      doc: A branch on the zero flag that takes the same time on both sides
