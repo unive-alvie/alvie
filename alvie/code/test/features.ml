@@ -199,6 +199,42 @@ let test_input_generation_tracks_interrupts () =
   Alcotest.(check bool) "reti resumes the interrupted enclave" true
     (List.mem enclave_options (`Next (Input.IEnclave (Enclave.CInst (I_CMP (S_SECRET, D_R (R 4)))))) ~equal:Poly.equal)
 
+(*
+  The cleanup section is code too: when it runs again, it runs the same instructions. Here the enclave is
+  interrupted, resumed, and exits; cleanup then runs reti, which re-enters the enclave through the stale
+  interrupt frame (as in B3); the enclave exits again and cleanup runs a second time. Its first action must
+  be reti again: nop would be a different program, whose first cleanup run would never have re-entered.
+*)
+let cleanup_reentry_spec = {|
+enclave { nop; nop };
+isr { reti };
+prepare { create <enc_s, enc_e, data_s, data_e>; jin enc_s };
+cleanup { (nop | reti); nop };
+|}
+
+let cleanup_reentry_history = (
+  (let create = Input.IAttacker (Attacker.CCreateEncl ("enc_s", "enc_e", "data_s", "data_e")) in
+   let jmp_in = Input.IAttacker (Attacker.CJmpIn "enc_s") in
+   let nop = Input.IEnclave (Enclave.CInst I_NOP) in
+   let reti = Input.IAttacker Attacker.CReti in
+   [create; jmp_in; nop; reti; nop; reti; nop]),
+  [output (OTime (payload UM)); output (OJmpIn (payload PM));
+   output (OTime_Handle (payload PM, payload PM)); output (OReti (payload PM));
+   output (OJmpOut (payload UM)); output (OReti (payload PM));
+   output (OJmpOut (payload UM))])
+
+let show_options options = List.map options ~f:(function `Stop -> "`Stop" | `Next input -> Input.show input)
+
+let test_input_generation_replays_cleanup () =
+  let spec = Inputgen.build_spec_dfa (parse_spec_exn cleanup_reentry_spec) in
+  let inputs, outputs = cleanup_reentry_history in
+  let reti = Input.IAttacker Attacker.CReti in
+  let _, first_run = Inputgen.get_options spec (List.take inputs 5) (List.take outputs 5) in
+  Alcotest.(check (list string)) "the first cleanup run can choose"
+    [Input.show (Input.IAttacker (Attacker.CInst I_NOP)); Input.show reti] (List.sort ~compare:String.compare (show_options first_run));
+  let _, second_run = Inputgen.get_options spec inputs outputs in
+  Alcotest.(check (list string)) "the second cleanup run replays reti" [Input.show reti] (show_options second_run)
+
 let test_input_generation_stops_after_illegal_output () =
   let spec = Inputgen.build_spec_dfa (parse_spec_exn valid_spec) in
   let create = Input.IAttacker (Attacker.CCreateEncl ("enc_s", "enc_e", "data_s", "data_e")) in
@@ -285,6 +321,7 @@ let () =
       Alcotest.test_case "follow TestDL sections" `Quick test_input_generation_follows_sections;
       Alcotest.test_case "reject action in wrong section" `Quick test_input_generation_rejects_wrong_mode;
       Alcotest.test_case "track interrupts and reti" `Quick test_input_generation_tracks_interrupts;
+      Alcotest.test_case "replay cleanup when it runs again" `Quick test_input_generation_replays_cleanup;
       Alcotest.test_case "stop after illegal output" `Quick test_input_generation_stops_after_illegal_output;
     ];
     "Models and observations", [

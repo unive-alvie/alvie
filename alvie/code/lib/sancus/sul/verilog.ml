@@ -282,13 +282,24 @@ let fill_template template_code (cfg : cfg_t) =
     let actual_isr = curr_isr @ List.drop first_isr (List.length curr_isr) in
         (* Logs.debug (fun p -> p "ISR: %s" ([%derive.show: Attacker.atom_t annot list] actual_isr)); *)
         actual_isr in
-  (* - Cleanup: when exiting with a jmpout more than once! --- FIXME: this is a hack *)
+  (*
+    - Cleanup: it runs more than once when it leaves with reti or jin and the enclave jumps out again. Every run
+    starts from the beginning of the same code, and the input generator makes each run replay the longest earlier
+    one (Inputgen.get_options). al holds the actions of all runs, one after the other, and a run ends with the
+    reti or jin that leaves the section: the code is the current run (which holds the labelled action), followed
+    by the rest of the longest earlier run.
+  *)
   let relevant_cleanup al =
-    if List.is_empty al then []
-    else
-    (
-      List.rev (List.take_while (List.rev (List.drop_last_exn al)) ~f:(function (Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _)) -> false | _ -> true))@[List.last_exn al]
-    )
+    let leaves = function Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _) -> true | _ -> false in
+    let rev_runs = List.fold al ~init:[] ~f:(fun rev_runs a ->
+      match rev_runs with
+      | run :: older when not (List.exists run ~f:leaves) -> (run @ [a]) :: older
+      | _ -> [a] :: rev_runs) in
+    match rev_runs with
+    | [] -> []
+    | current :: earlier ->
+      let longest = List.fold earlier ~init:[] ~f:(fun acc run -> if List.length run > List.length acc then run else acc) in
+      current @ List.drop longest (List.length current)
   in
   let enclave_labels, enclave_code = Enclave.compile (relevant_enclave cfg.enclave_history) in
   Logs.debug (fun p -> p "Enclave labels: %s" ([%derive.show: (string*string) list] enclave_labels));
