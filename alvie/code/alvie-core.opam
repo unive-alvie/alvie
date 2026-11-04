@@ -7,8 +7,10 @@ description:
   "The L# learner and its equivalence oracles, the model file format, and the comparison engine that finds witnesses with mCRL2. A backend (such as alvie-sancus) provides the system under learning."
 maintainer: ["Matteo Busi, Riccardo Focardi, Flaminia Luccio"]
 authors: ["Matteo Busi, Riccardo Focardi, Flaminia Luccio"]
-license: "LICENSE"
+license: "MIT"
 tags: ["automata learning" "formal verification" "alvie"]
+homepage: "https://unive-alvie.github.io/alvie/"
+bug-reports: "https://github.com/unive-alvie/alvie/issues"
 depends: [
   "dune" {>= "3.1"}
   "ocaml" {>= "4.13"}
@@ -37,3 +39,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/unive-alvie/alvie.git"

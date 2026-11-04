@@ -5,8 +5,10 @@ synopsis: "Helpers for ALVIE backends that simulate RTL designs (VCD parser)"
 description: ""
 maintainer: ["Matteo Busi, Riccardo Focardi, Flaminia Luccio"]
 authors: ["Matteo Busi, Riccardo Focardi, Flaminia Luccio"]
-license: "LICENSE"
+license: "MIT"
 tags: ["vcd" "rtl" "alvie"]
+homepage: "https://unive-alvie.github.io/alvie/"
+bug-reports: "https://github.com/unive-alvie/alvie/issues"
 depends: [
   "dune" {>= "3.1"}
   "ocaml" {>= "4.13"}
@@ -29,3 +31,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/unive-alvie/alvie.git"

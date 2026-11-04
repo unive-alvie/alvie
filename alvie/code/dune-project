@@ -9,7 +9,11 @@
 (authors "Matteo Busi, Riccardo Focardi, Flaminia Luccio")
 (maintainers "Matteo Busi, Riccardo Focardi, Flaminia Luccio")
 
-(license LICENSE)
+(license MIT)
+
+(source (github unive-alvie/alvie))
+(homepage "https://unive-alvie.github.io/alvie/")
+(bug_reports "https://github.com/unive-alvie/alvie/issues")
 
 ; ALVIE is split into three packages (see docs/reference/code-architecture.md):
 ; - alvie-core: the learner, the oracles, the model files and the comparison engine, with no backend;
