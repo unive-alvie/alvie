@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### Tests and CI
+
+- Adds `regression.sh`, which checks that a change leaves the checked-in
+  results unchanged: `witnesses` compares the checked-in models again and
+  checks every witness graph and count; `learning` learns every model again
+  and checks that it is identical to the checked-in one (learning is
+  deterministic), then checks its witnesses. It also records the learning
+  time of each model.
+- Adds `tt_inputgen_golden`, which checks the input generator against a
+  corpus of histories taken from the learned models
+  (`alvie/code/test/golden/inputgen.sexp`). It needs no external tool.
+- CI runs the corpus check with the fast checks, and runs `regression.sh all`
+  and `tt_attack` in the published Docker image.
+
+### Scripts
+
+- `learn_all.sh` also learns the attacker `a`, so that it learns every model
+  of `results/`.
+
+### Documentation
+
+- The testing guide documents the new suites, and gives the right count (49)
+  for the known-answer check of B6.
+
 ## 2026.10
 
 ### Performance

@@ -110,7 +110,9 @@ New models learned with a different oracle or different limits can give a differ
 | B9 | 15 | — | 6 |
 | `a.atdl` | 20 | — | 0 |
 
-Two points help you to read this table:
+`./regression.sh witnesses` checks these counts on the checked-in models (they are also in `alvie/code/test/regression/witness-counts.txt`; update both together).
+
+Three points help you to read this table:
 
 - **The counts do not fall to zero.**
   The enclave family includes `rst` and a read from unprotected memory.
