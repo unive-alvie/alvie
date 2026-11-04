@@ -35,11 +35,11 @@ Keep them independent of external tools, so that every contributor can run them.
 ### Isolated features (`tt_features`)
 
 This suite tests the ALVIE parts in isolation.
-It has 24 tests in four groups:
+It has 25 tests in four groups:
 
 - TestDL parsing (syntax, operators, rejected input).
 - Specification semantics (secret expansion, code generation, derivatives).
-- Input generation (sections, interrupts, `reti`, illegal outputs).
+- Input generation (sections, interrupts, `reti`, replayed sections, illegal outputs).
 - Models and observations (the observation tree, serialization, payload merge, output equality).
 
 ### Diagnostics (`diagnostics.exe`)
@@ -76,7 +76,7 @@ This suite replays attack traces on the simulator.
 It compares the output with the expected output for each processor commit, secret, and interrupt mode.
 It needs `sancus-core-gap` at `../../sancus-core-gap` from `alvie/code`.
 
-The suite has 38 tests in groups named after the attacks (`example`, `b1`, `b2`, …).
+The suite has 40 tests in groups named after the attacks (`example`, `b1`, `b2`, …) and the `cleanup re-entry` group.
 Run one group by its name:
 
 ```bash

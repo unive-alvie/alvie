@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Fixes
+
+- A `cleanup` section that runs more than once now replays its earlier run,
+  as the enclave and the ISR already did. `cleanup` runs again when it
+  re-enters the enclave (with `reti` or `jin`) and the enclave jumps out
+  again. Before, the second run could choose different actions, e.g. `nop`
+  instead of `reti` with `spec-lib/complete.atdl`; the generated program then
+  no longer matched the earlier steps, and the simulator reported
+  `OUnsupported`. The specifications of the attack catalogue have a single
+  choice in `cleanup`, so their models and witnesses do not change.
+
 ### Tests and CI
 
 - Adds `regression.sh`, which checks that a change leaves the checked-in

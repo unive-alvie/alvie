@@ -459,3 +459,31 @@ let output_a_encl1_int = [
 
 (* A2': Jump directly in the middle of an enclave data with value a valid opcode *)
 (* A2'': Jump directly in the middle of an enclave data with value 0 *)
+
+(* Cleanup re-entry (spec-lib/complete.atdl): as in B3, cleanup re-enters the enclave with reti, and the enclave
+   jumps out again. The second run of cleanup is the same code as the first one, so it must run reti again: nop
+   is not a valid choice any more (it would change the code of the first run). *)
+let input_cleanup_reentry_prefix = "att: timer_enable 3;
+att: create <enc_s, enc_e, data_s, data_e>;
+att: jin enc_s;
+enc: cmp ?, r4;
+enc: ifz (add #1, &data_s; nop) (nop; add #1, &data_s);
+att: reti;
+enc: mov &data_s, r4;
+enc: jmp #enc_e;
+att: reti;
+enc: mov &data_s, r4;
+enc: jmp #enc_e;"
+
+let input_cleanup_reentry_replay = input_cleanup_reentry_prefix ^ "\natt: reti"
+let input_cleanup_reentry_other = input_cleanup_reentry_prefix ^ "\natt: nop"
+
+(* reti re-enters the enclave once more: the attacker observes it from UM, then the enclave runs in PM *)
+let output_cleanup_reentry_replay = [
+  [
+    (OTime { k = 14; gie = false; umem_val = 0; reg_val = 0x1; timerA_counter = 0; mode = UM });
+    (OReti { k = 1; gie = false; umem_val = 0; reg_val = 0x1; timerA_counter = 0; mode = PM })
+  ]
+]
+(* Before the fix, nop was accepted and the simulator reported OUnsupported *)
+let output_cleanup_reentry_other = [ [ OIllegal ] ]

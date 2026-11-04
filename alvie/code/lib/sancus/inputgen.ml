@@ -195,6 +195,29 @@ let get_options
       _enclave_next b
   in
   (*
+    The cleanup section is code as well: it can run more than once without a reset, e.g., when it re-enters the
+    enclave with reti or jin and the enclave jumps out again. Each run starts from the beginning of the same
+    code, so a run must replay the actions of the longest earlier run, and can choose new actions only past
+    its end. (Earlier runs are prefixes of the longest one, by this same rule.)
+  *)
+  let cleanup_next b =
+    (* The cleanup actions of each run, oldest first: a run starts whenever the mode switches to `Cleanup *)
+    let _, rev_runs = List.fold full_history ~init:(spec, []) ~f:(fun (sd, rev_runs) io ->
+      let sd' = transition sd io in
+      let rev_runs = match io, rev_runs with
+        | In i, run :: older when Poly.equal sd.mode `Cleanup -> (i :: run) :: older
+        | Out _, _ when (not (Poly.equal sd.mode `Cleanup)) && Poly.equal sd'.mode `Cleanup -> [] :: rev_runs
+        | _ -> rev_runs in
+      (sd', rev_runs)) in
+    match List.map rev_runs ~f:List.rev with
+    | current :: earlier ->
+      let longest = List.fold earlier ~init:[] ~f:(fun acc run -> if List.length run > List.length acc then run else acc) in
+      (match List.nth longest (List.length current) with
+       | Some i -> [`Next i]
+       | None -> attack_next b)
+    | [] -> attack_next b
+  in
+  (*
      Depending on the current mode we can choose to:
   *)
   match curr_spec_dfa.mode with
@@ -205,7 +228,7 @@ let get_options
     (* ... return the available Inputs for the current attacker mode according to spec *)
     | `Prepare -> curr_spec_dfa, attack_next prepare
     | `ISR_toPM | `ISR_toUM -> curr_spec_dfa, isr_next isr
-    | `Cleanup -> curr_spec_dfa, attack_next cleanup
+    | `Cleanup -> curr_spec_dfa, cleanup_next cleanup
 
 let generate_next
   ?(choose=(fun _ _ options -> if List.length options = 0 then `Stop else List.random_element_exn options))

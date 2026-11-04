@@ -160,6 +160,10 @@ let () =
         test_case "(last commit) w/o interrupts, b9 + encl" `Slow (exec ~att_spec_name:"b9" ~input_str:input_b9_encl_noint_last ~ignore_interrupts:true ~commit:last_commit ~expected:[("0", output_b9_encl_noint_last); ("1", output_b9_encl_noint_last)]);
         test_case "(last commit -- vulnerable) w interrupts, b9 + encl" `Slow (exec ~att_spec_name:"b9" ~input_str:input_b9_encl_int_last ~ignore_interrupts:false ~commit:last_commit ~expected:[("0", output_b9_encl0_int_last); ("1", output_b9_encl1_int_last)]);
       ];
+      "cleanup re-entry", [
+        test_case "(original commit) w interrupts, cleanup replays reti" `Slow (exec ~att_spec_name:"complete" ~input_str:input_cleanup_reentry_replay ~ignore_interrupts:false ~commit:orig_commit ~expected:[("0", output_cleanup_reentry_replay)]);
+        test_case "(original commit) w interrupts, cleanup cannot choose nop" `Slow (exec ~att_spec_name:"complete" ~input_str:input_cleanup_reentry_other ~ignore_interrupts:false ~commit:orig_commit ~expected:[("0", output_cleanup_reentry_other)]);
+      ];
       "new anomaly", [
         test_case "(original commit) w/o interrupts, new anomaly + encl" `Slow (exec ~att_spec_name:"a" ~input_str:input_a_encl_noint ~ignore_interrupts:true ~commit:orig_commit ~expected:[("0", output_a_encl_noint); ("1", output_a_encl_noint)]);
         test_case "(original commit) w interrupts, new anomaly + encl" `Slow (exec ~n:2 ~att_spec_name:"a" ~input_str:input_a_encl_int ~ignore_interrupts:false ~commit:orig_commit ~expected:[("0", output_a_encl0_int); ("1", output_a_encl1_int)]);
