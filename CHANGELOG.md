@@ -4,6 +4,12 @@
 
 ### Fixes
 
+- The simulator backend no longer fails with `Could not clone Sancus
+  repository` when the temporary directory is on another file system than the
+  `sancus-core-gap` checkout (for example `--tmpdir /tmp`, as in the direct
+  commands of the documentation, or a Docker bind mount): a local clone
+  hard-links the objects, so the backend now copies them when hard links are
+  not possible. The message, when the clone does fail, says what to check.
 - `fa.exe` looked for witnesses in one direction only: mCRL2 checks that the
   traces of the first model are traces of the second one, so a behavior that
   only the second model (secret 1) has was found only by chance. It now

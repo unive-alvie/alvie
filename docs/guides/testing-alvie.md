@@ -21,7 +21,7 @@ Run `dune build` first.
 | --- | --- | --- | --- |
 | Isolated features | `dune exec test/features.exe -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Diagnostics | `dune exec test/diagnostics.exe -- --color=never` | Nothing outside OCaml. | Under 1 second. |
-| CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml. | A few seconds. |
+| CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml, except `git`. | A few seconds. |
 | Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | Minutes for each group. |
 
 The first three suites are the fast checks.

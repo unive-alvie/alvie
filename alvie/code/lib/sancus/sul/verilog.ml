@@ -105,12 +105,19 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "Chosen temporary directory: %s" r_tmpdir);
-  (* Clone Sancus so a submodule source retains a valid Git directory. *)
+  (* Clone Sancus so a submodule source retains a valid Git directory. A local clone hard-links the objects, which
+     fails when the temporary directory is on another file system than the checkout (e.g., --tmpdir /tmp, or a
+     Docker bind mount): then the objects are copied instead. *)
   Logs.debug (fun m -> m "Cloning: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
   let cloned_repo = r_tmpdir ^ "/sancus-core-gap" in
-  if Sys_unix.command (Format.sprintf "git clone --local %s %s %s"
-      (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) <> 0 then
-    failwith (Format.sprintf "Could not clone Sancus repository from %s" sancus_repo);
+  let clone mode = Sys_unix.command (Format.sprintf "git clone %s %s %s %s"
+      mode (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) = 0 in
+  if not (clone "--local") then (
+    Logs.debug (fun m -> m "The local clone failed, copying the objects instead");
+    ignore (Sys_unix.command (Format.sprintf "rm -rf %s" (Filename.quote cloned_repo)));
+    if not (clone "--no-hardlinks") then
+      failwith (Format.sprintf "Could not clone Sancus repository from %s into %s. Check that it is a git checkout (git submodule update --init sancus-core-gap) and that --tmpdir is writable; --debug shows the git output."
+        sancus_repo r_tmpdir));
   (* Use the required commit *)
   Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
   if Sys_unix.command (Format.sprintf "cd %s; git checkout %s %s"
