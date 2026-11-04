@@ -258,3 +258,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Output of regression.sh
+results/regression/
+counterexamples/regression/
