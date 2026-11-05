@@ -28,7 +28,7 @@
   (public_name tt_plugin)
   (package alvie-sancus)
   (modules plugin)
-  (libraries alcotest qcheck-core alvie_plugin sancus core core_unix core_unix.filename_unix core_unix.sys_unix yojson)
+  (libraries alcotest qcheck-core alvie_plugin alvie_inputgen sancus core core_unix core_unix.filename_unix core_unix.sys_unix yojson)
   (preprocess (pps ppx_jane))
 )
 

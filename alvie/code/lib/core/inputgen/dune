@@ -1,0 +1,6 @@
+; The input generator of ALVIE/Core: derivatives of spec bodies, phase rules and the prefix rule
+(library
+ (name alvie_inputgen)
+ (public_name alvie-core.inputgen)
+ (preprocess (pps ppx_jane))
+ (libraries core alvie_plugin))

@@ -51,6 +51,7 @@ type alt_decl = {
   syntax : (string * Grammar.template) list;
   args : (string * Diag.pos * Grammar.arg_type) list;
   secret : (string * Grammar.template) option;
+  attrs : (string * Diag.pos * string list) list;
   doc : string option;
 }
 
@@ -64,8 +65,9 @@ let alt_decl : alt_decl Shape.t =
     (let+ syntax = req "syntax" (one_or_list template) ~doc:"The syntax template, or a list of them (the first is used to print)"
      and+ args = dflt "args" [] (Shape.map arg_type) ~doc:"The arguments, by name, with their types"
      and+ secret = opt "secret" secret_decl ~doc:"Makes this variant the hole of the secret"
+     and+ attrs = dflt "attributes" [] (Shape.map (Shape.list (Shape.string ()))) ~doc:"For each attribute, the arguments that give its values"
      and+ doc = opt "doc" (Shape.string ()) in
-     { syntax; args; secret; doc })
+     { syntax; args; secret; attrs; doc })
 
 type type_decl = Single of alt_decl | Variants of (string * Diag.pos * alt_decl) list
 
@@ -78,7 +80,7 @@ let type_decl : (type_decl * string option) Shape.t =
     and+ doc = opt "doc" (Shape.string ()) in
     (syntax, args, variants, doc) in
   Shape.map_result (obj ~what:"a type declaration" fields) ~f:(fun n -> function
-      | Some syntax, args, None, doc -> Ok (Single { syntax; args; secret = None; doc }, doc)
+      | Some syntax, args, None, doc -> Ok (Single { syntax; args; secret = None; attrs = []; doc }, doc)
       | None, [], Some variants, doc -> Ok (Variants variants, doc)
       | _ -> fail n "a type has either a syntax (and args) or variants")
 
@@ -87,16 +89,18 @@ let shape =
   obj ~what:"an atoms file"
     (let+ format = req "format" (Shape.int ~min:1 ~max:1 ()) ~doc:"The version of the format of this file: 1"
      and+ types = dflt "types" [] (Shape.map type_decl) ~doc:"The types of the arguments of atoms"
-     and+ atoms = req "atoms" (Shape.map (Shape.map alt_decl)) ~doc:"The atom classes (e.g. attacker, victim), each with its atoms" in
+     and+ atoms = req "atoms" (Shape.map (Shape.map alt_decl)) ~doc:"The atom classes (e.g. attacker, victim), each with its atoms"
+     and+ attributes = dflt "attributes" [] (Shape.map (obj (let+ ty = req "of" (Shape.string ()) ~doc:"The type of the values of the attribute" in ty)))
+         ~doc:"The attributes of atoms that constraints can use (e.g. reads: { of: reg })" in
      ignore format;
-     (types, atoms))
+     (types, atoms, attributes))
 
 (* Builds the grammar and checks it *)
-let build ~(types : (string * Diag.pos * (type_decl * string option)) list) ~(atoms : (string * Diag.pos * (string * Diag.pos * alt_decl) list) list) : (Grammar.t, Diag.t list) Result.t =
+let build ~(types : (string * Diag.pos * (type_decl * string option)) list) ~(atoms : (string * Diag.pos * (string * Diag.pos * alt_decl) list) list) ~attributes : (Grammar.t, Diag.t list) Result.t =
   let errors = ref [] in
   let err ?hint pos fmt = Printf.ksprintf (fun m -> errors := Diag.error ~pos ?hint m :: !errors) fmt in
   let make_alt tag pos (d : alt_decl) : Grammar.alt =
-    { tag; syntax = List.map d.syntax ~f:snd; args = List.map d.args ~f:(fun (n, _, t) -> (n, t)); secret = Option.map d.secret ~f:snd; doc = d.doc; pos } in
+    { tag; syntax = List.map d.syntax ~f:snd; args = List.map d.args ~f:(fun (n, _, t) -> (n, t)); secret = Option.map d.secret ~f:snd; attrs = List.map d.attrs ~f:(fun (n, _, args) -> (n, args)); doc = d.doc; pos } in
   let tys =
     List.map types ~f:(fun (name, pos, (decl, _)) ->
         match decl with
@@ -104,7 +108,7 @@ let build ~(types : (string * Diag.pos * (type_decl * string option)) list) ~(at
         | Variants vs -> { Grammar.name; alts = List.map vs ~f:(fun (tag, p, d) -> make_alt tag p d); single = false; is_class = false; tpos = pos })
     @ List.map atoms ~f:(fun (name, pos, vs) ->
         { Grammar.name; alts = List.map vs ~f:(fun (tag, p, d) -> make_alt tag p d); single = false; is_class = true; tpos = pos }) in
-  let g = { Grammar.types = tys } in
+  let g = { Grammar.types = tys; attributes = List.map attributes ~f:(fun (n, _, ty) -> (n, ty)) } in
   let names = List.map tys ~f:(fun t -> t.name) in
   (* Names *)
   List.iter tys ~f:(fun t ->
@@ -148,6 +152,20 @@ let build ~(types : (string * Diag.pos * (type_decl * string option)) list) ~(at
                     | 1 -> ()
                     | _ -> err a.pos "the syntax %S of %s shows {%s} more than once" shown a.tag d))
               else if not (List.is_empty used) then err a.pos "the syntax of the secret variant %s cannot have arguments" a.tag)));
+  (* Attributes: their types exist, and atoms list only declared attributes and their own arguments *)
+  let attribute_names = List.map attributes ~f:(fun (n, _, _) -> n) in
+  List.iter attributes ~f:(fun (n, pos, ty) ->
+      if not (List.mem names ty ~equal:String.equal) then err pos "the attribute %s has the unknown type %s" n ty ?hint:(Diag.hint_did_you_mean ty names));
+  let type_alts = List.concat_map types ~f:(fun (name, _, (decl, _)) ->
+      match decl with Single d -> [ (name, d) ] | Variants vs -> List.map vs ~f:(fun (tag, _, d) -> (tag, d))) in
+  List.iter [ type_alts; List.concat_map atoms ~f:(fun (_, _, vs) -> List.map vs ~f:(fun (tag, _, d) -> (tag, d))) ] ~f:(fun vs ->
+      List.iter vs ~f:(fun (tag, d) ->
+          List.iter d.attrs ~f:(fun (n, pos, args) ->
+              if not (List.mem attribute_names n ~equal:String.equal) then
+                err pos "%s is not a declared attribute" n ?hint:(match Diag.hint_did_you_mean n attribute_names with Some h -> Some h | None -> Some "declare it under attributes: at the top of atoms.yaml");
+              List.iter args ~f:(fun a ->
+                  if not (List.exists d.args ~f:(fun (x, _, _) -> String.equal x a)) then
+                    err pos "the attribute %s of %s names %s, which is not one of its arguments" n tag a))));
   (* Left recursion: a template that starts with an argument whose type can start, without consuming text, with
      the same type again would make the parser find nothing *)
   let first_types (t : Grammar.ty) =
@@ -170,6 +188,6 @@ let build ~(types : (string * Diag.pos * (type_decl * string option)) list) ~(at
   match List.rev !errors with [] -> Ok g | es -> Error es
 
 let load ~file : (Grammar.t, Diag.t list) Result.t =
-  Result.bind (Shape.parse_file shape file) ~f:(fun (types, atoms) -> build ~types ~atoms)
+  Result.bind (Shape.parse_file shape file) ~f:(fun (types, atoms, attributes) -> build ~types ~atoms ~attributes)
 
-let load_string ~file text = Result.bind (Shape.parse_string shape ~file text) ~f:(fun (types, atoms) -> build ~types ~atoms)
+let load_string ~file text = Result.bind (Shape.parse_string shape ~file text) ~f:(fun (types, atoms, attributes) -> build ~types ~atoms ~attributes)

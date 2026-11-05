@@ -102,7 +102,7 @@ let test_spec_lib_print_parse () =
       match Spec.parse p [ ("printed", printed) ] with
       | Error es -> Alcotest.failf "the printed spec does not parse:\n%s\n%s" printed (Diag.list_to_string es)
       | Ok again ->
-        List.iter2_exn spec again ~f:(fun (s : Spec.section) (s' : Spec.section) ->
+        List.iter2_exn spec.sections again.sections ~f:(fun (s : Spec.section) (s' : Spec.section) ->
             Alcotest.check body_testable (atdl ^ ": " ^ s.name) s.body s'.body))
 
 let test_secret_expansion () =
@@ -282,8 +282,141 @@ let test_spec_errors = [
    spec_error "enclave { nop };\nisr { reti };\nprepare { jin enc_s };\n"
      [ "the spec has no cleanup section\n  hint: add cleanup { ... }; (write cleanup { eps }; for an empty one)" ]);
   ("reserved block",
-   spec_error ("constraint { disjoint(isr, enclave) };\nenclave { nop };\n" ^ complete_rest)
-     [ "spec:1:1: constraint blocks (constraints between sections) are reserved for a later version of ALVIE and are not supported yet\n  hint: remove the block" ]);
+   spec_error ("threads { a, b };\nenclave { nop };\n" ^ complete_rest)
+     [ "spec:1:1: threads blocks (several threads of control) are reserved for a later version of ALVIE and are not supported yet\n  hint: remove the block" ]);
+]
+
+(* The input generator, on the toy plugin of test/fixtures/toy *)
+
+module G = Alvie_inputgen.Generator
+
+let toy =
+  lazy (match Plugin.load (Filename.concat code_dir "test/fixtures/toy") with
+      | Ok p -> p
+      | Error es -> failwith ("the toy plugin does not load:\n" ^ Diag.list_to_string es))
+
+let toy_spec text =
+  let p = Lazy.force toy in
+  match Spec.parse p [ ("toy spec", text) ] with
+  | Ok spec -> G.make p spec
+  | Error es -> failwith (Diag.list_to_string es)
+
+let atom text = Result.ok_or_failwith (Result.map_error (Grammar.parse_value (Lazy.force toy).grammar ~file:"atom" ~ty:"ops" text) ~f:Diag.to_string)
+
+let options gen st =
+  List.map (G.options gen st) ~f:(function
+      | `Stop -> "STOP"
+      | `Next (i : G.input) -> if String.equal i.section "blob" then Value.to_string i.atom else Grammar.print_atom (Lazy.force toy).grammar ~cls:"ops" i.atom)
+
+let put gen st text = G.input gen st { section = G.current st; atom = atom text }
+let see gen st kind fields = G.observe gen st [ Value.Node (kind, fields) ]
+let ok gen st = see gen st "Ok" []
+let enter gen st n = see gen st "Enter" [ ("target", Value.Int n) ]
+
+let check_options name expected gen st = Alcotest.(check (list string)) name expected (options gen st)
+
+let toy_body = "irq { nop; ret };\nbus { (put 1 | put 2)* };\n"
+
+let test_options_in_declaration_order () =
+  let gen = toy_spec ("main { (nop | put 1 | call x | put ?) };\nvictim { eps };\n" ^ toy_body) in
+  check_options "call, put, nop, as atoms.yaml declares them" [ "call x"; "put 1"; "put ?"; "nop" ] gen (G.initial gen)
+
+let test_prefix_rule () =
+  let gen = toy_spec ("main { (call x)* };\nvictim { (put 1 | put 2); ret };\n" ^ toy_body) in
+  let st = G.initial gen in
+  let st = ok gen (put gen st "call x") in
+  let st = enter gen st 1 in
+  check_options "the first run chooses" [ "put 1"; "put 2" ] gen st;
+  let st = ok gen (put gen st "put 2") in
+  let st = see gen (put gen st "ret") "Leave" [] in
+  let st = ok gen (put gen st "call x") in
+  let st = enter gen st 1 in
+  check_options "the second run replays the first" [ "put 2" ] gen st;
+  let st = ok gen (put gen st "put 2") in
+  check_options "and the program goes on" [ "ret" ] gen st
+
+let test_interrupt_and_resume () =
+  let gen = toy_spec ("main { call x; eps };\nvictim { put 1; (put 2 | put 3); ret };\n" ^ toy_body) in
+  let st = enter gen (put gen (G.initial gen) "call x") 1 in
+  let st = ok gen (put gen st "put 1") in
+  let st = see gen (put gen st "put 3") "Irq" [] in
+  Alcotest.(check string) "the interrupt enters irq" "irq" (G.current st);
+  check_options "irq runs from its start" [ "nop" ] gen st;
+  let st = ok gen (put gen st "nop") in
+  let st = see gen (put gen st "ret") "Ret" [ ("mode", Value.Sym "high") ] in
+  Alcotest.(check string) "resume returns to the victim" "victim" (G.current st);
+  check_options "where it was interrupted" [ "ret" ] gen st;
+  let st = see gen (put gen st "ret") "Leave" [] in
+  (* A second resume returns to the same position, and replays the victim's program from there *)
+  let st = see gen st "Ret" [ ("mode", Value.Sym "high") ] in
+  Alcotest.(check string) "resume again" "victim" (G.current st);
+  check_options "replays from the saved position" [ "ret" ] gen st
+
+let test_stimulus_and_opaque () =
+  let gen = toy_spec ("main { (call x)* };\nvictim { eps };\n" ^ toy_body) in
+  let st = enter gen (put gen (G.initial gen) "call x") 2 in
+  check_options "a stimulus section" [ "put 1"; "put 2" ] gen st;
+  let st = see gen (put gen st "put 1") "Leave" [] in
+  let st = enter gen (put gen st "call x") 2 in
+  check_options "chooses afresh every time" [ "put 1"; "put 2" ] gen st;
+  let st = see gen (put gen st "put 2") "Leave" [] in
+  let st = enter gen (put gen st "call x") 3 in
+  check_options "an opaque section offers run" [ "run" ] gen st
+
+let test_stop () =
+  let gen = toy_spec ("main { (call x)* };\nvictim { eps };\n" ^ toy_body) in
+  let st = put gen (G.initial gen) "call x" in
+  check_options "finished" [] gen (see gen st "Done" []);
+  check_options "invalid" [ "STOP" ] gen (see gen st "Bad" []);
+  check_options "an input of another section" [ "STOP" ] gen (G.input gen (G.initial gen) { section = "victim"; atom = atom "nop" })
+
+(* Constraints, on the toy plugin: put v uses v *)
+
+let toy_error text expected () =
+  match Spec.parse (Lazy.force toy) [ ("toy spec", text) ] with
+  | Ok _ -> Alcotest.failf "expected an error"
+  | Error es -> Alcotest.(check (list string)) "errors" expected (diag_strings es)
+
+let toy_rest = "bus { (put 1 | put 2)* };\n"
+
+let test_constraint_disjoint () =
+  let gen = toy_spec ("constraint { disjoint(uses(victim), uses(irq)) };\nmain { call x };\nvictim { put 1; (put 2 | put 3); ret };\nirq { (put 1 | put 2 | put 4 | nop); ret };\n" ^ toy_rest) in
+  let st = enter gen (put gen (G.initial gen) "call x") 1 in
+  let st = ok gen (put gen st "put 1") in
+  let st = see gen (put gen st "put 3") "Irq" [] in
+  check_options "irq cannot use what the victim used" [ "put 2"; "put 4"; "nop" ] gen st
+
+let test_constraint_lookahead () =
+  (* put 2 would make irq end with put 1, which the victim used: offering it would lead to a dead end *)
+  let gen = toy_spec ("constraint { disjoint(uses(victim), uses(irq)) };\nmain { call x };\nvictim { put 1; ret };\nirq { (put 2; put 1) | nop; ret };\n" ^ toy_rest) in
+  let st = enter gen (put gen (G.initial gen) "call x") 1 in
+  let st = see gen (put gen st "put 1") "Irq" [] in
+  check_options "only the completion that keeps the constraint" [ "nop" ] gen st
+
+let test_constraint_subset () =
+  let gen = toy_spec ("constraint { subset(uses(main), {1, 2}) };\nmain { (put 1 | put 2 | put 3)*; call x };\nvictim { eps };\nirq { nop };\n" ^ toy_rest) in
+  check_options "main uses only 1 and 2" [ "call x"; "put 1"; "put 2" ] gen (G.initial gen)
+
+(* The registers that Sancus atoms read and write *)
+let test_sancus_attributes () =
+  let p = Lazy.force sancus in
+  let regs cls name text =
+    let v = Result.ok_or_failwith (Result.map_error (Grammar.parse_value p.grammar ~file:"atom" ~ty:cls text) ~f:Diag.to_string) in
+    List.map (Grammar.attribute_of_atom p.grammar ~cls ~name v) ~f:(Grammar.print p.grammar (Grammar.Ref "reg")) in
+  Alcotest.(check (list string)) "mov reads its source" [ "r5" ] (regs "enclave" "reads" "mov r5, r6");
+  Alcotest.(check (list string)) "and writes its destination" [ "r6" ] (regs "enclave" "writes" "mov r5, r6");
+  Alcotest.(check (list string)) "add reads both" [ "r5"; "r6" ] (regs "enclave" "reads" "add r5, r6");
+  Alcotest.(check (list string)) "@r4 is read" [ "r4" ] (regs "enclave" "reads" "mov @r4, &data_s");
+  Alcotest.(check (list string)) "ifz: both branches" [ "r7"; "r8" ] (regs "attacker" "writes" "ifz (mov #1, r7) (nop; mov #2, r8)");
+  Alcotest.(check (list string)) "jin uses no register" [] (regs "attacker" "reads" "jin enc_s")
+
+let test_constraint_errors = [
+  ("unknown attribute",
+   toy_error "constraint { disjoint(usse(main), uses(irq)) };\n" [ "toy spec:1:23: usse is not an attribute of the atoms of toy (did you mean uses?)" ]);
+  ("subset of an attribute",
+   toy_error "constraint { subset(uses(main), uses(irq)) };\n" [ "toy spec:1:14: the second set of subset must be a list of values {...}: an attribute can still grow" ]);
+  ("bad value",
+   toy_error "constraint { subset(uses(main), {1, 12}) };\n" [ "toy spec:1:37: \"12\" is not a value of val: 12 is out of range: expected an integer from 0 to 9" ]);
 ]
 
 let () =
@@ -313,6 +446,17 @@ let () =
           Alcotest.test_case "JSON of the documented example" `Quick test_value_json_example;
           Alcotest.test_case "interning" `Quick test_interning;
           Alcotest.test_case "interned values keep the order" `Quick test_interned_order ]);
+      ("input generation", [
+          Alcotest.test_case "options in declaration order" `Quick test_options_in_declaration_order;
+          Alcotest.test_case "prefix rule" `Quick test_prefix_rule;
+          Alcotest.test_case "interrupt and resume" `Quick test_interrupt_and_resume;
+          Alcotest.test_case "stimulus and opaque sections" `Quick test_stimulus_and_opaque;
+          Alcotest.test_case "stop" `Quick test_stop;
+          Alcotest.test_case "constraint: disjoint" `Quick test_constraint_disjoint;
+          Alcotest.test_case "constraint: no dead ends" `Quick test_constraint_lookahead;
+          Alcotest.test_case "constraint: subset" `Quick test_constraint_subset;
+          Alcotest.test_case "Sancus attributes" `Quick test_sancus_attributes ]);
+      ("constraint errors", cases test_constraint_errors);
       ("atoms.yaml errors", cases test_atoms_errors);
       ("errors across files", cases test_cross_errors);
       ("spec errors", cases test_spec_errors);
