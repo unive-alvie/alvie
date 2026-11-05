@@ -38,7 +38,7 @@ let test_sancus_loads () =
   Alcotest.(check string) "name" "sancus" p.manifest.name;
   Alcotest.(check (list string)) "sections" [ "enclave"; "isr"; "prepare"; "cleanup" ] (Sections_file.names p.sections);
   Alcotest.(check string) "initial" "prepare" (Sections_file.initial p.sections).name;
-  Alcotest.(check int) "kinds" 11 (List.length p.observations.kinds)
+  Alcotest.(check int) "kinds" 12 (List.length p.observations.kinds)
 
 let test_schemas_up_to_date () =
   let dir = Filename.concat code_dir "schemas" in
