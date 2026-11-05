@@ -53,6 +53,36 @@
 - CI runs the corpus check with the fast checks, and runs `regression.sh all`
   and `tt_attack` in the published Docker image.
 
+### Input generation
+
+- Learning uses the input generator of ALVIE/Core, driven by the plugin files
+  of `plugins/sancus/` (embedded in the executables). It follows a test
+  through its sections with `phases.yaml` and applies one rule to every
+  section: a section is code, so all its runs in a test are prefixes of its
+  longest run, and new actions are chosen only beyond its end.
+  `learn.exe --inputgen legacy` uses the former generator.
+- **Results change for B3 on `ef753b6`**: 124 witnesses instead of 351, and
+  its two models with interrupts are about half as large. The former
+  generator let an enclave that the attacker re-enters with `reti` choose
+  new actions where the timer had interrupted it, although it was running the
+  same code again: the simulator then ran code that did not match the
+  earlier steps of the test. The enclave now runs the code it ran from that
+  point the first time. B3 is still found: its witness graph on `ef753b6`
+  has 66 `reti` edges (2 on the fixing commit), and the counts on `6475709`
+  and `bf89c0b` do not change. The former generator also let `prepare`
+  choose new actions after a reset. Three other models (B1 on `ef753b6`, B3
+  on `bf89c0b` with secret 1) are learned again with other state numbers
+  only: they are isomorphic to the earlier ones.
+- Specs can state constraints between sections, e.g.
+  `constraint { disjoint(writes(isr), reads(enclave)) };`: the generator
+  offers only actions that keep them, and never leads a section into a dead
+  end. The Sancus atoms have the attributes `reads` and `writes` (the
+  registers of the source and destination operands).
+- Errors in specs give the file, line and column, and what was expected there.
+- The input generation corpus (`tt_inputgen_golden`) now records the
+  generator of ALVIE/Core (703 walks); `check --engine legacy` checks the
+  former one, `--show-history` prints the history before a difference.
+
 ### Plugin files (preview)
 
 - ALVIE/Core reads the YAML files that declare a plugin: the manifest, the

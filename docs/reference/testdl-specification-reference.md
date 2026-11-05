@@ -137,6 +137,9 @@ Every section is code that stays in memory, so a section that runs again runs th
 The enclave runs again after a jump-in or a `reti`, the `isr` after each interrupt, and `cleanup` after each jump-out (for example when `cleanup` re-enters the enclave with `reti` or `jin`).
 When a section runs again, ALVIE/Sancus replays the actions of its longest earlier run, and offers new actions only after that run ends.
 For example, with `cleanup { (nop | reti); nop }`, if the first run of `cleanup` chose `reti`, a second run of `cleanup` must start with `reti` too.
+The same holds after a reset, which runs `prepare` again, and after a `reti` that re-enters the enclave where the timer last interrupted it: the enclave then runs the code it ran from that point the first time.
+
+The rules that move a test between sections are in `alvie/code/plugins/sancus/phases.yaml` (see the [Plugin Files Reference](../plugin-files/)).
 
 Illegal or unsupported observations invalidate the current generated path; reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the active section as described above.
 This is how `.atdl` and `.etdl` files limit both the learner's alphabet and the order in which inputs can be queried.
@@ -226,8 +229,22 @@ See the [Executables Reference](/alvie/reference/executables-reference/) for eve
 - Enclave baseline: `spec-lib/enclave-complete.etdl`
 - Example pair: `spec-lib/example/attacker.atdl`, `spec-lib/example/enclave.etdl`
 
+## Constraints
+
+A specification can also state constraints between sections, in a `constraint` block in either file:
+
+```
+constraint { disjoint(writes(isr), reads(enclave)) };
+```
+
+This one lets the ISR write no register that the enclave reads.
+The attributes `reads` and `writes` are the registers in the source and destination operands of an instruction (for `&rN`, the register counts as written).
+`subset(writes(isr), {r12, r13})` limits the registers that the ISR writes to `r12` and `r13`.
+See [Constraints](../plugin-files/#constraints) for the rules.
+
 ## Troubleshooting
 
 - Parser errors usually come from missing `;`, missing section headers, or out-of-range registers.
+  The message gives the file, line and column, and what was expected there, for example `enclave.etdl:1:20: 15 is out of range: expected an integer from 0 to 14`.
 - `?` is valid in enclave instructions; ensure a secret is provided when needed.
 - If `timer_enable`/interrupt scheduling is not desired, use the CLI option to ignore interrupts.

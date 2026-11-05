@@ -166,6 +166,29 @@ A template cannot start, directly or through its arguments, with its own type (l
 The variant marked `secret: { expand: "<template>" }` is the hole of the secret.
 Its syntax (for example `?`) parses to the hole, and the secret value replaces it by its expansion, with `{value}` replaced by the value: with `expand: "#{value}"` and the secret `1`, `?` becomes `#1`.
 
+### Attributes
+
+Attributes describe atoms for the constraints of specs, for example the registers that an instruction reads.
+Declare each attribute with the type of its values, and list, for each atom (or variant) that has it, the arguments its values come from:
+
+```yaml
+attributes:
+  reads:  { of: reg }
+  writes: { of: reg }
+types:
+  inst:
+    variants:
+      mov: { syntax: "mov {src}, {dst}", args: { src: src, dst: dst }, attributes: { reads: [src], writes: [dst] } }
+atoms:
+  enclave:
+    inst: { syntax: "{i}", args: { i: inst }, attributes: { reads: [i], writes: [i] } }
+```
+
+The values of an attribute in an atom are the values of its type found in the listed arguments.
+Inside them, a variant that lists the attribute contributes the values of the arguments it lists, and a variant that does not list it contributes those of all its arguments.
+An atom that does not list an attribute has no value for it, and nested atoms (as in a list of atoms) contribute their own values.
+With the declarations above, `mov r5, r6` reads `r5` and writes `r6`.
+
 ## `observations.yaml`: what the backend observes
 
 ```yaml
@@ -209,14 +232,17 @@ rules:
 
 | Action | Effect |
 | --- | --- |
-| `reset` | Every section starts again. |
-| `{ enter: S }` | S starts again and becomes current. |
-| `{ switch: S }` | S becomes current where it was. |
-| `{ interrupt: S }` | The current section is saved, and S is entered. |
-| `resume` | The last saved section becomes current where it was. |
+| `reset` | Every section starts again. The positions saved by interrupts stay. |
+| `{ enter: S }` | S starts again (a new run) and becomes current. |
+| `{ switch: S }` | S becomes current where it was (its run goes on). |
+| `{ interrupt: S }` | The position of the current section is saved, and S is entered. |
+| `resume` | The section interrupted last becomes current again, at the position where it was interrupted. That position stays saved, so a second `resume` returns to it again. |
 | `{ stop: finished }`, `{ stop: invalid }` | The test stops. |
 
 `do: []` changes nothing.
+
+The saved positions stay after a `resume` and after a `reset` because some platforms allow it: on Sancus, an attacker can execute `reti` twice and re-enter the enclave where the timer last interrupted it (attack B3).
+Whether a resume happens is for the platform's observations to say; the phase rules only follow them.
 
 ### Attacker view
 
@@ -236,6 +262,19 @@ rules:
 | `{ fields: [...] }` | The kind and these fields. |
 | `distinct` | The observation, which is never equal to another one, so it is always reported. |
 | `all` | Everything. |
+
+## How Core generates inputs
+
+Learning asks Core, at every step of a test, which inputs the spec allows next.
+Core follows the test through its sections with the phase rules, and offers the atoms that the current section's body accepts next, in the order `atoms.yaml` declares them.
+
+Sections of kind `code` follow the prefix rule.
+Running a section again runs the same code from its start, so all the runs of a section in one test are prefixes of its longest run, its *program*.
+When a run is at a position that the program already has, the only option is the program's atom there; new atoms are chosen only beyond its end.
+A run starts when the section is entered (`enter`, or an `interrupt` into it); `switch` and `resume` continue a run.
+A `resume` into the middle of a run therefore replays the program from that position.
+
+Sections of kind `stimulus` choose afresh at every input, and an `opaque` section offers only the input `run`.
 
 ## Checks across files
 
@@ -277,7 +316,24 @@ primary ::= atom | "(" body ")"
 `|` is a choice, `;` a sequence, `*` any number of repetitions, and `eps` the empty sequence.
 Whitespace is allowed anywhere between the parts.
 
-`constraint { ... };`, `threads { ... };` and `step <unit>;` are reserved for later versions: Core recognises them and reports that they are not supported yet.
+### Constraints
+
+A `constraint` block states what must hold over a whole test, across sections:
+
+```
+constraint { disjoint(writes(isr), reads(enclave)); subset(writes(isr), {r12, r13}) };
+```
+
+| Constraint | Holds when |
+| --- | --- |
+| `disjoint(A, B)` | No value is in both sets. |
+| `subset(A, {v, ...})` | Every value of A is listed. The second set must be a list: an attribute can still grow. |
+
+A set is `attribute(section)`, the values of the attribute in all the atoms that the section has run in the test, or a list of values of the attribute's type, such as `{r12, r13}`.
+Core offers a new atom only if every constraint still holds with it, and if the section can still reach the end of its body with atoms that keep the constraints, so that a test never runs into a dead end of its own section.
+Atoms that the prefix rule replays are always offered: they ran before, so their values are already counted.
+
+`threads { ... };` and `step <unit>;` are reserved for later versions: Core recognises them and reports that they are not supported yet.
 
 ## Values
 

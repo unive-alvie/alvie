@@ -102,7 +102,7 @@ New models learned with a different oracle or different limits can give a differ
 | --- | --- | --- | --- |
 | B1 | 26 | 7 (`e8cf011`) | 3 |
 | B2 | 6 | 4 (`3170d5d`) | 3 |
-| B3 | 351 | 6 (`6475709`) | 9 |
+| B3 | 124 | 6 (`6475709`) | 9 |
 | B4 | 7 | 5 (`3636536`) | 3 |
 | B6 | 8 | 11 (`d54f031`) | 9 |
 | B7 | 8 | 9 (`264f135`) | 9 |
@@ -112,7 +112,12 @@ New models learned with a different oracle or different limits can give a differ
 
 `./regression.sh witnesses` checks these counts on the checked-in models (they are also in `alvie/code/test/regression/witness-counts.txt`; update both together).
 
-Four points help you to read this table:
+Five points help you to read this table:
+
+- **The B3 count changed from 351 to 124 with the input generator of ALVIE/Core.**
+  The input generator now makes an enclave that the attacker re-enters with `reti` run the code it ran from that point the first time.
+  Before, a re-entered enclave could choose other actions at the same place, which no program can do, and the models of B3 on `ef753b6` had states for those impossible runs.
+  B3 is still found: the witnesses on `ef753b6` re-enter the enclave by `reti` (66 `reti` edges in the witness graph, against 2 on the fixing commit), whose count is still 6.
 
 - **The counts do not fall to zero.**
   The enclave family includes `rst`, and a read and a write of unprotected memory.
