@@ -270,8 +270,8 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 26 | 3 |
-| B3 | 124 | 9 |
+| B1 | 29 | 3 |
+| B3 | 11 | 9 |
 | B6 | 8 | 9 |
 
 If your counts are different, check the build and the mCRL2 installation first.

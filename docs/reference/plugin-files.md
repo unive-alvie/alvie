@@ -232,16 +232,17 @@ rules:
 
 | Action | Effect |
 | --- | --- |
-| `reset` | Every section starts again. The positions saved by interrupts stay. |
+| `restart` | The test starts afresh, in the initial section, as if nothing had run: the platform rebooted, and the programs of the sections can be new. |
+| `reset` | Every section starts again, with the same programs. The position saved by the last interrupt stays. |
 | `{ enter: S }` | S starts again (a new run) and becomes current. |
 | `{ switch: S }` | S becomes current where it was (its run goes on). |
-| `{ interrupt: S }` | The position of the current section is saved, and S is entered. |
-| `resume` | The section interrupted last becomes current again, at the position where it was interrupted. That position stays saved, so a second `resume` returns to it again. |
+| `{ interrupt: S }` | The position of the current section is saved (in place of the one saved before), and S is entered. |
+| `resume` | The section interrupted last becomes current again, at the position where it was interrupted. That position stays saved, so a second `resume` returns to it again. Nested interrupts are not supported yet. |
 | `{ stop: finished }`, `{ stop: invalid }` | The test stops. |
 
 `do: []` changes nothing.
 
-The saved positions stay after a `resume` and after a `reset` because some platforms allow it: on Sancus, an attacker can execute `reti` twice and re-enter the enclave where the timer last interrupted it (attack B3).
+The saved position stays after a `resume` and after a `reset` because some platforms allow it: on Sancus, an attacker can execute `reti` twice and re-enter the enclave where the timer last interrupted it (attack B3).
 Whether a resume happens is for the platform's observations to say; the phase rules only follow them.
 
 ### Attacker view
