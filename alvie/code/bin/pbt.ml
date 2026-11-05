@@ -119,7 +119,7 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa1
+            ~spec:(Generic_inputgen.spec_of_test_spec complete_spec1)
             ~ignore_interrupts:false
             () in
         let sul2 =
@@ -139,7 +139,7 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa2
+            ~spec:(Generic_inputgen.spec_of_test_spec complete_spec2)
             ~ignore_interrupts:false
             () in
         (* (3) prepare the oracle *)

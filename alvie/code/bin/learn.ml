@@ -144,11 +144,6 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
-    and inputgen_name =
-      flag
-        "--inputgen"
-        (optional_with_default "core" string)
-        ~doc:"core|legacy The input generator: ALVIE/Core's, driven by plugins/sancus (default), or the former Sancus one (Inputgen), to compare"
     and keep_repeated_reentries =
       flag
         "--keep-repeated-reentries"
@@ -197,27 +192,19 @@ let command =
         (* Secret must be expanded *)
         Cli_diagnostics.require_secret_if_needed enclave secret;
         let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
-        let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
-        let spec_dfa = Inputgen.build_spec_dfa complete_spec in
-        let generator = match inputgen_name with
-          | "core" ->
-            let core_spec = match secret with
-              | None -> core_spec
-              | Some value ->
-                (match Alvie_plugin.Spec.expand_secret (Lazy.force Generic_inputgen.plugin) core_spec ~value with
-                 | Ok s -> s
-                 | Error d -> Cli_diagnostics.fail "Could not expand the secret %S: %s." value (Alvie_plugin.Diag.to_string d)) in
-            `Core (Generic_inputgen.make_of_spec core_spec)
-          | "legacy" ->
-            if not (List.is_empty core_spec.constraints) then
-              Cli_diagnostics.fail "The specifications have constraints, which only the input generator of ALVIE/Core supports: remove --inputgen legacy.";
-            `Legacy spec_dfa
-          | other -> Cli_diagnostics.fail "--inputgen must be core or legacy, not %S." other in
-        (* The oracles ask the input generator through these; the spec_dfa argument is the one of Inputgen's interface *)
+        (* The first argument of IG.generate_next, a remnant of the interface of Inputgen *)
+        let spec_dfa = () in
+        (* The spec of the input generator of ALVIE/Core and of the simulator, with the secret expanded *)
+        let core_spec = match secret with
+          | None -> core_spec
+          | Some value ->
+            (match Alvie_plugin.Spec.expand_secret (Lazy.force Generic_inputgen.plugin) core_spec ~value with
+             | Ok s -> s
+             | Error d -> Cli_diagnostics.fail "Could not expand the secret %S: %s." value (Alvie_plugin.Diag.to_string d)) in
+        let generator = Generic_inputgen.make_of_spec core_spec in
+        (* The oracles ask the input generator through IG; the spec_dfa argument is the one of Inputgen's interface *)
         let module IG = struct
-          let generate_next ?choose _ il ol = match generator with
-            | `Core g -> Generic_inputgen.generate_next ?choose g il ol
-            | `Legacy s -> Inputgen.generate_next ?choose s il ol
+          let generate_next ?choose _ il ol = Generic_inputgen.generate_next ?choose generator il ol
         end in
         (* (2) initialize the interface with the processor's implementation *)
         let sul =
@@ -237,7 +224,7 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa
+            ~spec:core_spec
             ~ignore_interrupts:ignore_interrupts
             ~collapse_reentries:(not keep_repeated_reentries)
             () in

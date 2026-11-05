@@ -1,6 +1,10 @@
+(*
+  The Sancus backend (Alvie_backend.Backend.S): it generates the program of a test from the programs of the sections
+  that Core gives, simulates it with the Verilog testbench of sancus-core-gap, and turns the trace of the input's
+  instructions into observations. Verilog is its adapter to the learner.
+*)
 open! Core
 
-open Inputgen
 open Common
 
 open Attacker
@@ -30,14 +34,9 @@ type cfg_t = {
   pmem_elf : string;
   filledfile : string;
   dumpfile : string;
-  (* This field describes the attack *)
-  initial_spec : spec_dfa;
   (* This is the parameter to convert "absolute" time into cycles *)
   sim_cycle_ratio : int;
-  (* The following fields collect the history of actions of each portion of code, i.e., enclave/isr/prepare/cleanup *)
-  enclave_history : Enclave.t;
-  ca_history : Attacker.t;
-  (* Since the above fields don't collect the outputs and the actual interleaving of actions, we also keep overall I/O histories *)
+  (* The inputs and outputs of the test so far, to recognise repeated re-entries *)
   input_history : input_t list;
   output_history : output_t list;
   (* Finally, we also keep track of the instructions we still need to analyze *)
@@ -49,6 +48,8 @@ type cfg_t = {
   collapse_reentries : bool;
   (* The configurations at the re-entry points of the current run, most recent first *)
   reentries : cfg_t list;
+  (* Where the test is in the spec after the last input (Generator.key) *)
+  spec_key : string;
 } [@@deriving ord,sexp,make]
 
 type t = cfg_t ref
@@ -99,7 +100,7 @@ let with_simulator_cache ~tmpdir ~workingdir ~r_tmpdir ~basename ~verilog_compil
           Core_unix.rename ~src:(cached ^ ".tmp") ~dst:cached);
         res)
 
-let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~initial_spec ~ignore_interrupts ?(sim_cycle_ratio = 500) ?(collapse_reentries = true) () =
+let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~ignore_interrupts ?(sim_cycle_ratio = 500) ?(collapse_reentries = true) () =
   Sys_unix.chdir workingdir;
   (* Create tmpdir and a temporary dir inside tmpdir *)
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
@@ -153,10 +154,7 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
       ~pmem_elf:(r_tmpdir ^ "/" ^ pmem_elf)
       ~filledfile:(r_tmpdir ^ "/" ^ filledfile)
       ~dumpfile:(r_tmpdir ^ "/" ^ dumpfile)
-      ~initial_spec
       ~sim_cycle_ratio
-      ~enclave_history:(C_Enclave [])
-      ~ca_history:(C_ISR [], C_Prepare [], C_Cleanup [])
       ~input_history:[]
       ~output_history:[]
       ~left_labels:[]
@@ -165,160 +163,35 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
       ~ignore_interrupts:ignore_interrupts
       ~collapse_reentries
       ~reentries:[]
+      ~spec_key:""
       ())
   )
 
-let update_cfg mode curr_spec_dfa_mode cfg i =
-  let ctor a = match mode with `Label -> Label a | `NoLabel -> NoLabel a in
-  let open Attacker in
-  let _attack_update (C_ISR isr, C_Prepare prepare, C_Cleanup cleanup) mode i =
-    let a () = (match i with | Input.IAttacker a -> [ ctor a ] | _ -> []) in
-      match mode with
-      | `Enclave | `Invalid | `Finished -> (C_ISR isr, C_Prepare prepare, C_Cleanup cleanup)
-      | `ISR_toPM | `ISR_toUM -> (C_ISR (isr @ a ()), C_Prepare prepare, C_Cleanup cleanup)
-      | `Prepare -> (C_ISR isr, C_Prepare (prepare @ a ()), C_Cleanup cleanup)
-      | `Cleanup -> (C_ISR isr, C_Prepare prepare, C_Cleanup (cleanup @ a ())) in
-  let _enclave_update (Enclave.C_Enclave enclave_history) mode i =
-    let e () = (match i with | Input.IEnclave e -> [ ctor e ] | _ -> []) in
-      match mode with
-      | `Enclave -> Enclave.C_Enclave (enclave_history @ e ())
-      | `ISR_toPM | `ISR_toUM | `Prepare | `Cleanup | `Invalid | `Finished -> Enclave.C_Enclave enclave_history in
-  (* Logs.debug (fun m -> m "\x1B[31m[Before] Verilog.update_cfg: %s\x1B[0m" (List.to_string ~f:Input.show cfg.input_history)); *)
-  let res = { cfg with
-      input_history = cfg.input_history @ [i];
-      enclave_history = (_enclave_update cfg.enclave_history curr_spec_dfa_mode i);
-      ca_history = (_attack_update cfg.ca_history curr_spec_dfa_mode i);
-  } in
-  (* Logs.debug (fun m -> m "\x1B[31m[After] Verilog.update_cfg: %s\x1B[0m" (List.to_string ~f:Input.show res.input_history)); *)
-  res
-
-let fill_template template_code (cfg : cfg_t) =
-  (* Compile the "high-level" actions into actual code *)
-  Common.reset_last_used_idx (); (* FIXME: this is very bad, but that's the easiest thing; We need to reset the index after each experiment *)
-  (* enclave, isr and cleanup sections are may be re-entered more than once w/o a reset *)
-  (*
-    - enclave: re-entered upon reti and jmpin.
-    In the both cases we do not want to "compile" the pre-existing code, so we remove from enclave_history all the instructions that appear *before* the last JmpIn and those that appear *after* the last reti (if any) in the full I/O history (i.e., intersperse_lists input output)
-  *)
-  let full_history = Inputgen.intersperse_lists cfg.input_history cfg.output_history in
-  let relevant_enclave (Enclave.C_Enclave eh) =
-    let last_encl_segment = List.take_while
-      (List.rev full_history)
-      ~f:(fun io ->
-        match io with
-        | Inputgen.Out (ol, _, _) when List.exists ol ~f:(fun o -> match o with | OJmpIn _ -> true | _ -> false)
-            -> false
-        | _ -> true) in
-    let curr_encl_segment = List.take_while
-      (List.rev full_history)
-      ~f:(fun io ->
-        match io with
-        | Inputgen.Out (ol, _, _) when List.exists ol ~f:(fun o -> match o with | OJmpIn _ | OReti _ -> true | _ ->    false)
-            -> false
-        | _ -> true) in
-    (* If the two segments are the same, it means we've never interrupted the enclave so return the last part of eh *)
-    if List.equal Poly.equal last_encl_segment curr_encl_segment then
-      (
-        let filt = List.rev (List.filter_map last_encl_segment ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None)) in
-        let filt_len = List.length filt in
-        let res = (List.drop eh (List.length eh - filt_len)) in
-        Logs.debug (fun p -> p "eh   enclave: %s" ([%derive.show: Enclave.atom_t annot list] eh));
-        Logs.debug (fun p -> p "res  enclave: %s" ([%derive.show: Enclave.atom_t annot list] res));
-        Logs.debug (fun p -> p "filt enclave: %s" ([%derive.show: Enclave.atom_t list] filt));
-        assert(List.for_all2_exn res filt ~f:(fun (NoLabel e | Label e) f -> Enclave.equal_atom_t e f));
-        Enclave.C_Enclave res
-      )
-    else
-      (
-      (* Otherwise, i have last_encl_segment e1 ... en IRQ ... reti ... IRQ ... reti en+1 en+2 ... and what we want to write is:
-        e1 ... en en+1 ..., so take last_encl_segment until the first reti, drop all attackers actions and to the result concat curr_encl_segment
-      *)
-      let filt_last = List.filter_map last_encl_segment ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None) in
-      let filt_last_len = List.length filt_last in
-      (* this is in the form e1 ... en .. en+1 en+2 ... en+k en+1 en+2 ... en+k' but labelled *)
-      let res_last = (List.drop eh (List.length eh - filt_last_len)) in
-      let last_encl_segment = List.take_while
-        (List.rev last_encl_segment)
-        ~f:(fun io ->
-          match io with
-          | Inputgen.Out (ol, _, _) when List.exists ol ~f:(fun o -> match o with | OJmpIn _ | OReti _ -> true | _ -> false)
-              -> false
-          | _ -> true) in
-      let filt_last = (List.filter_map last_encl_segment ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None)) in
-      let filt_curr = List.rev (List.filter_map curr_encl_segment ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None)) in
-      let filt_last_len = List.length filt_last in
-      let filt_curr_len = List.length filt_curr in
-      (* extract just e1 ... en labelled and concat the part corresponding to filt_curr to it *)
-      let res = (List.take res_last filt_last_len) @ (List.drop eh (List.length eh - filt_curr_len)) in
-      Logs.debug (fun p -> p "eh   enclave: %s" ([%derive.show: Enclave.atom_t annot list] eh));
-      Logs.debug (fun p -> p "res  enclave: %s" ([%derive.show: Enclave.atom_t annot list] res));
-      Logs.debug (fun p -> p "filt last enclave: %s" ([%derive.show: Enclave.atom_t list] filt_last));
-      Logs.debug (fun p -> p "filt curr enclave: %s" ([%derive.show: Enclave.atom_t list] filt_curr));
-      assert(List.for_all2_exn res (filt_last @ filt_curr) ~f:(fun (NoLabel e | Label e) f -> Enclave.equal_atom_t e f));
-      (* if an enclave has already been completed once, we need to complete res with the "missing" actions.Logs
-        For that, we look for the last jmpout in eh and go backwards completing the code.
-      *)
-      let completing_suffix = List.drop_while
-        (List.rev full_history)
-        ~f:(fun io ->
-          match io with
-          | Inputgen.Out (ol, _, _) when List.exists ol ~f:(fun o -> match o with | OJmpOut _ | OJmpOut_Handle _ -> true | _ -> false)
-              -> false
-          | _ -> true) in
-      let completing_suffix = List.rev (List.take_while
-        completing_suffix
-        ~f:(fun io ->
-          match io with
-          | Inputgen.Out (ol, _, _) when List.exists ol ~f:(fun o -> match o with | OJmpIn _ -> true | _ -> false)
-              -> false
-          | _ -> true)) in
-      Logs.debug (fun p -> p "completing_suffix: %s" ([%derive.show: observable_t list] completing_suffix));
-      let completing_suffix_filt = List.filter_map completing_suffix ~f:(fun io -> match io with In (Input.IEnclave i) -> Some i | _ -> None) in
-      let completing_suffix_res = List.map ~f:(fun a -> NoLabel a) (List.drop completing_suffix_filt (List.length res)) in
-      Enclave.C_Enclave (res @ completing_suffix_res)
-    ) in
-  (* - ISR: We assume all sections to be executed from their beginning and just once; ISR special since multiple interrupts may occur, so this function extracts just the actions from the last reti (excluded) *)
-  let relevant_isr al =
-    (* Notice that the call to relevant_isr is done only on the portion of the history of the isr *)
-    (* Extract the part of the ISR since the last unlabelled reti/jmpin (excl.). The only labelled reti/jmpin is kept. *)
-    let curr_isr = List.rev (List.take_while (List.rev al) ~f:(fun a -> match a with NoLabel Attacker.CReti | NoLabel (Attacker.CJmpIn _) -> false | _ -> true)) in
-    Logs.debug (fun p -> p "Curr ISR: %s" ([%derive.show: Attacker.atom_t annot list] curr_isr));
-    (* Extract the first ISR, by keeping all observables until the first reti (included!)*)
-    let first_isr = List.rev (List.fold_until al ~init:[] ~f:(fun acc_isr a -> match a with Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _) -> Stop (a::acc_isr) | _ -> Continue (a::acc_isr)) ~finish:(fun isr -> isr)) in
-    Logs.debug (fun p -> p "First ISR: %s" ([%derive.show: Attacker.atom_t annot list] first_isr));
-    (* The actual ISR is obtained by stiching together the current ISR and the part of the first ISR that has not been "given" yet. If curr_isr and first_isr coincide (i.e., no reti has ever been issued), we just keep curr_isr *)
-    let actual_isr = curr_isr @ List.drop first_isr (List.length curr_isr) in
-        (* Logs.debug (fun p -> p "ISR: %s" ([%derive.show: Attacker.atom_t annot list] actual_isr)); *)
-        actual_isr in
-  (*
-    - Cleanup: it runs more than once when it leaves with reti or jin and the enclave jumps out again. Every run
-    starts from the beginning of the same code, and the input generator makes each run replay the longest earlier
-    one (Inputgen.get_options). al holds the actions of all runs, one after the other, and a run ends with the
-    reti or jin that leaves the section: the code is the current run (which holds the labelled action), followed
-    by the rest of the longest earlier run.
-  *)
-  let relevant_cleanup al =
-    let leaves = function Label Attacker.CReti | NoLabel Attacker.CReti | Label (Attacker.CJmpIn _) | NoLabel (Attacker.CJmpIn _) -> true | _ -> false in
-    let rev_runs = List.fold al ~init:[] ~f:(fun rev_runs a ->
-      match rev_runs with
-      | run :: older when not (List.exists run ~f:leaves) -> (run @ [a]) :: older
-      | _ -> [a] :: rev_runs) in
-    match rev_runs with
-    | [] -> []
-    | current :: earlier ->
-      let longest = List.fold earlier ~init:[] ~f:(fun acc run -> if List.length run > List.length acc then run else acc) in
-      current @ List.drop longest (List.length current)
-  in
-  let enclave_labels, enclave_code = Enclave.compile (relevant_enclave cfg.enclave_history) in
+(*
+  The program of a test: the programs of the sections that Core gives (Alvie_backend.Backend.step), compiled into the
+  testbench's template. The input's occurrence is labelled, so that analyse_dump finds its instructions: the
+  other atoms run too, but are not analysed.
+*)
+let fill_template template_code (cfg : cfg_t) (step : Alvie_backend.Backend.step) =
+  (* FIXME: this is very bad, but that's the easiest thing; We need to reset the index after each experiment *)
+  Common.reset_last_used_idx ();
+  let program name convert =
+    let prog = Option.value (List.Assoc.find step.programs ~equal:String.equal name) ~default:[] in
+    List.mapi prog ~f:(fun position v ->
+        let a = Result.ok_or_failwith (convert v) in
+        if String.equal step.section name && position = step.position then Label a else NoLabel a) in
+  let enclave = program "enclave" Atom_value.to_enclave in
+  let isr = program "isr" Atom_value.to_attacker and prepare = program "prepare" Atom_value.to_attacker
+  and cleanup = program "cleanup" Atom_value.to_attacker in
+  let enclave_labels, enclave_code = Enclave.compile (Enclave.C_Enclave enclave) in
   Logs.debug (fun p -> p "Enclave labels: %s" ([%derive.show: (string*string) list] enclave_labels));
   Logs.debug (fun p -> p "Enclave code: %s" ([%derive.show: string list] enclave_code));
-  let (C_ISR ai_list, C_Prepare ap_list, C_Cleanup ac_list) = cfg.ca_history in
-  let attacker_labels, isr_code, prepare_code, cleanup_code = Attacker.compile ~ignore_interrupts:cfg.ignore_interrupts (C_ISR (relevant_isr ai_list), C_Prepare ap_list, C_Cleanup (relevant_cleanup ac_list)) in
+  let attacker_labels, isr_code, prepare_code, cleanup_code =
+    Attacker.compile ~ignore_interrupts:cfg.ignore_interrupts (C_ISR isr, C_Prepare prepare, C_Cleanup cleanup) in
   let code = String.substr_replace_all template_code ~pattern:"; [@inst_isr]" ~with_:(String.concat ~sep:"\n\t" isr_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_pre]" ~with_:(String.concat ~sep:"\n\t" prepare_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_post]" ~with_:(String.concat ~sep:"\n\t" cleanup_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_victim]" ~with_:(String.concat ~sep:"\n\t" enclave_code) in
-    (* Logs.debug (fun m -> m "filled: %s" code); *)
     attacker_labels @ enclave_labels, code
 
 let addr_of_label_script cfg l =
@@ -771,9 +644,6 @@ let pre (cfg : t) =
   );
   cfg := {
     !cfg with
-      initial_spec = { !cfg.initial_spec with current = !cfg.initial_spec.spec };
-      enclave_history = C_Enclave [];
-      ca_history = (C_ISR [], C_Prepare [], C_Cleanup []);
       input_history = [];
       output_history = [];
       left_labels = [];
@@ -794,7 +664,7 @@ let is_reentry ((ol, _, _) : output_t) =
   is_reentry), and identify the configuration after a segment with the one after an identical
   segment immediately preceding it, i.e., u x x behaves as u x, when
   - the two segments have the same inputs and outputs, and
-  - the input generator (spec DFA) is in the same state after each of them.
+  - the input generator is in the same place in the spec after each of them (Generator.key).
   This is done by restoring the configuration reached after the first segment.
 *)
 let collapse_repeated_reentry (cfg : cfg_t) : cfg_t =
@@ -806,8 +676,7 @@ let collapse_repeated_reentry (cfg : cfg_t) : cfg_t =
         let from = List.length a.input_history and len = List.length b.input_history - List.length a.input_history in
         List.sub b.input_history ~pos:from ~len, List.sub b.output_history ~pos:from ~len in
       let (i1, o1), (i2, o2) = segment r0 r1, segment r1 cfg in
-      let dfa (c : cfg_t) = fst (Inputgen.get_options c.initial_spec c.input_history c.output_history) in
-      if List.equal Input.equal i1 i2 && List.equal Output_internal.equal o1 o2 && Inputgen.compare_spec_dfa (dfa r1) (dfa cfg) = 0 then (
+      if List.equal Input.equal i1 i2 && List.equal Output_internal.equal o1 o2 && String.equal r1.spec_key cfg.spec_key then (
         Logs.debug (fun m -> m "Verilog: collapsing a repeated re-entry segment of %d steps" (List.length i2));
         Prof.count "sul.collapsed_reentry";
         (* r1 was saved before being pushed: keep the stack as it is now, i.e., r1 :: r0 :: ... *)
@@ -815,9 +684,12 @@ let collapse_repeated_reentry (cfg : cfg_t) : cfg_t =
       else { cfg with reentries = cfg :: cfg.reentries }
     | _ -> { cfg with reentries = cfg :: cfg.reentries }
 
-let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
-  Prof.time (match dry_output with None -> "sul.step(real)" | Some _ -> "sul.step(dry)") @@ fun () ->
-  Logs.debug (fun m -> m "\x1B[31mVerilog.step: Invoked with %s\x1B[0m" (Sexp.to_string (Input.sexp_of_t i)));
+(* The Sancus input of a step: enclave atoms are victim inputs, the others the attacker's *)
+let input_of_step (step : Alvie_backend.Backend.step) : Input.t =
+  if String.equal step.section "enclave" then Input.IEnclave (Result.ok_or_failwith (Atom_value.to_enclave step.atom))
+  else Input.IAttacker (Result.ok_or_failwith (Atom_value.to_attacker step.atom))
+
+let print_input ~silent (i : Input.t) =
   if not silent then
   (match Logs.level () with
     | Some Logs.App -> Format.printf "[%s" (match i with
@@ -861,69 +733,9 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
       | IAttacker (Attacker.CReti) -> "\x1B[35m" ^ "R" ^ "\x1B[0m"
       ); Out_channel.flush stdout
      | _ -> ()
-  ) else ();
-  (* Check if the history of inputs + the new one is "legal" according to the spec.
-     If not, return Exception/Reset depending on whether the mode was inside the enclave or not. *)
-  Logs.debug (fun m -> m "Verilog.step: Input history: %s" (Sexp.to_string_mach (List.sexp_of_t Input.sexp_of_t !cfg.input_history)));
-  Logs.debug (fun m -> m "Verilog.step: Output history: %s" (Sexp.to_string_mach (List.sexp_of_t Output_internal.sexp_of_t !cfg.output_history)));
-  let curr_spec_dfa, matchable = Prof.time "sul.matchable" (fun () -> Inputgen.matchable !cfg.initial_spec i !cfg.input_history !cfg.output_history) in
-  Logs.debug (fun m -> m "Verilog.step: Mode: %s" (Inputgen.mode_show curr_spec_dfa.mode));
-  Logs.debug (fun m -> m "Verilog.step: Input: %s" (Input.show i));
-  (* (Partial) update of the configuration *)
-  let cfg' = update_cfg `Label curr_spec_dfa.mode !cfg i in
-  let last_inst_number, left_labels, out = (if not matchable then
-    (
-      Logs.debug (fun m -> m "Verilog.step: %s not matchable in %s, outputting OIllegal (default)." (Input.show i) (Inputgen.mode_show curr_spec_dfa.mode));
-      cfg'.last_inst_number, [], Output_internal.default
-      (* failwith "Verilog.step: I got an illegal input!" *)
-    )
-  else if
-    List.mem ~equal:(fun (o, _, _) (o', _, _) -> List.equal Output_internal.equal_element_t o o') cfg'.output_history ([Output_internal.OMaybeDiverge], [], 0) ||
-    List.mem ~equal:Input.equal cfg'.input_history Input.INoInput ||
-    List.mem ~equal:Output_internal.equal cfg'.output_history Output_internal.default then
-    (
-      Logs.debug (fun m -> m "Verilog.step: cannot continue since we got empty input, illegal action or halt previously!");
-      cfg'.last_inst_number, [], Output_internal.default
-    )
-  else
-    (
-      (* Logs.debug (fun m -> m "Verilog.step: input matched, running Verilog."); *)
-      (* Read the template file, fill it with the new code and write it to the filled file *)
-        (* Now, if dry_output is None, run the simulator and collect results; Otherwise return dry_output directly *)
-        (* If the output is one of those for which left_labels might not be empty, ignore the directive! *)
-        (* Dry is used only if the output we expect empties the contents of left_labels: *)
-        (* let open Output_internal in *)
-        let force_no_dry () =
-          (* The program is only needed when we actually simulate: dry steps skip filling the template *)
-          let template_code = In_channel.read_all cfg'.templatefile in
-          let labels, code = Prof.time "sul.fill_template" (fun () -> fill_template template_code cfg') in
-          Logs.debug (fun m -> m "filledfile: %s" cfg'.filledfile);
-          Out_channel.write_all cfg'.filledfile ~data:code;
-          let t, ll, e = match run_simulator cfg' with
-            | Error o -> cfg'.last_inst_number, [], [o]
-            | Ok (diverges, d) ->
-                let l_last_inst_number, l_left_labels, l_out = analyse_dump diverges cfg' labels d in
-                (* If we observed a reti, we need to re-perform the analysis on left_labels, otherwise we are done! *)
-                match List.find l_out ~f:(fun el -> match el with Output_internal.OReti _ -> true | _ -> false) with
-                | None -> l_last_inst_number, cfg'.left_labels @ l_left_labels, l_out
-                | Some _ ->
-                  (* Logs.debug (fun p -> p "Reti found: re-launching: ll: %s; l: %s" ([%derive.show: (string*string) list] cfg'.left_labels) ([%derive.show: (string*string) list] labels)); *)
-                  analyse_dump diverges cfg' (cfg'.left_labels @ labels) d in (t, ll, (e, ll, t))
-        in
-        match dry_output with
-        | None -> force_no_dry ()
-        | Some (ol, ll, lt) ->
-          (match List.last ol with
-            | None -> force_no_dry ()
-            | Some _ -> lt, ll, (ol, ll, lt)
-          )
-    )
-  ) in
-  let cfg'_nolbl = update_cfg `NoLabel curr_spec_dfa.mode !cfg i in
-  cfg := { cfg'_nolbl with last_inst_number = last_inst_number; left_labels = left_labels; output_history = cfg'.output_history @ [ out ] };
-  if is_reentry out then cfg := collapse_repeated_reentry !cfg;
-  (* If we observe a reset, this is special and we should behave as if a pre () was issued by the learning algorithm *)
-  if List.mem (fst3 out) OReset ~equal:Output_internal.equal_element_t then pre cfg else ();
+  ) else ()
+
+let print_output ~silent (out : output_t) =
   if not silent then
   (match Logs.level () with
   | Some Logs.App ->
@@ -951,7 +763,48 @@ let step ?(silent=false) ?(dry_output : output_t option) cfg i : output_t =
       Format.printf "%s]" (List.fold (fst3 out) ~init:"" ~f:(fun acc o -> acc ^ render_output_t o));
     ; Out_channel.flush stdout
    | _ -> ()
-  ) else ();
+  ) else ()
+
+(* The configuration after a step whose output is out (run or restored). The key of the place in the spec is
+   computed only at re-entries, where collapse_repeated_reentry compares it: it is costly *)
+let finish cfg (cfg' : cfg_t) (step : Alvie_backend.Backend.step) (out : output_t) =
+  let (_, left_labels, last_inst_number) = out in
+  cfg := { cfg' with last_inst_number; left_labels; output_history = cfg'.output_history @ [ out ] };
+  if is_reentry out then (
+    cfg := { !cfg with spec_key = Lazy.force step.key };
+    cfg := collapse_repeated_reentry !cfg);
+  (* A reset starts the test again: the simulation restarts from the initial state *)
+  if List.mem (fst3 out) OReset ~equal:Output_internal.equal_element_t then pre cfg
+
+let run cfg (step : Alvie_backend.Backend.step) : output_t =
+  Prof.time "sul.step(real)" @@ fun () ->
+  let i = input_of_step step in
+  Logs.debug (fun m -> m "\x1B[31mSimulator.step: %s (%s, position %d)\x1B[0m" (Input.show i) step.section step.position);
+  print_input ~silent:step.silent i;
+  let cfg' = { !cfg with input_history = !cfg.input_history @ [ i ] } in
+  let template_code = In_channel.read_all cfg'.templatefile in
+  let labels, code = Prof.time "sul.fill_template" (fun () -> fill_template template_code cfg' step) in
+  Logs.debug (fun m -> m "filledfile: %s" cfg'.filledfile);
+  Out_channel.write_all cfg'.filledfile ~data:code;
+  let last_inst_number, left_labels, elements = match run_simulator cfg' with
+    | Error o -> cfg'.last_inst_number, [], [o]
+    | Ok (diverges, d) ->
+      let l_last_inst_number, l_left_labels, l_out = analyse_dump diverges cfg' labels d in
+      (* If we observed a reti, we need to re-perform the analysis on left_labels, otherwise we are done! *)
+      match List.find l_out ~f:(fun el -> match el with Output_internal.OReti _ -> true | _ -> false) with
+      | None -> l_last_inst_number, cfg'.left_labels @ l_left_labels, l_out
+      | Some _ -> analyse_dump diverges cfg' (cfg'.left_labels @ labels) d in
+  let out = (elements, left_labels, last_inst_number) in
+  finish cfg cfg' step out;
+  print_output ~silent:step.silent out;
   out
+
+let restore cfg (step : Alvie_backend.Backend.step) (out : output_t) =
+  Prof.time "sul.step(dry)" @@ fun () ->
+  let i = input_of_step step in
+  print_input ~silent:step.silent i;
+  let cfg' = { !cfg with input_history = !cfg.input_history @ [ i ] } in
+  finish cfg cfg' step out;
+  print_output ~silent:step.silent out
 
 let post _ = ()
