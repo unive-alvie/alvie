@@ -13,9 +13,8 @@ A plugin describes its platform in six YAML files and implements a backend that 
 This page is the reference for those files and for the spec language that Core builds from them.
 
 :::note[Status]
-This release reads and checks the plugin files, and parses specs with them.
-`plugins/sancus/` declares ALVIE/Sancus this way, and its specs parse exactly as `learn.exe` parses them today.
-Learning and comparison still use the Sancus code paths; later releases move them onto these files.
+ALVIE/Sancus is declared in these files (`plugins/sancus/`), and learning and comparison use them: the input generator follows the phase rules and the spec's constraints, the backend contract gives the simulator the programs of the sections, and comparisons see what the attacker view declares.
+The command line and the tools for plugin authors are still those of ALVIE/Sancus.
 :::
 
 ## Layout
@@ -263,6 +262,28 @@ rules:
 | `{ fields: [...] }` | The kind and these fields. |
 | `distinct` | The observation, which is never equal to another one, so it is always reported. |
 | `all` | Everything. |
+
+Some observations stand for several events, for example an instruction that ran and an interrupt that was handled.
+A `parts:` rule splits them; each part is then seen by the `show` rules (parts are not split again):
+
+```yaml
+  - match: Time_Handle
+    parts: [{ field: time, as: Time }, { field: handle, as: Handle, input: interrupt }]
+  - match: JmpOut
+    parts: [{ field: self, as: Time }, { as: JmpOut }]
+```
+
+A part is an observation of the kind `as`, with a record field of the observation (`field: time`), its own fields (`field: self`), or no fields at all (no `field`).
+Its input is the input of the step, or, with `input: interrupt`, the built-in interrupt, which the attacker controls: the two runs of a witness must have their interrupts at the same places.
+
+### What comparisons take from these files
+
+Core compares models only through these files, with nothing written for a platform:
+
+- what the attacker sees, and which outputs are silent, from `view.yaml` (mCRL2 compares only what the attacker sees: on Sancus, not the cycle count `k`);
+- where a run ends: the outputs whose phase rule stops (`stop: finished`) or restarts the test;
+- which inputs the attacker chooses (the low inputs): the atoms of attacker sections, and interrupts;
+- the victim's code of a run: the atoms of victim sections until it is interrupted or the test goes to another section; two runs of a witness must run the same victim code, up to the secret (its values in the atoms are ignored).
 
 ## How Core generates inputs
 

@@ -96,14 +96,17 @@ The red path leaves the black path at the point where the two models first give 
 Each transition has a label in this form:
 
 ```text
-input / output (k = …, gie = …, umem_val = …, reg_val = …, timerA_counter = …, mode = …)
+input/Output(k = …, gie = …, umem_val = …, reg_val = …, timerA_counter = …, mode = …)
 ```
 
 Example:
 
 ```text
-ubr/Time (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 9, mode = PM)
+ubr/Time(k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 10, mode = PM) (hidden)
 ```
+
+`(hidden)` marks an output that the attacker does not see: the comparison treats it as silent (here because the CPU is in protected mode; see `plugins/sancus/view.yaml`).
+An interrupt that the attacker handles shows as a separate step whose input is `IRQ`.
 
 | Part | Meaning |
 | --- | --- |
@@ -127,19 +130,19 @@ Stop at the first step where the output is different.
 In the Getting Started example, the two paths separate at the secret comparison:
 
 ```text
-black: cmp #0, r4 / Time (k = 1, …, timerA_counter = 3, mode = PM)
-red:   cmp #1, r4 / Time (k = 1, …, timerA_counter = 3, mode = PM)
+black: cmp #0, r4/Time(k = 1, …, timerA_counter = 3, mode = PM) (hidden)
+red:   cmp #1, r4/Time(k = 1, …, timerA_counter = 3, mode = PM) (hidden)
 ```
 
-The outputs are equal here, so this step is not the difference.
+The outputs are hidden here, so this step is not the difference.
 The inputs differ only because the secret is in the input.
 
 The next steps show the difference:
 
 ```text
-black: ubr / Time (k = 7, …, timerA_counter = 10, mode = PM)
-       ubr / Time (k = 2, …, timerA_counter = 12, mode = UM)
-red:   ubr / Time (k = 2, …, timerA_counter = 5, mode = UM)
+black: ubr/Time(k = 7, …, timerA_counter = 10, mode = PM) (hidden)
+       ubr/Time(k = 2, …, timerA_counter = 12, mode = UM)
+red:   ubr/Time(k = 2, …, timerA_counter = 5, mode = UM)
 ```
 
 For secret 0, the enclave runs 7 more cycles in protected mode before it leaves.
@@ -270,7 +273,7 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 29 | 3 |
+| B1 | 31 | 3 |
 | B3 | 11 | 9 |
 | B6 | 8 | 9 |
 

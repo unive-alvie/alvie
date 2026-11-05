@@ -18,15 +18,18 @@ The code in `alvie/code` is split into three opam packages, defined in `dune-pro
 | --- | --- | --- | --- |
 | `alvie-core` | `lib/core/` | `learninglib`, `prof`, `interop`, `ltscompare`, `alvie_plugin` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, the comparison engine, and the plugin files and spec language. It has no backend. |
 | `alvie-rtl-util` | `lib/rtl-util/` | `vcd` | Helpers for backends that simulate RTL designs: the VCD parser. It is not part of Core. |
-| `alvie-sancus` | `lib/sancus/`, `lib/sancus-compare/`, `plugins/sancus/`, `bin/`, `test/` | `sancus`, `ltscomparator` | The Sancus backend, its plugin files and comparison hooks, the executables and the test suites. |
+| `alvie-sancus` | `lib/sancus/`, `plugins/sancus/`, `bin/`, `test/` | `sancus` | The Sancus backend, its plugin files, the executables and the test suites. |
 
 `alvie-core` does not depend on the other two packages: CI builds it on its own with `dune build -p alvie-core`, which fails if a library of `alvie-core` uses one of `alvie-sancus` or `alvie-rtl-util`.
 `dune build` builds all three, and the executables keep their paths (`_build/default/bin/learn.exe` and so on).
 
 The comparison engine (`Ltscompare.Cexfinder.Make`) does not know what the inputs and outputs of a model mean.
 A backend tells it through the `Ltscompare.Hooks.S` signature: which inputs the attacker chooses, which outputs the attacker cannot see, which outputs end a run, when two outputs look the same to the attacker, which outputs come from the victim, and which victim code a run executes.
-`lib/sancus-compare/obs.ml` gives the Sancus answers, and `fa.exe` uses the resulting instance.
-These hooks are temporary: they become the declarative attacker view of the plugin files in a later release of ALVIE/Core.
+`Ltscompare.Plugin_hooks` derives all of them from the files of a plugin: hidden outputs and public equality from the attacker view (`view.yaml`, applied before mCRL2, so the comparison sees only what the attacker sees), the end of a run from the phase rules that stop or restart the test, the low inputs and the victim code from the roles of the sections, and the victim code up to the secret from the expansions of the secret's values.
+The view also splits observations that stand for several events into parts (`parts:` rules), each one a transition of the compared model, with the interrupt as the input of the parts that are one.
+`fa.exe` uses this engine with the Sancus plugin; nothing in the comparison is written for Sancus.
+
+`Ltscompare.Properties` is the catalogue of properties (version 1): noninterference with an optional baseline, inclusion and equivalence of models, and mCRL2 modal mu-calculus formulas on one model.
 
 ### Plugin files and values
 
@@ -92,7 +95,9 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/compare/hooks.ml` | What the comparison engine needs to know about a backend's inputs and outputs |
 | `lib/rtl-util/vcd/vcd.ml` | VCD parser |
 | `lib/core/prof/prof.ml` | Optional profiler (`ALVIE_PROFILE=1`) |
-| `lib/sancus-compare/obs.ml` | The inputs and outputs that `fa.exe` compares, and the Sancus hooks |
+| `lib/core/compare/view.ml` | The attacker view: parts and what the attacker sees of each |
+| `lib/core/compare/plugin_hooks.ml` | The hooks of the engine, derived from the plugin files |
+| `lib/core/compare/properties.ml` | The catalogue of properties |
 | `bin/learn.ml` | Experiment orchestration and model writing |
 | `bin/fa.ml` | Four-model flow-analysis comparison |
 
@@ -151,7 +156,7 @@ Follow the [Extending TestDL Actions](../../guides/spec-extending-actions/) guid
 ### Add a learning backend
 
 Implement the `SUL` signature, keep input and output types comparable and serializable, and instantiate `LSharp` with the new backend in an executable.
-To compare its models, implement `Ltscompare.Hooks.S` for its inputs and outputs and instantiate `Ltscompare.Cexfinder.Make`, as `lib/sancus-compare/` does.
+To compare its models, instantiate `Ltscompare.Plugin_hooks.Make` with its plugin and `Ltscompare.Properties.Make` (or `Cexfinder.Make`) with the result, as `fa.exe` does.
 Depend only on the libraries of `alvie-core` (and `alvie-rtl-util` if the backend simulates RTL), not on `alvie-sancus`.
 The backend must preserve the observable-output contract; changing payload semantics changes learned models and their comparability.
 
