@@ -12,7 +12,7 @@
  (modes byte exe)
  (modules pbt fa learn exec)
  (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
- (libraries alvie_cli_diagnostics sancus learninglib interop core core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscomparator qcheck)
+ (libraries alvie_cli_diagnostics sancus learninglib interop core core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscompare alvie_plugin qcheck)
 )
 
 (env

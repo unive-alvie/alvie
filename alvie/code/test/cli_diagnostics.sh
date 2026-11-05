@@ -134,6 +134,14 @@ expect_status 1 'Raised at\|Raised by\|Called from' \
   --tmpdir "$TMP_DIR/fa-debug" \
   --witness-file-basename "$TMP_DIR/fa-debug/witness" \
   --m1-int "$TMP_DIR/invalid.dot" \
+  --m2-int "$TMP_DIR/invalid.dot" \
+  --secrets 0,1
+
+expect_status 2 'Cannot tell the secrets of the models from their names: give them with --secrets s1,s2' \
+  _build/default/bin/fa.exe \
+  --tmpdir "$TMP_DIR/fa" \
+  --witness-file-basename "$TMP_DIR/fa/witness" \
+  --m1-int "$TMP_DIR/invalid.dot" \
   --m2-int "$TMP_DIR/invalid.dot"
 
 source "$REPO_ROOT/script_helpers.sh"
