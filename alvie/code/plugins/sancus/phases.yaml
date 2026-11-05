@@ -6,8 +6,8 @@ rules:
   - { match: Diverge, do: [{ stop: finished }] }
   - { match: [Illegal, Unsupported], do: [{ stop: invalid }] }
   - { match: [Time, Silent], do: [] }
-  # Leaving the enclave by a reset or a jump out starts the whole test again, from cleanup
-  - { match: [Reset, JmpOut], in: enclave, do: [reset, { enter: cleanup }] }
+  # A reset starts every section again, from cleanup if the enclave was running
+  - { match: Reset, in: enclave, do: [reset, { enter: cleanup }] }
   - { match: Reset, do: [reset, { enter: prepare }] }
   - { match: JmpIn, do: [{ enter: enclave }] }
   - { match: JmpOut, do: [{ enter: cleanup }] }

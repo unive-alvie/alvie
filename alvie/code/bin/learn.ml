@@ -144,6 +144,11 @@ let command =
         "--ignore-interrupts"
         no_arg
         ~doc:"Ignores *any* interrupt-scheduling actions from the attacker (i.e., timer_enable)."
+    and inputgen_name =
+      flag
+        "--inputgen"
+        (optional_with_default "core" string)
+        ~doc:"core|legacy The input generator: ALVIE/Core's, driven by plugins/sancus (default), or the former Sancus one (Inputgen), to compare"
     and keep_repeated_reentries =
       flag
         "--keep-repeated-reentries"
@@ -187,13 +192,33 @@ let command =
         let attacker_spec_str = Cli_diagnostics.read_file ~option:"--att-spec" attacker_spec_fn in
         Logs.debug (fun m -> m "Enclave spec: %s" enclave_spec_str);
         Logs.debug (fun m -> m "Attacker spec: %s" attacker_spec_str);
-        let spec_w_secret = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec_str in
+        let core_spec, spec_w_secret = Cli_diagnostics.parse_spec_files ~enclave_spec_file:enclave_spec_fn ~attacker_spec_file:attacker_spec_fn in
         let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
         (* Secret must be expanded *)
         Cli_diagnostics.require_secret_if_needed enclave secret;
         let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
         let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
         let spec_dfa = Inputgen.build_spec_dfa complete_spec in
+        let generator = match inputgen_name with
+          | "core" ->
+            let core_spec = match secret with
+              | None -> core_spec
+              | Some value ->
+                (match Alvie_plugin.Spec.expand_secret (Lazy.force Generic_inputgen.plugin) core_spec ~value with
+                 | Ok s -> s
+                 | Error d -> Cli_diagnostics.fail "Could not expand the secret %S: %s." value (Alvie_plugin.Diag.to_string d)) in
+            `Core (Generic_inputgen.make_of_spec core_spec)
+          | "legacy" ->
+            if not (List.is_empty core_spec.constraints) then
+              Cli_diagnostics.fail "The specifications have constraints, which only the input generator of ALVIE/Core supports: remove --inputgen legacy.";
+            `Legacy spec_dfa
+          | other -> Cli_diagnostics.fail "--inputgen must be core or legacy, not %S." other in
+        (* The oracles ask the input generator through these; the spec_dfa argument is the one of Inputgen's interface *)
+        let module IG = struct
+          let generate_next ?choose _ il ol = match generator with
+            | `Core g -> Generic_inputgen.generate_next ?choose g il ol
+            | `Legacy s -> Inputgen.generate_next ?choose s il ol
+        end in
         (* (2) initialize the interface with the processor's implementation *)
         let sul =
           Sancus.Verilog.make
@@ -234,7 +259,7 @@ let command =
                   if Float.(<=) (Random.float_range 0.0 1.0) bad_prob then
                     List.random_element_exn complete_input_alphabet
                   else
-                    match Inputgen.generate_next spec_dfa il ol with
+                    match IG.generate_next spec_dfa il ol with
                     | `Stop -> Input.INoInput
                     | `Next i -> i
                   )
@@ -261,7 +286,7 @@ let command =
                 ~epsilon:epsilon
                 ~delta:delta
                 ~next_input:(fun _ il ol ->
-                  Inputgen.generate_next
+                  IG.generate_next
                     ~choose:(fun il ol options ->
                         let ol_includes o = List.exists ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o) in
                         if (
@@ -296,7 +321,7 @@ let command =
                 ~epsilon:epsilon
                 ~delta:delta
                 ~next_input:(fun _ il ol ->
-                  Inputgen.generate_next
+                  IG.generate_next
                     ~choose:(fun _ ol options ->
                       let ol_includes o = List.exists ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o) in
                       let ol_cnt o = Float.of_int (List.count ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o)) in
@@ -344,7 +369,7 @@ let command =
                   if Float.(<=) (Random.float_range 0.0 1.0) bad_prob then
                     `Next (List.random_element_exn complete_input_alphabet)
                   else
-                    Inputgen.generate_next spec_dfa il ol
+                    IG.generate_next spec_dfa il ol
                 )
                 (* ~next_input:(fun _ il ol ->
                   if List.mem (List.concat (List.map ~f:fst3 ol)) OIllegal ~equal:Output_internal.equal_element_t then
@@ -425,7 +450,7 @@ let command =
             learned
        (*    else if String.equal oracle_name "incremental" then
             let oracle = IncrementalOracle.make
-            ~next_options:(fun is os -> snd (Inputgen.get_options spec_dfa is os))
+            ~next_options:(fun is os -> snd (IG.get_options spec_dfa is os))
             ~stop_cond:(fun available is _ -> List.is_empty available ||
             List.mem is (INoInput) ~equal:Input.equal ||
             List.mem is (IAttacker CRstNZ) ~equal:Input.equal ||
@@ -451,7 +476,7 @@ let command =
             ~step_limit:step_limit
             ~reset_prob:reset_prob
             ~next_input:(fun _ il ol ->
-              match Inputgen.generate_next spec_dfa il ol with
+              match IG.generate_next spec_dfa il ol with
               | `Stop -> Input.INoInput
               | `Next i -> i
             )

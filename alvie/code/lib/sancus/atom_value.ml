@@ -150,3 +150,33 @@ let rec of_enclave_body (b : Enclave.Enclave.body_t) : S.body =
 (* A spec of testdl.ml as the sections of plugins/sancus/sections.yaml, in their order *)
 let of_test_spec ((Enclave e, ISR i, Prepare p, Cleanup c) : Testdl.test_spec_t) : (string * S.body) list =
   [ ("enclave", of_enclave_body e); ("isr", of_attacker_body i); ("prepare", of_attacker_body p); ("cleanup", of_attacker_body c) ]
+
+let rec to_attacker_body (b : S.body) : (Attacker.Attacker.body_t, string) Result.t =
+  let open Result.Let_syntax in
+  match b with
+  | Empty -> Ok Attacker.Attacker.Empty
+  | Epsilon -> Ok Epsilon
+  | Atom a -> let%map a = to_attacker a in Attacker.Attacker.Atom a
+  | Choice (l, r) -> let%bind l = to_attacker_body l in let%map r = to_attacker_body r in Attacker.Attacker.Choice (l, r)
+  | Seq (l, r) -> let%bind l = to_attacker_body l in let%map r = to_attacker_body r in Attacker.Attacker.Seq (l, r)
+  | Star b -> let%map b = to_attacker_body b in Attacker.Attacker.Star b
+
+let rec to_enclave_body (b : S.body) : (Enclave.Enclave.body_t, string) Result.t =
+  let open Result.Let_syntax in
+  match b with
+  | Empty -> Ok Enclave.Enclave.Empty
+  | Epsilon -> Ok Epsilon
+  | Atom a -> let%map a = to_enclave a in Enclave.Enclave.Atom a
+  | Choice (l, r) -> let%bind l = to_enclave_body l in let%map r = to_enclave_body r in Enclave.Enclave.Choice (l, r)
+  | Seq (l, r) -> let%bind l = to_enclave_body l in let%map r = to_enclave_body r in Enclave.Enclave.Seq (l, r)
+  | Star b -> let%map b = to_enclave_body b in Enclave.Enclave.Star b
+
+(* The spec of testdl.ml of a spec parsed with plugins/sancus *)
+let to_test_spec (spec : S.t) : (Testdl.test_spec_t, string) Result.t =
+  let open Result.Let_syntax in
+  let body name = match S.body_of spec name with Some b -> Ok b | None -> Error (sprintf "no %s section" name) in
+  let%bind e = Result.bind (body "enclave") ~f:to_enclave_body in
+  let%bind i = Result.bind (body "isr") ~f:to_attacker_body in
+  let%bind p = Result.bind (body "prepare") ~f:to_attacker_body in
+  let%map c = Result.bind (body "cleanup") ~f:to_attacker_body in
+  (Testdl.Enclave e, Testdl.ISR i, Testdl.Prepare p, Testdl.Cleanup c)
