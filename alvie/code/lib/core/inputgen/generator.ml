@@ -54,7 +54,7 @@ type section_state = {
 (* Where an interrupted section was *)
 type saved = { sname : string; at : section_state }
 
-type thread = { current : string; saved : saved list (* the interrupted sections, the last first *) }
+type thread = { current : string; saved : saved list (* the last interrupted section, if any (nested interrupts are not supported yet) *) }
 
 type state = {
   sections : section_state String.Map.t;
@@ -135,13 +135,15 @@ let matches (r : _ rule) ~current (obs : Value.t) =
 
 let apply t st (a : Rules_file.action) =
   match a with
+  | Restart -> t.initial
   | Reset -> List.fold (Map.keys st.sections) ~init:st ~f:(restart t)
   | Enter s -> set_thread (restart t st s) { (thread st) with current = s }
   | Switch s -> set_thread st { (thread st) with current = s }
   | Interrupt s ->
     let th = thread st in
+    (* Resume returns to the last interrupted position, and does not forget it: only that one matters *)
     let saved = { sname = th.current; at = section st th.current } in
-    set_thread (restart t st s) { current = s; saved = saved :: th.saved }
+    set_thread (restart t st s) { current = s; saved = [ saved ] }
   | Resume ->
     (match (thread st).saved with
      | { sname; at } :: _ ->
@@ -314,3 +316,32 @@ module Cache (Item : sig type t [@@deriving hash, compare, sexp_of] end) = struc
     | Some o -> o
     | None -> let o = options c.gen e.st in Hashtbl.set c.options_memo ~key:e.id ~data:o; o
 end
+
+(* What backends see of a state *)
+
+(* The program of each section, in the order of the plugin's sections: the longest run of a code section, and the
+   current run of a stimulus section (opaque sections have none) *)
+let programs t st : (string * Value.t list) list =
+  List.filter_map t.plugin.sections.sections ~f:(fun s ->
+      let ss = section st s.name in
+      match s.kind with
+      | Code -> Some (s.name, ss.program)
+      | Stimulus -> Some (s.name, List.rev ss.run)
+      | Opaque -> None)
+
+(* The position of the current run of a section: the number of atoms it has run *)
+let position st name = (section st name).run_length
+
+(*
+  A key of where the test is in the spec: the current section, the saved positions and what each section accepts
+  next. Two states with the same key offer the same inputs from now on, for the same observations; programs and
+  runs are not in it. Backends may use it to recognise a repeated state (Sancus does, to collapse re-entries).
+*)
+let key st =
+  let th = thread st in
+  Sexp.to_string_mach
+    [%sexp
+      (th.current : string),
+      (List.map th.saved ~f:(fun s -> (s.sname, s.at.deriv)) : (string * Spec.body) list),
+      (Map.to_alist (Map.map st.sections ~f:(fun s -> s.deriv)) : (string * Spec.body) list),
+      (st.status : status)]

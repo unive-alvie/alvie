@@ -13,7 +13,8 @@
       - { match: Reset, in: enclave, do: [reset, { enter: cleanup }] }
       - { match: Reti, when: { mode: PM }, do: [resume] }
 
-  Actions: reset (every section starts again), { enter: S } (S starts again and becomes current), { switch: S } (S
+  Actions: restart (the test starts afresh: the platform rebooted, and the programs of the sections can be new), reset
+  (every section starts again, with the same programs), { enter: S } (S starts again and becomes current), { switch: S } (S
   becomes current where it was), { interrupt: S } (the current section is saved and S is entered), resume (the last
   saved section becomes current where it was), { stop: finished } or { stop: invalid }. do: [] changes nothing.
 
@@ -39,6 +40,7 @@ type cond = { path : string list; value : string; kpos : Diag.pos; cpos : Diag.p
 type stop = Finished | Invalid [@@deriving sexp, equal]
 
 type action =
+  | Restart
   | Reset
   | Enter of string
   | Switch of string
@@ -56,7 +58,7 @@ let when_shape =
     ~f:(List.map ~f:(fun (key, kpos, (value, cpos)) -> { path = String.split key ~on:'.'; value; kpos; cpos }))
 
 let action_shape : action Shape.t =
-  let scalar = Shape.enum [ ("reset", Reset); ("resume", Resume) ] in
+  let scalar = Shape.enum [ ("restart", Restart); ("reset", Reset); ("resume", Resume) ] in
   let structured =
     let open Obj in
     Shape.map_result
@@ -72,7 +74,7 @@ let action_shape : action Shape.t =
           | None, None, Some s, None -> Ok (Interrupt s)
           | None, None, None, Some s -> Ok (Stop s)
           | _ -> fail n "an action has exactly one of enter, switch, interrupt and stop") in
-  by_kind ~what:"an action" ~scalar ~map:structured () ~doc:"reset, resume, { enter: S }, { switch: S }, { interrupt: S } or { stop: finished | invalid }"
+  by_kind ~what:"an action" ~scalar ~map:structured () ~doc:"restart, reset, resume, { enter: S }, { switch: S }, { interrupt: S } or { stop: finished | invalid }"
 
 let show_shape : show Shape.t =
   let scalar = Shape.enum [ ("hidden", Hidden); ("tag", Tag); ("distinct", Distinct); ("all", All) ] in
