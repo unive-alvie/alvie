@@ -493,6 +493,284 @@ digraph G {
   491 [shape=circle, ];
   492 [shape=circle, ];
   493 [shape=circle, ];
+  494 [shape=circle, ];
+  495 [shape=circle, ];
+  496 [shape=circle, ];
+  497 [shape=circle, ];
+  498 [shape=circle, ];
+  499 [shape=circle, ];
+  500 [shape=circle, ];
+  501 [shape=circle, ];
+  502 [shape=circle, ];
+  503 [shape=circle, ];
+  504 [shape=circle, ];
+  505 [shape=circle, ];
+  506 [shape=circle, ];
+  507 [shape=circle, ];
+  508 [shape=circle, ];
+  509 [shape=circle, ];
+  510 [shape=circle, ];
+  511 [shape=circle, ];
+  512 [shape=circle, ];
+  513 [shape=circle, ];
+  514 [shape=circle, ];
+  515 [shape=circle, ];
+  516 [shape=circle, ];
+  517 [shape=circle, ];
+  518 [shape=circle, ];
+  519 [shape=circle, ];
+  520 [shape=circle, ];
+  521 [shape=circle, ];
+  522 [shape=circle, ];
+  523 [shape=circle, ];
+  524 [shape=circle, ];
+  525 [shape=circle, ];
+  526 [shape=circle, ];
+  527 [shape=circle, ];
+  528 [shape=circle, ];
+  529 [shape=circle, ];
+  530 [shape=circle, ];
+  531 [shape=circle, ];
+  532 [shape=circle, ];
+  533 [shape=circle, ];
+  534 [shape=circle, ];
+  535 [shape=circle, ];
+  536 [shape=circle, ];
+  537 [shape=circle, ];
+  538 [shape=circle, ];
+  539 [shape=circle, ];
+  540 [shape=circle, ];
+  541 [shape=circle, ];
+  542 [shape=circle, ];
+  543 [shape=circle, ];
+  544 [shape=circle, ];
+  545 [shape=circle, ];
+  546 [shape=circle, ];
+  547 [shape=circle, ];
+  548 [shape=circle, ];
+  549 [shape=circle, ];
+  550 [shape=circle, ];
+  551 [shape=circle, ];
+  552 [shape=circle, ];
+  553 [shape=circle, ];
+  554 [shape=circle, ];
+  555 [shape=circle, ];
+  556 [shape=circle, ];
+  557 [shape=circle, ];
+  558 [shape=circle, ];
+  559 [shape=circle, ];
+  560 [shape=circle, ];
+  561 [shape=circle, ];
+  562 [shape=circle, ];
+  563 [shape=circle, ];
+  564 [shape=circle, ];
+  565 [shape=circle, ];
+  566 [shape=circle, ];
+  567 [shape=circle, ];
+  568 [shape=circle, ];
+  569 [shape=circle, ];
+  570 [shape=circle, ];
+  571 [shape=circle, ];
+  572 [shape=circle, ];
+  573 [shape=circle, ];
+  574 [shape=circle, ];
+  575 [shape=circle, ];
+  576 [shape=circle, ];
+  577 [shape=circle, ];
+  578 [shape=circle, ];
+  579 [shape=circle, ];
+  580 [shape=circle, ];
+  581 [shape=circle, ];
+  582 [shape=circle, ];
+  583 [shape=circle, ];
+  584 [shape=circle, ];
+  585 [shape=circle, ];
+  586 [shape=circle, ];
+  587 [shape=circle, ];
+  588 [shape=circle, ];
+  589 [shape=circle, ];
+  590 [shape=circle, ];
+  591 [shape=circle, ];
+  592 [shape=circle, ];
+  593 [shape=circle, ];
+  594 [shape=circle, ];
+  595 [shape=circle, ];
+  596 [shape=circle, ];
+  597 [shape=circle, ];
+  598 [shape=circle, ];
+  599 [shape=circle, ];
+  600 [shape=circle, ];
+  601 [shape=circle, ];
+  602 [shape=circle, ];
+  603 [shape=circle, ];
+  604 [shape=circle, ];
+  605 [shape=circle, ];
+  606 [shape=circle, ];
+  607 [shape=circle, ];
+  608 [shape=circle, ];
+  609 [shape=circle, ];
+  610 [shape=circle, ];
+  611 [shape=circle, ];
+  612 [shape=circle, ];
+  613 [shape=circle, ];
+  614 [shape=circle, ];
+  615 [shape=circle, ];
+  616 [shape=circle, ];
+  617 [shape=circle, ];
+  618 [shape=circle, ];
+  619 [shape=circle, ];
+  620 [shape=circle, ];
+  621 [shape=circle, ];
+  622 [shape=circle, ];
+  623 [shape=circle, ];
+  624 [shape=circle, ];
+  625 [shape=circle, ];
+  626 [shape=circle, ];
+  627 [shape=circle, ];
+  628 [shape=circle, ];
+  629 [shape=circle, ];
+  630 [shape=circle, ];
+  631 [shape=circle, ];
+  632 [shape=circle, ];
+  633 [shape=circle, ];
+  634 [shape=circle, ];
+  635 [shape=circle, ];
+  636 [shape=circle, ];
+  637 [shape=circle, ];
+  638 [shape=circle, ];
+  639 [shape=circle, ];
+  640 [shape=circle, ];
+  641 [shape=circle, ];
+  642 [shape=circle, ];
+  643 [shape=circle, ];
+  644 [shape=circle, ];
+  645 [shape=circle, ];
+  646 [shape=circle, ];
+  647 [shape=circle, ];
+  648 [shape=circle, ];
+  649 [shape=circle, ];
+  650 [shape=circle, ];
+  651 [shape=circle, ];
+  652 [shape=circle, ];
+  653 [shape=circle, ];
+  654 [shape=circle, ];
+  655 [shape=circle, ];
+  656 [shape=circle, ];
+  657 [shape=circle, ];
+  658 [shape=circle, ];
+  659 [shape=circle, ];
+  660 [shape=circle, ];
+  661 [shape=circle, ];
+  662 [shape=circle, ];
+  663 [shape=circle, ];
+  664 [shape=circle, ];
+  665 [shape=circle, ];
+  666 [shape=circle, ];
+  667 [shape=circle, ];
+  668 [shape=circle, ];
+  669 [shape=circle, ];
+  670 [shape=circle, ];
+  671 [shape=circle, ];
+  672 [shape=circle, ];
+  673 [shape=circle, ];
+  674 [shape=circle, ];
+  675 [shape=circle, ];
+  676 [shape=circle, ];
+  677 [shape=circle, ];
+  678 [shape=circle, ];
+  679 [shape=circle, ];
+  680 [shape=circle, ];
+  681 [shape=circle, ];
+  682 [shape=circle, ];
+  683 [shape=circle, ];
+  684 [shape=circle, ];
+  685 [shape=circle, ];
+  686 [shape=circle, ];
+  687 [shape=circle, ];
+  688 [shape=circle, ];
+  689 [shape=circle, ];
+  690 [shape=circle, ];
+  691 [shape=circle, ];
+  692 [shape=circle, ];
+  693 [shape=circle, ];
+  694 [shape=circle, ];
+  695 [shape=circle, ];
+  696 [shape=circle, ];
+  697 [shape=circle, ];
+  698 [shape=circle, ];
+  699 [shape=circle, ];
+  700 [shape=circle, ];
+  701 [shape=circle, ];
+  702 [shape=circle, ];
+  703 [shape=circle, ];
+  704 [shape=circle, ];
+  705 [shape=circle, ];
+  706 [shape=circle, ];
+  707 [shape=circle, ];
+  708 [shape=circle, ];
+  709 [shape=circle, ];
+  710 [shape=circle, ];
+  711 [shape=circle, ];
+  712 [shape=circle, ];
+  713 [shape=circle, ];
+  714 [shape=circle, ];
+  715 [shape=circle, ];
+  716 [shape=circle, ];
+  717 [shape=circle, ];
+  718 [shape=circle, ];
+  719 [shape=circle, ];
+  720 [shape=circle, ];
+  721 [shape=circle, ];
+  722 [shape=circle, ];
+  723 [shape=circle, ];
+  724 [shape=circle, ];
+  725 [shape=circle, ];
+  726 [shape=circle, ];
+  727 [shape=circle, ];
+  728 [shape=circle, ];
+  729 [shape=circle, ];
+  730 [shape=circle, ];
+  731 [shape=circle, ];
+  732 [shape=circle, ];
+  733 [shape=circle, ];
+  734 [shape=circle, ];
+  735 [shape=circle, ];
+  736 [shape=circle, ];
+  737 [shape=circle, ];
+  738 [shape=circle, ];
+  739 [shape=circle, ];
+  740 [shape=circle, ];
+  741 [shape=circle, ];
+  742 [shape=circle, ];
+  743 [shape=circle, ];
+  744 [shape=circle, ];
+  745 [shape=circle, ];
+  746 [shape=circle, ];
+  747 [shape=circle, ];
+  748 [shape=circle, ];
+  749 [shape=circle, ];
+  750 [shape=circle, ];
+  751 [shape=circle, ];
+  752 [shape=circle, ];
+  753 [shape=circle, ];
+  754 [shape=circle, ];
+  755 [shape=circle, ];
+  756 [shape=circle, ];
+  757 [shape=circle, ];
+  758 [shape=circle, ];
+  759 [shape=circle, ];
+  760 [shape=circle, ];
+  761 [shape=circle, ];
+  762 [shape=circle, ];
+  763 [shape=circle, ];
+  764 [shape=circle, ];
+  765 [shape=circle, ];
+  766 [shape=circle, ];
+  767 [shape=circle, ];
+  768 [shape=circle, ];
+  769 [shape=circle, ];
+  770 [shape=circle, ];
+  771 [shape=circle, ];
   
   
   0 -> 1 [fontcolor="#000000", color="#000000",
@@ -504,7 +782,7 @@ digraph G {
   0 -> 222 [fontcolor="#000000", color="#000000",
             label="timer_enable 2/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
             style="dashed", ];
-  0 -> 402 [fontcolor="#000000", color="#000000",
+  0 -> 514 [fontcolor="#000000", color="#000000",
             label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
             style="dashed", ];
   1 -> 2 [fontcolor="#000000", color="#000000",
@@ -1197,6 +1475,9 @@ digraph G {
               label="ifz [ mov #42, &data_s; nop;], [ nop; mov #42, &data_s;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dashed", ];
   226 -> 386 [fontcolor="#000000", color="#000000",
+              label="ifz [ mov r5, r5; nop;], [ nop; mov r5, r5;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  226 -> 498 [fontcolor="#000000", color="#000000",
               label="ifz [ dint; nop;], [ nop; dint;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dashed", ];
   227 -> 228 [fontcolor="#000000", color="#000000",
@@ -1225,7 +1506,10 @@ digraph G {
   231 -> 369 [fontcolor="#A40000", color="#A40000",
               label="ifz [ mov #42, &data_s; nop;], [ nop; mov #42, &data_s;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dotted", ];
-  231 -> 393 [fontcolor="#A40000", color="#A40000",
+  231 -> 442 [fontcolor="#A40000", color="#A40000",
+              label="ifz [ mov r5, r5; nop;], [ nop; mov r5, r5;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  231 -> 505 [fontcolor="#A40000", color="#A40000",
               label="ifz [ dint; nop;], [ nop; dint;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dotted", ];
   232 -> 233 [fontcolor="#A40000", color="#A40000",
@@ -1670,178 +1954,172 @@ digraph G {
               label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dashed", ];
   390 -> 391 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dashed", ];
   391 -> 392 [fontcolor="#000000", color="#000000",
-              label="br #enc_e/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dashed", ];
-  391 -> 400 [fontcolor="#000000", color="#000000",
-              label="mov &data_s, r4/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  393 -> 394 [fontcolor="#A40000", color="#A40000",
-              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
-              style="dotted", ];
-  394 -> 395 [fontcolor="#A40000", color="#A40000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  395 -> 396 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  396 -> 397 [fontcolor="#A40000", color="#A40000",
-              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dotted", ];
-  397 -> 398 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dotted", ];
-  398 -> 399 [fontcolor="#A40000", color="#A40000",
               label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
+              style="dashed", ];
+  392 -> 393 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  393 -> 394 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  394 -> 395 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  395 -> 396 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  396 -> 397 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  397 -> 398 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  398 -> 399 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  399 -> 400 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
   400 -> 401 [fontcolor="#000000", color="#000000",
-              label="br #enc_e/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  401 -> 402 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
   402 -> 403 [fontcolor="#000000", color="#000000",
-              label="create/Time (k = 648, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
   403 -> 404 [fontcolor="#000000", color="#000000",
-              label="jin enc_s/Time (k = 18, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
   404 -> 405 [fontcolor="#000000", color="#000000",
-              label="jin enc_s/JmpIn (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 2, mode = PM)",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dashed", ];
   405 -> 406 [fontcolor="#000000", color="#000000",
-              label="cmp #0, r4/Time (k = 1, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dashed", ];
-  405 -> 415 [fontcolor="#A40000", color="#A40000",
-              label="cmp #1, r4/Time (k = 1, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
-              style="dotted", ];
   406 -> 407 [fontcolor="#000000", color="#000000",
-              label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  406 -> 425 [fontcolor="#000000", color="#000000",
-              label="ifz [ mov &enc_s, &enc_s; nop;], [ nop; mov &enc_s, &enc_s;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  406 -> 470 [fontcolor="#000000", color="#000000",
-              label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
               style="dashed", ];
   407 -> 408 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
   408 -> 409 [fontcolor="#000000", color="#000000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
   409 -> 410 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  410 -> 411 [fontcolor="#000000", color="#000000",
-              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
-              style="dashed", ];
-  411 -> 412 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  412 -> 413 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dashed", ];
-  413 -> 414 [fontcolor="#000000", color="#000000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  414 -> 469 [fontcolor="#000000", color="#000000", label="reti/Reset",
-              style="dashed", ];
-  415 -> 416 [fontcolor="#A40000", color="#A40000",
-              label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dotted", ];
-  415 -> 447 [fontcolor="#A40000", color="#A40000",
-              label="ifz [ mov &enc_s, &enc_s; nop;], [ nop; mov &enc_s, &enc_s;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dotted", ];
-  415 -> 482 [fontcolor="#A40000", color="#A40000",
-              label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dotted", ];
-  416 -> 417 [fontcolor="#A40000", color="#A40000",
-              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  417 -> 418 [fontcolor="#A40000", color="#A40000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  418 -> 419 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  419 -> 420 [fontcolor="#A40000", color="#A40000",
-              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
-              style="dotted", ];
-  420 -> 421 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dotted", ];
-  421 -> 422 [fontcolor="#A40000", color="#A40000",
-              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dotted", ];
-  422 -> 423 [fontcolor="#A40000", color="#A40000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  423 -> 424 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dotted", ];
-  425 -> 426 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  426 -> 427 [fontcolor="#000000", color="#000000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  427 -> 428 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  428 -> 429 [fontcolor="#000000", color="#000000",
-              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
-              style="dashed", ];
-  429 -> 430 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  430 -> 431 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dashed", ];
-  431 -> 432 [fontcolor="#000000", color="#000000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  432 -> 433 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  433 -> 434 [fontcolor="#000000", color="#000000",
               label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dashed", ];
+  410 -> 411 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  411 -> 412 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  412 -> 413 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  413 -> 414 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  414 -> 415 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  415 -> 416 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  416 -> 417 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  417 -> 418 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  418 -> 419 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  419 -> 420 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  420 -> 421 [fontcolor="#000000", color="#000000",
+              label="mov &data_s, r4/Time (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  421 -> 422 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  422 -> 423 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  423 -> 424 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  424 -> 425 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 5, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  425 -> 426 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  426 -> 427 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  427 -> 428 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  428 -> 429 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  429 -> 430 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  430 -> 431 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  431 -> 432 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  432 -> 433 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  433 -> 434 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
   434 -> 435 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dashed", ];
   435 -> 436 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 10, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dashed", ];
   436 -> 437 [fontcolor="#000000", color="#000000",
-              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
               style="dashed", ];
   437 -> 438 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  438 -> 439 [fontcolor="#000000", color="#000000",
-              label="reti/Reti (k = 8, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  439 -> 440 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  440 -> 441 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 4, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dashed", ];
-  441 -> 442 [fontcolor="#000000", color="#000000",
               label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
-  442 -> 443 [fontcolor="#000000", color="#000000",
+  438 -> 439 [fontcolor="#000000", color="#000000",
               label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dashed", ];
-  443 -> 444 [fontcolor="#000000", color="#000000",
-              label="reti/Reti (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+  439 -> 440 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dashed", ];
-  444 -> 445 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+  440 -> 441 [fontcolor="#000000", color="#000000", label="br #enc_e/Reset",
               style="dashed", ];
-  445 -> 446 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dashed", ];
+  442 -> 443 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
+              style="dotted", ];
+  443 -> 444 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  444 -> 445 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  445 -> 446 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  446 -> 447 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
   447 -> 448 [fontcolor="#A40000", color="#A40000",
               label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
@@ -1900,46 +2178,55 @@ digraph G {
               label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dotted", ];
   466 -> 467 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dotted", ];
   467 -> 468 [fontcolor="#A40000", color="#A40000",
-              label="IRQ/HandleIRQ (k = 10, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
-  470 -> 471 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  471 -> 472 [fontcolor="#000000", color="#000000",
+  468 -> 469 [fontcolor="#A40000", color="#A40000",
               label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  472 -> 473 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  469 -> 470 [fontcolor="#A40000", color="#A40000",
               label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  473 -> 474 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  470 -> 471 [fontcolor="#A40000", color="#A40000",
               label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
-              style="dashed", ];
-  474 -> 475 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  471 -> 472 [fontcolor="#A40000", color="#A40000",
               label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  475 -> 476 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  472 -> 473 [fontcolor="#A40000", color="#A40000",
               label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
-              style="dashed", ];
-  476 -> 477 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  473 -> 474 [fontcolor="#A40000", color="#A40000",
               label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  477 -> 478 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  474 -> 475 [fontcolor="#A40000", color="#A40000",
               label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
-  478 -> 479 [fontcolor="#000000", color="#000000",
+              style="dotted", ];
+  475 -> 476 [fontcolor="#A40000", color="#A40000",
               label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  479 -> 480 [fontcolor="#000000", color="#000000",
-              label="reti/Time (k = 6, gie = true, umem_val = 0x2a, reg_val = 0, timerA_counter = 1, mode = PM)",
-              style="dashed", ];
-  480 -> 481 [fontcolor="#000000", color="#000000",
-              label="IRQ/HandleIRQ (k = 3, gie = false, umem_val = 0x2a, reg_val = 0, timerA_counter = 0, mode = UM)",
-              style="dashed", ];
+              style="dotted", ];
+  476 -> 477 [fontcolor="#A40000", color="#A40000",
+              label="mov &data_s, r4/Time (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  477 -> 478 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  478 -> 479 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  479 -> 480 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  480 -> 481 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 5, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  481 -> 482 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
   482 -> 483 [fontcolor="#A40000", color="#A40000",
-              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
               style="dotted", ];
   483 -> 484 [fontcolor="#A40000", color="#A40000",
               label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
@@ -1948,13 +2235,13 @@ digraph G {
               label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
   485 -> 486 [fontcolor="#A40000", color="#A40000",
-              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              label="reti/Reti (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dotted", ];
   486 -> 487 [fontcolor="#A40000", color="#A40000",
               label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dotted", ];
   487 -> 488 [fontcolor="#A40000", color="#A40000",
-              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
               style="dotted", ];
   488 -> 489 [fontcolor="#A40000", color="#A40000",
               label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
@@ -1963,12 +2250,835 @@ digraph G {
               label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
   490 -> 491 [fontcolor="#A40000", color="#A40000",
-              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
               style="dotted", ];
   491 -> 492 [fontcolor="#A40000", color="#A40000",
-              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
               style="dotted", ];
   492 -> 493 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  493 -> 494 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  494 -> 495 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  495 -> 496 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  496 -> 497 [fontcolor="#A40000", color="#A40000",
+              label="br #enc_e/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  498 -> 499 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
+              style="dashed", ];
+  499 -> 500 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  500 -> 501 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  501 -> 502 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  502 -> 503 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  503 -> 504 [fontcolor="#000000", color="#000000",
+              label="br #enc_e/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  503 -> 512 [fontcolor="#000000", color="#000000",
+              label="mov &data_s, r4/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  505 -> 506 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = UM)",
+              style="dotted", ];
+  506 -> 507 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  507 -> 508 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  508 -> 509 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  509 -> 510 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  510 -> 511 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  512 -> 513 [fontcolor="#000000", color="#000000",
+              label="br #enc_e/Time (k = 3, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  514 -> 515 [fontcolor="#000000", color="#000000",
+              label="create/Time (k = 648, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  515 -> 516 [fontcolor="#000000", color="#000000",
+              label="jin enc_s/Time (k = 18, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  516 -> 517 [fontcolor="#000000", color="#000000",
+              label="jin enc_s/JmpIn (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 2, mode = PM)",
+              style="dashed", ];
+  517 -> 518 [fontcolor="#000000", color="#000000",
+              label="cmp #0, r4/Time (k = 1, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
+              style="dashed", ];
+  517 -> 527 [fontcolor="#A40000", color="#A40000",
+              label="cmp #1, r4/Time (k = 1, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 3, mode = PM)",
+              style="dotted", ];
+  518 -> 519 [fontcolor="#000000", color="#000000",
+              label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  518 -> 537 [fontcolor="#000000", color="#000000",
+              label="ifz [ mov &unprot_mem, r8; nop;], [ nop; mov &unprot_mem, r8;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  518 -> 581 [fontcolor="#000000", color="#000000",
+              label="ifz [ mov &enc_s, &enc_s; nop;], [ nop; mov &enc_s, &enc_s;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  518 -> 625 [fontcolor="#000000", color="#000000",
+              label="ifz [ mov r5, r5; nop;], [ nop; mov r5, r5;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  518 -> 748 [fontcolor="#000000", color="#000000",
+              label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  519 -> 520 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  520 -> 521 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  521 -> 522 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  522 -> 523 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  523 -> 524 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  524 -> 525 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  525 -> 526 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  526 -> 747 [fontcolor="#000000", color="#000000", label="reti/Reset",
+              style="dashed", ];
+  527 -> 528 [fontcolor="#A40000", color="#A40000",
+              label="ifz [ rst; nop;], [ nop; rst;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  527 -> 559 [fontcolor="#A40000", color="#A40000",
+              label="ifz [ mov &unprot_mem, r8; nop;], [ nop; mov &unprot_mem, r8;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  527 -> 603 [fontcolor="#A40000", color="#A40000",
+              label="ifz [ mov &enc_s, &enc_s; nop;], [ nop; mov &enc_s, &enc_s;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  527 -> 686 [fontcolor="#A40000", color="#A40000",
+              label="ifz [ mov r5, r5; nop;], [ nop; mov r5, r5;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  527 -> 760 [fontcolor="#A40000", color="#A40000",
+              label="ifz [ mov #42, &unprot_mem; nop;], [ nop; mov #42, &unprot_mem;]/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  528 -> 529 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  529 -> 530 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  530 -> 531 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  531 -> 532 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  532 -> 533 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  533 -> 534 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  534 -> 535 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  535 -> 536 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  537 -> 538 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  538 -> 539 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  539 -> 540 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  540 -> 541 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  541 -> 542 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  542 -> 543 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  543 -> 544 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  544 -> 545 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  545 -> 546 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  546 -> 547 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  547 -> 548 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  548 -> 549 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  549 -> 550 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  550 -> 551 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 5, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  551 -> 552 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  552 -> 553 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  553 -> 554 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  554 -> 555 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  555 -> 556 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  556 -> 557 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  557 -> 558 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  559 -> 560 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  560 -> 561 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  561 -> 562 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  562 -> 563 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  563 -> 564 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  564 -> 565 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  565 -> 566 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  566 -> 567 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  567 -> 568 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  568 -> 569 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  569 -> 570 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  570 -> 571 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  571 -> 572 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  572 -> 573 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  573 -> 574 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  574 -> 575 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  575 -> 576 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  576 -> 577 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  577 -> 578 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  578 -> 579 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  579 -> 580 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  581 -> 582 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  582 -> 583 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  583 -> 584 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  584 -> 585 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  585 -> 586 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  586 -> 587 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  587 -> 588 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  588 -> 589 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  589 -> 590 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  590 -> 591 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  591 -> 592 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 10, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  592 -> 593 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  593 -> 594 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  594 -> 595 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 8, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  595 -> 596 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  596 -> 597 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 4, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  597 -> 598 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  598 -> 599 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  599 -> 600 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  600 -> 601 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  601 -> 602 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  603 -> 604 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  604 -> 605 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  605 -> 606 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  606 -> 607 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  607 -> 608 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  608 -> 609 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  609 -> 610 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  610 -> 611 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  611 -> 612 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  612 -> 613 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  613 -> 614 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  614 -> 615 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  615 -> 616 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  616 -> 617 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  617 -> 618 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  618 -> 619 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  619 -> 620 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  620 -> 621 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  621 -> 622 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  622 -> 623 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 7, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  623 -> 624 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 10, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  625 -> 626 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  626 -> 627 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  627 -> 628 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  628 -> 629 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  629 -> 630 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  630 -> 631 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  631 -> 632 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  632 -> 633 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  633 -> 634 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  634 -> 635 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  635 -> 636 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  636 -> 637 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  637 -> 638 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  638 -> 639 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  639 -> 640 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  640 -> 641 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  641 -> 642 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  642 -> 643 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  643 -> 644 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  644 -> 645 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  645 -> 646 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  646 -> 647 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  647 -> 648 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  648 -> 649 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  649 -> 650 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  650 -> 651 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  651 -> 652 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  652 -> 653 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  653 -> 654 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  654 -> 655 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  655 -> 656 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  656 -> 657 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  657 -> 658 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  658 -> 659 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  659 -> 660 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  660 -> 661 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  661 -> 662 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  662 -> 663 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  663 -> 664 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  664 -> 665 [fontcolor="#000000", color="#000000",
+              label="mov &data_s, r4/Time (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  665 -> 666 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  666 -> 667 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  667 -> 668 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  668 -> 669 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 5, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  669 -> 670 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  670 -> 671 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  671 -> 672 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  672 -> 673 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  673 -> 674 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  674 -> 675 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  675 -> 676 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  676 -> 677 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  677 -> 678 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  678 -> 679 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  679 -> 680 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  680 -> 681 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  681 -> 682 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  682 -> 683 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  683 -> 684 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  684 -> 685 [fontcolor="#000000", color="#000000", label="br #enc_e/Reset",
+              style="dashed", ];
+  686 -> 687 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  687 -> 688 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  688 -> 689 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  689 -> 690 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  690 -> 691 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  691 -> 692 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  692 -> 693 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  693 -> 694 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  694 -> 695 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  695 -> 696 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  696 -> 697 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  697 -> 698 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  698 -> 699 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  699 -> 700 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  700 -> 701 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  701 -> 702 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  702 -> 703 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  703 -> 704 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  704 -> 705 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  705 -> 706 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  706 -> 707 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  707 -> 708 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  708 -> 709 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  709 -> 710 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  710 -> 711 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  711 -> 712 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  712 -> 713 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  713 -> 714 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  714 -> 715 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  715 -> 716 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  716 -> 717 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  717 -> 718 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  718 -> 719 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  719 -> 720 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  720 -> 721 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  721 -> 722 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  722 -> 723 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  723 -> 724 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  724 -> 725 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  725 -> 726 [fontcolor="#A40000", color="#A40000",
+              label="mov &data_s, r4/Time (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  726 -> 727 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 5, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  727 -> 728 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  728 -> 729 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  729 -> 730 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 5, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  730 -> 731 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  731 -> 732 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  732 -> 733 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  733 -> 734 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  734 -> 735 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 4, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  735 -> 736 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  736 -> 737 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 8, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  737 -> 738 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  738 -> 739 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  739 -> 740 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  740 -> 741 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  741 -> 742 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  742 -> 743 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  743 -> 744 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  744 -> 745 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  745 -> 746 [fontcolor="#A40000", color="#A40000",
+              label="br #enc_e/Time (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  748 -> 749 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  749 -> 750 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  750 -> 751 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  751 -> 752 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dashed", ];
+  752 -> 753 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  753 -> 754 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dashed", ];
+  754 -> 755 [fontcolor="#000000", color="#000000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  755 -> 756 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  756 -> 757 [fontcolor="#000000", color="#000000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  757 -> 758 [fontcolor="#000000", color="#000000",
+              label="reti/Time (k = 6, gie = true, umem_val = 0x2a, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dashed", ];
+  758 -> 759 [fontcolor="#000000", color="#000000",
+              label="IRQ/HandleIRQ (k = 3, gie = false, umem_val = 0x2a, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dashed", ];
+  760 -> 761 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  761 -> 762 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  762 -> 763 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  763 -> 764 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 3, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = PM)",
+              style="dotted", ];
+  764 -> 765 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 0, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  765 -> 766 [fontcolor="#A40000", color="#A40000",
+              label="IRQ/HandleIRQ (k = 9, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = UM)",
+              style="dotted", ];
+  766 -> 767 [fontcolor="#A40000", color="#A40000",
+              label="timer_enable 1/Time (k = 15, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  767 -> 768 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 14, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
+              style="dotted", ];
+  768 -> 769 [fontcolor="#A40000", color="#A40000",
+              label="reti/Reti (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  769 -> 770 [fontcolor="#A40000", color="#A40000",
+              label="reti/Time (k = 2, gie = true, umem_val = 0, reg_val = 0, timerA_counter = 1, mode = PM)",
+              style="dotted", ];
+  770 -> 771 [fontcolor="#A40000", color="#A40000",
               label="IRQ/HandleIRQ (k = 7, gie = false, umem_val = 0, reg_val = 0, timerA_counter = 0, mode = UM)",
               style="dotted", ];
   
