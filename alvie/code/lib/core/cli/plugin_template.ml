@@ -231,16 +231,112 @@ module Native : Alvie_backend.Native.S = struct
 end
 |}
 
-let files ~name =
-  let modname = "alvie_" ^ String.map (fun c -> if Char.equal c '-' then '_' else c) name in
+(* The external template: the same platform, in Python, with the SDK *)
+
+let external_manifest = {|# yaml-language-server: $schema=../../schemas/alvie-plugin.schema.json
+# The manifest of the plugin @NAME@ (made by alvie plugin new --external: change it to describe your platform).
+format: 1
+name: @NAME@
+version: "0.1"
+core: "1"
+kind: external
+command: [python3, backend.py]
+description: >-
+  A stand-in platform: the attacker calls the victim, whose instruction wait n takes n cycles, and sees how long it
+  ran when it returns. Replace it with your platform: the files here, and the backend in backend.py.
+config:
+  slowdown:
+    type: int
+    range: [1, 4]
+    default: "1"
+    doc: How many cycles a cycle of wait takes (an example of a parameter of the backend)
+capabilities: [restore, clone]
+fixtures: fixtures
+|}
+
+let external_backend = {|"""The backend of the plugin @NAME@ (made by alvie plugin new --external): a stand-in platform, for you to
+replace with yours. It speaks the protocol of ALVIE/Core through the Python SDK (alvie_plugin.py, a copy of
+sdk/python/alvie_plugin.py), and builds its observations with @MODULE@_types.py, which
+`alvie plugin types plugins/@NAME@ plugins/@NAME@/@MODULE@_types.py` writes again when observations.yaml changes.
+
+Core gives each step: its section, its position in the section's run, its atom (a value of atoms.yaml, in JSON
+form), and the programs of the sections. The backend runs it and returns its observations.
+
+Check it with: alvie external plugins/@NAME@ conformance --spec plugins/@NAME@/fixtures/leak.spec --secret 0
+Write logs with log(): standard output carries only the protocol.
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from alvie_plugin import Backend, PluginError, serve, get, tag  # noqa: E402
+import @MODULE@_types as obs  # noqa: E402
+
+
+class Platform(Backend):
+    capabilities = ("restore", "clone")
+
+    def __init__(self, config, variant):
+        super().__init__(config, variant)
+        if variant is not None:
+            raise PluginError(f"@NAME@ has no variant {variant!r}")
+        self.slowdown = int(config.get("slowdown", "1"))
+        self.pre()
+
+    def pre(self):
+        self.in_victim = False
+        self.cycles = 0  # run by the victim since it was called
+
+    def step(self, step):
+        t = tag(step.atom)
+        if not self.in_victim:
+            if t == "nop":
+                return [obs.Ok()]
+            if t == "call":
+                self.in_victim, self.cycles = True, 0
+                return [obs.Enter()]
+            if t == "halt":
+                return [obs.Done()]
+        else:
+            if t == "nop":
+                self.cycles += 1
+                return [obs.Run()]
+            if t == "wait":
+                self.cycles += get(step.atom, "v", "num") * self.slowdown
+                return [obs.Run()]
+            if t == "ret":
+                self.in_victim = False
+                return [obs.Exit(time=self.cycles + 1)]
+        return [obs.Illegal()]
+
+
+if __name__ == "__main__":
+    serve("@NAME@", "0.1", Platform)
+|}
+
+let files ?(external_ = false) ~name ~types () =
+  let pyname = String.map (fun c -> if Char.equal c '-' then '_' else c) name in
+  (* the OCaml library of a native plugin, or the Python module of the types of an external one *)
+  let modname = if external_ then pyname else "alvie_" ^ pyname in
   let sub s =
     s |> Core.String.substr_replace_all ~pattern:"@NAME@" ~with_:name
     |> Core.String.substr_replace_all ~pattern:"@CAPMODULE@" ~with_:(String.capitalize_ascii modname)
     |> Core.String.substr_replace_all ~pattern:"@MODULE@" ~with_:modname in
   let p f = Filename.concat (Filename.concat "plugins" name) f and l f = Filename.concat (Filename.concat "lib/plugins" name) f in
-  Core.List.map ~f:(fun (path, text) -> (path, sub text))
-    [ (p "alvie-plugin.yaml", manifest); (p "sections.yaml", sections); (p "atoms.yaml", atoms); (p "observations.yaml", observations);
+  let common =
+    [ (p "sections.yaml", sections); (p "atoms.yaml", atoms); (p "observations.yaml", observations);
       (p "phases.yaml", phases); (p "view.yaml", view);
       (p "fixtures/leak.spec", leak_spec); (p "fixtures/leak.yaml", leak_fixture);
-      (p "fixtures/safe.spec", safe_spec); (p "fixtures/safe.yaml", safe_fixture);
-      (l "dune", dune); (l "main.ml", main); (l (modname ^ ".ml"), backend) ]
+      (p "fixtures/safe.spec", safe_spec); (p "fixtures/safe.yaml", safe_fixture) ] in
+  let files =
+    if external_ then
+      (p "alvie-plugin.yaml", external_manifest) :: common @ [ (p "backend.py", external_backend) ]
+    else (p "alvie-plugin.yaml", manifest) :: common @ [ (l "dune", dune); (l "main.ml", main); (l (modname ^ ".ml"), backend) ] in
+  let files = Core.List.map files ~f:(fun (path, text) -> (path, sub text)) in
+  (* The external plugin gets the SDK, and the constructors of its observations (types: the plugin's files ->
+     the text of the module) *)
+  if external_ then
+    files @ [ (p "alvie_plugin.py", Sdk_python.alvie_plugin_py); (p (modname ^ "_types.py"), types (Core.List.filter files ~f:(fun (path, _) -> Filename.check_suffix path ".yaml"))) ]
+  else files

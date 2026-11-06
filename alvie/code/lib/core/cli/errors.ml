@@ -3,6 +3,8 @@
 
   - a mistake in the command or the files (User_error, a file that cannot be read, a model of a later format, a
     plugin file with problems): "ALVIE error: <message>", exit status 2;
+  - a backend that cannot go on (Backend.Failed, e.g. an external plugin that crashed): "ALVIE backend error",
+    exit status 1;
   - anything else is unexpected: "ALVIE failed unexpectedly", with the backtrace under --debug, exit status 1.
 
   A plugin can classify some failures of its own (classify): e.g. ALVIE/Sancus reports a simulation that did not
@@ -68,6 +70,7 @@ let protect ?(classify = fun _ -> None) ~debug f =
   try f () with
   | User_error message | Sys_error message | Interop.Unsupported_format message ->
     report ~heading:"ALVIE error" ~message ~status:2
+  | Alvie_backend.Backend.Failed message -> report ~heading:"ALVIE backend error" ~message ~status:1
   | Failure message ->
     (match classify message with
      | Some (heading, message, status) -> report ~heading ~message ~status

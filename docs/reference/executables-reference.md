@@ -22,7 +22,9 @@ All executables are built with `dune build` from inside `alvie/code/` and run fr
 | `alvie property formula M -f F.mcf` | | Checks that a model satisfies an mCRL2 modal μ-calculus formula |
 | `alvie plugin check [DIR]` | | Checks the files of a plugin (by default `plugins/sancus`, which `alvie` is built with) and prints a summary, or every problem with its place |
 | `alvie plugin schemas OUT` | | Writes the JSON Schemas of the plugin files and of the plugin's values to `OUT` |
-| `alvie plugin new NAME` | | Makes a native plugin from the template (see the [Plugin Author Guide](/alvie/guides/plugin-author-guide/)) |
+| `alvie plugin new NAME [--external]` | | Makes a plugin from the template: native, or external in Python (see the [Plugin Author Guide](/alvie/guides/plugin-author-guide/)) |
+| `alvie plugin types DIR OUT.py` | | Writes the Python constructors of the observations of the plugin in `DIR` |
+| `alvie external DIR ...` | | The commands of ALVIE/Core on the external plugin in `DIR` (see the [protocol](/alvie/reference/protocol/)) |
 | `alvie tiny ...` | | The commands of ALVIE/Core on Tiny, the reference platform (see [below](#the-commands-of-a-plugin)) |
 | `alvie sancus conformance`, `fixtures`, `exec` | | The same commands on Sancus: the conformance of the simulator, and the fixtures of `plugins/sancus` |
 
@@ -62,7 +64,7 @@ A mistake in the command or the files (a missing model, a model of a newer forma
 
 ## The commands of a plugin
 
-ALVIE/Core has the same commands for every native plugin: `alvie tiny ...` for Tiny, `alvie-NAME ...` for a plugin made with `alvie plugin new`.
+ALVIE/Core has the same commands for every plugin: `alvie tiny ...` for Tiny, `alvie-NAME ...` for a native plugin made with `alvie plugin new`, and `alvie external DIR ...` for an external one (`alvie external plugins/tiny-py ...` for Tiny in Python).
 Their options include those of the plugin's manifest: `--mitigation` for Tiny.
 The [Tiny tutorial](/alvie/guides/tiny-tutorial/) uses each of them.
 

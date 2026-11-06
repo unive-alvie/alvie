@@ -71,6 +71,24 @@
   with a message. The checked-in models get the line, and nothing else
   changes in them.
 
+### External plugins
+
+- **The protocol of Core with external plugins**, version 1: JSON-RPC 2.0,
+  one message per line on the plugin's standard input and output, with a
+  handshake that checks versions and capabilities (see the External Plugin
+  Protocol reference, and `protocol.schema.json`).
+- `alvie external DIR ...` runs the commands of Core (`learn`, `compare`,
+  `property`, `exec`, `conformance`, `fixtures`) on the external plugin in
+  `DIR`. A plugin that crashes, hangs (`ALVIE_RPC_TIMEOUT`), writes on its
+  standard output or fails stops the command with a message and the end of
+  its log. `ALVIE_RPC_RECORD` and `ALVIE_RPC_REPLAY` record a run and replay
+  it without the plugin.
+- **The Python SDK** (`sdk/python/alvie_plugin.py`, standard library only),
+  `alvie plugin types` for the constructors of a plugin's observations, and
+  `alvie plugin new NAME --external`.
+- **Tiny in Python** (`plugins/tiny-py`) passes conformance and learns the
+  same models as Tiny. A call costs about 0.1 ms.
+
 ### Plugins: the reference platform, conformance and fixtures
 
 - **Tiny** (`plugins/tiny`, `lib/core/tiny`): the reference platform of

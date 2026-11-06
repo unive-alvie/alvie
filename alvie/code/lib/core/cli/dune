@@ -4,3 +4,11 @@
  (public_name alvie-core.cli)
  (preprocess (pps ppx_jane))
  (libraries core core_unix core_unix.command_unix alvie_plugin alvie_backend alvie_inputgen learninglib interop ltscompare logs logs.fmt yojson))
+
+; The Python SDK (sdk/python/alvie_plugin.py), which alvie plugin new --external copies into the new plugin
+(rule
+ (targets sdk_python.ml)
+ (deps %{project_root}/sdk/python/alvie_plugin.py)
+ (action
+  (with-stdout-to %{targets}
+   (system "printf '(* Generated from sdk/python by lib/core/cli/dune *)\nlet alvie_plugin_py = {alvie_py|'; cat %{deps}; printf '|alvie_py}\n'"))))

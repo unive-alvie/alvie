@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/alvie-plugin.schema.json
+# Tiny in Python: the reference platform of ALVIE/Core (plugins/tiny) as an external plugin, written with the
+# Python SDK (sdk/python). Its other files are those of plugins/tiny (tt_rpc checks that they are the same), and
+# it learns the same models: Core's tests compare the two.
+format: 1
+name: tiny-py
+version: "2026.10"
+core: "1"
+kind: external
+command: [python3, tiny.py]
+description: >-
+  Tiny, the reference platform of ALVIE/Core, as an external plugin in Python: the same platform as plugins/tiny,
+  behind the protocol of Core.
+config:
+  mitigation:
+    type: enum
+    values: [none, constant-time]
+    default: none
+    doc: constant-time makes bz and pad take two cycles whatever the register, which removes both leaks
+variants:
+  no-interrupts:
+    doc: The timer never interrupts the enclave (the baseline whose differences are not caused by interrupts)
+capabilities: [restore, clone]
+fixtures: ../tiny/fixtures

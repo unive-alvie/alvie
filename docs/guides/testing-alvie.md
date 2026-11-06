@@ -25,7 +25,8 @@ Run `dune build` first.
 | Input generation corpus | `dune exec tt_inputgen_golden -- check` | Nothing outside OCaml. | About 1 second. |
 | Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Tiny and the commands of Core | `dune exec tt_tiny -- --color=never` | Nothing outside OCaml. | Under 1 second. |
-| The plugin template | `bash test/plugin_new.sh` | Nothing outside OCaml (mCRL2 for the template's fixtures). | Under a minute. |
+| The plugin templates | `bash test/plugin_new.sh` | Python 3 for the external template (mCRL2 for the templates' fixtures). | Under a minute. |
+| External plugins | `bash test/rpc.sh` | Python 3. | About 30 seconds. |
 | Fixtures of Tiny | `_build/default/bin/alvie.exe tiny fixtures` | mCRL2. | A few seconds. |
 | Fixtures of Sancus | `_build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim` | The Sancus checkout, Verilator, the MSP430 toolchain, mCRL2. | About 10 minutes. |
 | Properties | `dune exec tt_properties -- test --color=never` | mCRL2. | About 1 second. |
@@ -68,7 +69,16 @@ This suite checks the generic commands of ALVIE/Core (`Alvie_cli.Runner`) on Tin
 - learning is deterministic and leaves out the transitions that the spec does not allow, and model files name their plugin;
 - L# learns back the model that a backend replaying a learned model gives (`Runner.Make(N).Model_native`), a check of the learner and its oracle.
 
-`test/plugin_new.sh` makes a plugin with `alvie plugin new` in the tree, builds it, checks its files and runs its conformance (and its fixtures where mCRL2 is installed), then removes it.
+`test/plugin_new.sh` makes a plugin with `alvie plugin new` in the tree, builds it, checks its files and runs its conformance (and its fixtures where mCRL2 is installed), then removes it; it does the same with an external plugin (`--external`).
+
+### External plugins (`rpc.sh`)
+
+This script checks the protocol of Core with external plugins (`lib/core/rpc`) and the Python SDK (`sdk/python`):
+
+- the SDK on its own, on a scripted session;
+- Tiny in Python (`plugins/tiny-py`) passes conformance, and learns the same 18 models as Tiny (three fixture specs, two secrets, the variant and the mitigation), up to the bookkeeping, which Core does not compare;
+- a recorded session replays without the plugin, and a run that differs from the recording fails;
+- Core stops with a clear message a plugin that crashes, hangs, writes on standard output, fails, has another version or fewer capabilities than its manifest, or cannot be started, and leaves no process behind.
 
 ### Input generation corpus (`tt_inputgen_golden`)
 
@@ -181,6 +191,7 @@ It runs these steps:
 6. `dune exec tt_plugin -- test --color=never`
 7. `dune exec tt_tiny -- --color=never`
 8. `bash test/plugin_new.sh`
+9. `bash test/rpc.sh`
 
 A second job runs the suites that need the simulator toolchain or mCRL2 in the published Docker image:
 `./regression.sh all`, `tt_attack`, `tt_properties`, `property_cmd.sh`, the fixtures of Tiny, and `plugin_new.sh` with the template's fixtures.
@@ -206,6 +217,7 @@ Run the suites yourself before you push a change that needs them, as the next ta
 | The model comparison (`lib/core/compare/`, `fa.exe`, `alvie property`) or `plugins/sancus/view.yaml` | `./regression.sh witnesses`, `tt_properties` and `property_cmd.sh` |
 | A plugin file format, the spec language, or `plugins/sancus/` | `tt_plugin` (and `tt_plugin -- schemas` for a format change) |
 | The commands of Core (`lib/core/cli/`), the backend contract, or Tiny (`lib/core/tiny/`, `plugins/tiny/`) | `tt_tiny`, `cli_diagnostics.sh`, `plugin_new.sh` and `alvie tiny fixtures` |
+| The protocol, `lib/core/rpc/`, the Python SDK, or `plugins/tiny-py/` | `rpc.sh` and `plugin_new.sh` |
 | The Sancus backend (`lib/sancus/`) | also `alvie sancus conformance` on a spec, and `alvie sancus fixtures` |
 | The libraries a library of `alvie-core` uses | `dune build -p alvie-core --build-dir _build-alvie-core @install` |
 | A specification in `spec-lib/` | A short learning run and a comparison |

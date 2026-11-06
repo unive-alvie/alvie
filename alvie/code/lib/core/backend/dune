@@ -3,4 +3,4 @@
  (name alvie_backend)
  (public_name alvie-core.backend)
  (preprocess (pps ppx_jane))
- (libraries core alvie_plugin alvie_inputgen learninglib))
+ (libraries core alvie_plugin alvie_inputgen learninglib yojson))
