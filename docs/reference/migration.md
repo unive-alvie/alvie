@@ -90,4 +90,5 @@ The documentation of each release stays at its own address: `/alvie/2026.10/` fo
 - The comparison engine is generic: its hooks come from the plugin files (`Ltscompare.Plugin_hooks`), and `lib/sancus-compare` is gone.
 - The input generator is that of Core (`lib/core/inputgen`), driven by the plugin files; `learn.exe --inputgen legacy` is gone, and the former generator remains only to compare with, in `tt_inputgen_golden check --engine legacy`.
 - The simulator is a backend of the contract of Core (`Alvie_backend.Backend.S`).
+- `learn.exe` and `fa.exe` learn and compare with the commands of Core (`Alvie_cli.Runner`), with the codec of Sancus: there is one learning path for every plugin.
 - [Code Architecture](/alvie/development/code-architecture/) describes the modules, and the [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/) how to add a platform.

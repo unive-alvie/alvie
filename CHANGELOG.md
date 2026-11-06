@@ -11,6 +11,20 @@ platform; the commands of Core for any plugin; conformance checks and
 fixtures; external plugins and the Python SDK. "Migrating from 2026.10" in
 the documentation lists what users must do.
 
+### One learning path
+
+- `learn.exe` and `fa.exe` (`alvie learn` and `alvie compare`) learn and
+  compare with the commands of ALVIE/Core (`Alvie_cli.Runner`), as every other
+  plugin does, through the codec of Sancus (`Sancus.Native.Codec`): their
+  options and output, and the models they learn, do not change (regression:
+  no differences). The runner gains what Sancus needed: a codec of the
+  plugin's own (`Runner.Make_codec`), random inputs outside the spec
+  (`--bad-probability`), the exhaustive oracle, `--dry` and the statistics of
+  `--report`. `alvie sancus fixtures` writes models in the format of Sancus.
+- A file that is not a model, given to `fa.exe` or `alvie compare`, is a
+  mistake in the command (exit 2, `cannot read --m1-int ...`), no longer an
+  unexpected failure.
+
 ### Documentation
 
 - The documentation is grouped by reader: ALVIE/Core, ALVIE/Sancus, Writing
