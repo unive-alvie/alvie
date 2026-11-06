@@ -157,4 +157,5 @@ let file_schemas () : (string * Yojson.Safe.t) list =
     s "atoms" "ALVIE plugin atoms" (Shape.map_value Atoms_file.shape ~f:ignore);
     s "observations" "ALVIE plugin observations" (Shape.map_value Observations_file.shape ~f:ignore);
     s "phases" "ALVIE plugin phase rules" (Shape.map_value Rules_file.phases_shape ~f:ignore);
-    s "view" "ALVIE plugin attacker view" (Shape.map_value Rules_file.view_shape ~f:ignore) ]
+    s "view" "ALVIE plugin attacker view" (Shape.map_value Rules_file.view_shape ~f:ignore);
+    s "fixture" "ALVIE plugin fixture" (Shape.map_value Fixture_file.shape ~f:ignore) ]

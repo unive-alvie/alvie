@@ -6,6 +6,8 @@
     alvie exec ...      runs a sequence of inputs on the backend (exec.exe)
     alvie pbt ...       property-based testing of two attacker specs (pbt.exe)
     alvie property ...  checks inclusion, equivalence or an mCRL2 formula on learned models
+    alvie sancus ...    conformance, fixtures and exec of ALVIE/Core on Sancus
+    alvie tiny ...      the commands of ALVIE/Core on Tiny, the reference platform (plugins/tiny)
     alvie plugin check  checks the plugin files; alvie plugin schemas writes their JSON Schemas
 
   learn.exe, fa.exe, exec.exe and pbt.exe remain, as the same commands, for one release.
@@ -18,4 +20,8 @@ let () =
          ("exec", Exec_cmd.command);
          ("pbt", Pbt_cmd.command);
          ("property", Property_cmd.command);
+         ("sancus", Alvie_cli.Runner.commands ~only:[ "conformance"; "fixtures"; "exec" ]
+                      ~summary:"The commands of ALVIE/Core on Sancus: conformance of the simulator, and the fixtures (learn and compare are the commands above)"
+                      (module Sancus.Native));
+         ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
          ("plugin", Alvie_cli.Plugin_cmd.command ~default:(lazy (Ok (Lazy.force Sancus.Generic_inputgen.plugin)))) ])

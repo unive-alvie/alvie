@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: bz branches on the secret, and the time the enclave takes tells it (with or without interrupts)
+spec: leak-time.spec
+secrets: [0, 1]
+expect: leak

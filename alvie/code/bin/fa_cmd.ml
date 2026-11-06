@@ -31,6 +31,7 @@ module Models (P : Ltscompare.Plugin_hooks.PARAMS) = struct
   (* A model as a Mealy machine of the comparison: each observation of a step is split into its parts, one
      transition each, with the input of the step (or the interrupt, for the parts that are one) *)
   let load_mealy file : C.IIOMealy.t =
+    check_plugin ~plugin:(Lazy.force Generic_inputgen.plugin).manifest.name file;
     let m = IOInterop.t_of_dot_file IOInterop.IIOMealy.ISet.empty file in
     let input_of (i : Input.t) : H.Input.t =
       match i, Generic_inputgen.atom_of_input i with

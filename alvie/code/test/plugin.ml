@@ -236,7 +236,7 @@ let test_atoms_errors = [
 (* A copy of the Sancus plugin with one file replaced, to check the errors across files *)
 let with_file name contents f =
   let dir = Filename_unix.temp_dir "tt_plugin" "" in
-  List.iter (Sys_unix.ls_dir plugin_dir) ~f:(fun file ->
+  List.iter (List.filter (Sys_unix.ls_dir plugin_dir) ~f:(fun f -> String.is_suffix f ~suffix:".yaml")) ~f:(fun file ->
       Out_channel.write_all (Filename.concat dir file) ~data:(In_channel.read_all (Filename.concat plugin_dir file)));
   Out_channel.write_all (Filename.concat dir name) ~data:contents;
   Exn.protect ~f:(fun () -> f dir) ~finally:(fun () -> ignore (Sys_unix.command (sprintf "rm -rf %s" (Filename.quote dir))))

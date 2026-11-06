@@ -48,3 +48,13 @@
   (libraries alcotest ltscompare alvie_plugin core core_unix core_unix.filename_unix core_unix.sys_unix)
   (preprocess (pps ppx_jane))
 )
+
+; Tiny, the reference platform, and the generic commands of Core on it: nothing outside OCaml
+(executable
+  (name tiny)
+  (public_name tt_tiny)
+  (package alvie-core)
+  (modules tiny)
+  (libraries alcotest alvie_plugin alvie_inputgen alvie_backend alvie_tiny alvie_cli core core_unix core_unix.filename_unix core_unix.sys_unix)
+  (preprocess (pps ppx_jane))
+)
