@@ -71,6 +71,37 @@
   with a message. The checked-in models get the line, and nothing else
   changes in them.
 
+### Plugins: the reference platform, conformance and fixtures
+
+- **Tiny** (`plugins/tiny`, `lib/core/tiny`): the reference platform of
+  ALVIE/Core, a small processor in pure OCaml with a timer that interrupts
+  its enclave and two planted timing leaks. Learning a model takes a
+  fraction of a second; the new tutorial "Find a Leak on Tiny" uses it.
+- **The commands of Core for any native plugin** (`Alvie_cli.Runner`):
+  `learn`, `compare` (noninterference, with a baseline variant),
+  `property`, `exec`, `conformance` and `fixtures`, with the options of the
+  manifest. `alvie tiny ...` runs them on Tiny; `alvie sancus conformance`,
+  `fixtures` and `exec` on Sancus. `compare`, `property`, `conformance` and
+  `fixtures` exit with 4 when the check does not pass.
+- **Conformance** checks that a backend keeps the contract of Core on
+  random tests of a spec: observations, phases, determinism, reset,
+  prefixes, restore and clone. Tiny and the Sancus simulator pass.
+- **Fixtures** (`fixtures/*.yaml` of a plugin): specs with the verdict of
+  noninterference the plugin must give. Tiny has five, Sancus four (the
+  Getting Started example, a safe variant of it, and attack A on ef753b6
+  and bf89c0b).
+- `alvie plugin new NAME` makes a native plugin from a template that works
+  from the start, with its own `alvie-NAME`; the Plugin Author Guide starts
+  from it.
+- Variants of the manifest (`--variant no-interrupts`) are now applied: the
+  backend gets the variant it runs.
+- Specs can have comments, from `//` to the end of the line.
+- The input generator simplifies the derivatives of spec bodies: a star in a
+  section no longer makes a test exponentially slower with every repetition.
+  The options it offers do not change (the corpus check has no difference).
+- A model of another plugin is refused with a message, by `alvie compare`
+  and `alvie property` too.
+
 ### Comparison
 
 - Comparisons see what the attacker view declares (`plugins/sancus/view.yaml`),

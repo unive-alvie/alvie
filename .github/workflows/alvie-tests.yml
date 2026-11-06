@@ -77,6 +77,12 @@ jobs:
       - name: Run the plugin files suite
         working-directory: alvie/code
         run: opam exec -- dune exec tt_plugin -- test --color=never
+      - name: Run the suite of Tiny and of the commands of Core
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_tiny -- --color=never
+      - name: Check the plugin template
+        working-directory: alvie/code
+        run: opam exec -- bash test/plugin_new.sh
 
   # The simulator-backed suites need Verilator, the MSP430 toolchain and mCRL2: they run in the published image,
   # as its own user (alvie), on a checkout that this user can write.
@@ -114,7 +120,7 @@ jobs:
         if: success() || failure()
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
-            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_properties -- test --color=never && bash test/property_cmd.sh'
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_properties -- test --color=never && bash test/property_cmd.sh && dune build && _build/default/bin/alvie.exe tiny fixtures --out /tmp/alvie-tiny-fixtures && bash test/plugin_new.sh'
       - name: Keep the logs of a failed run
         if: failure()
         uses: actions/upload-artifact@v4
@@ -124,3 +130,29 @@ jobs:
             logs/regression/
             alvie/code/_build/_tests/
           if-no-files-found: ignore
+
+  # The fixtures of plugins/sancus learn twelve models on the simulator, one after the other: in a job of their own,
+  # beside the regression
+  sancus-fixtures:
+    name: Check the fixtures of Sancus
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Pull the ALVIE image
+        run: docker pull matteobusi/alvie:latest
+      - name: Add the OCaml dependencies of this checkout to the image
+        run: |
+          printf '%s\n' 'FROM matteobusi/alvie:latest' \
+            'RUN eval "$(opam env --switch=4.13.1)" && opam install -y yaml yojson' \
+            | docker build -t alvie-ci -
+      - name: Let the image user write to the checkout
+        run: chmod -R a+rwX "$GITHUB_WORKSPACE"
+      - name: Learn and compare the fixtures
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune build && _build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim --out /tmp/alvie-sancus-fixtures'

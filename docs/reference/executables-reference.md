@@ -22,6 +22,9 @@ All executables are built with `dune build` from inside `alvie/code/` and run fr
 | `alvie property formula M -f F.mcf` | | Checks that a model satisfies an mCRL2 modal μ-calculus formula |
 | `alvie plugin check [DIR]` | | Checks the files of a plugin (by default `plugins/sancus`, which `alvie` is built with) and prints a summary, or every problem with its place |
 | `alvie plugin schemas OUT` | | Writes the JSON Schemas of the plugin files and of the plugin's values to `OUT` |
+| `alvie plugin new NAME` | | Makes a native plugin from the template (see the [Plugin Author Guide](/alvie/guides/plugin-author-guide/)) |
+| `alvie tiny ...` | | The commands of ALVIE/Core on Tiny, the reference platform (see [below](#the-commands-of-a-plugin)) |
+| `alvie sancus conformance`, `fixtures`, `exec` | | The same commands on Sancus: the conformance of the simulator, and the fixtures of `plugins/sancus` |
 
 ```bash
 _build/default/bin/alvie.exe learn --att-spec ... --encl-spec ... --res model.dot --tmpdir /tmp/alvie --sancus ../../sancus-core-gap --oracle pac
@@ -57,6 +60,43 @@ With `--debug`, `actions.txt`, next to the model given to mCRL2, lists each acti
 The exit status is 0 when the property holds and 4 when it does not; when it does not, the output gives a trace that shows it (except for a formula).
 A mistake in the command or the files (a missing model, a model of a newer format, a formula that mCRL2 rejects) exits with 2 and a message.
 
+## The commands of a plugin
+
+ALVIE/Core has the same commands for every native plugin: `alvie tiny ...` for Tiny, `alvie-NAME ...` for a plugin made with `alvie plugin new`.
+Their options include those of the plugin's manifest: `--mitigation` for Tiny.
+The [Tiny tutorial](/alvie/guides/tiny-tutorial/) uses each of them.
+
+| Command | Does |
+| --- | --- |
+| `learn --spec F --res M.dot` | Learns a model of the backend under the spec (several `--spec` for a spec in several files) |
+| `compare --m1 A --m2 B --secrets s1,s2 --witnesses W.dot` | Noninterference: the witnesses that tell apart two models that differ only in the secret |
+| `property inclusion\|equivalence\|formula` | The other properties, as `alvie property` below |
+| `exec --spec F --inputs FILE` | Runs the atoms of `FILE` (one per line, as a spec writes them) and prints what each observes |
+| `conformance --spec F` | Checks that the backend keeps the contract of Core, on random tests of the spec |
+| `fixtures [NAME ...]` | Learns and compares the plugin's fixtures, and checks their verdicts |
+
+Options of `learn` (and of `exec` and `conformance` where they apply):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--secret V` | | The value of the secret `?` in the spec; needed when the spec has one |
+| `--variant NAME` | | A variant of the system from the manifest, such as `no-interrupts` |
+| `--oracle` | `pac` | `pac`, with `--epsilon` and `--delta` (0.01 each) and `--round-limit`, or `randomwalk`, with `--test-count` (10000) and `--reset-probability` (0.09) |
+| `--seed N` | 0 | The seed of the random choices: learning is deterministic for a seed |
+| `--debug` | | Debug-level logging |
+
+Options of `compare`: `--m1-baseline` and `--m2-baseline` (models of a baseline variant, whose witnesses do not count), `--tmpdir` (for mCRL2, default `/tmp/alvie`) and `--cex-limit`.
+Options of `conformance`: `--tests` (50), `--length` (30) and `--seed`; of `fixtures`: `--dir` (another directory of fixtures) and `--out` (the models, witnesses and files of mCRL2, default `/tmp/alvie/fixtures`).
+
+The models of these commands are of the generic form: their inputs are atoms and their outputs observations, as the plugin files declare them; they do not contain the inputs that the spec does not allow.
+`compare`, `property` and `fixtures` refuse a model of another plugin.
+
+`compare`, `property`, `conformance` and `fixtures` exit with 0 when the check passes and 4 when it does not.
+A mistake in the command or its files exits with 2; errors that the command-line parser finds (an unknown option, a value of the wrong type, a missing option) exit with 1.
+
+On Sancus, `alvie learn` and `alvie compare` stay the commands of experiments, with the Sancus model files; `alvie sancus` has the commands that check the plugin.
+The simulator takes a few minutes for each model of a fixture.
+
 ## Model files
 
 Learned models are Graphviz `.dot` files whose first line says what made them:
@@ -66,7 +106,7 @@ Learned models are Graphviz `.dot` files whose first line says what made them:
 ```
 
 Models without this line come from earlier versions; they read the same.
-A model of a later format is refused with a message: it needs a newer ALVIE.
+A model of a later format is refused with a message: it needs a newer ALVIE, and so is a model of another plugin.
 
 ---
 

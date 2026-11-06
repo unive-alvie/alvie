@@ -29,7 +29,11 @@ plugins/sancus/
   observations.yaml     # what the backend observes
   phases.yaml           # how observations move a test between sections
   view.yaml             # what the attacker sees
+  fixtures/             # specs with the verdict the plugin must give on them (optional)
 ```
+
+Two plugins come with ALVIE: `plugins/sancus`, for Sancus, and `plugins/tiny`, *Tiny*, the reference platform of ALVIE/Core.
+Tiny is the smallest complete plugin: read its files next to this page.
 
 Every file starts with `format: 1`, the version of its format.
 Core checks each file, then checks the files against each other, and reports every error it finds with its file, line and column.
@@ -74,9 +78,12 @@ They cover each file on its own; the checks across files (for example, that a ru
 | `variants` | no | The variants of the system, by name, each with an optional `doc`: for example a baseline such as `no-interrupts`. |
 | `capabilities` | no | What the backend can do: `restore`, `clone`, `parallel`. |
 | `files` | no | The names of the other files, if they differ from the defaults above. |
-| `fixtures` | no | The directory of the plugin's fixtures. |
+| `fixtures` | no | The directory of the plugin's fixtures, relative to the manifest (see [Fixtures](#fixtures)). |
 
 A configuration parameter has a `type` (`string`, `path`, `int`, `bool` or `enum`), and optionally `required: true`, a `default` (written as on the command line), a `doc`, a `range: [lowest, highest]` for `int` and the `values` of an `enum`.
+Each parameter is an option of the plugin's commands, `--<name>`, checked against its type.
+
+A variant is a version of the system that the backend can run instead, chosen with `--variant`: Tiny and Sancus have `no-interrupts`, the baseline whose differences are not caused by interrupts.
 
 ## `sections.yaml`: sections and the secret
 
@@ -305,6 +312,33 @@ Sections of kind `stimulus` choose afresh at every input, and an `opaque` sectio
 
 The configuration parameters of the manifest are the options of the backend on the command line: `alvie learn --commit bf89c0b` sets the parameter `commit`.
 
+Two more checks need the backend, and run with the plugin's commands (`alvie tiny ...`, `alvie sancus ...`, or the `alvie-NAME` of a new plugin):
+
+- `conformance` runs random tests of a spec and checks that the backend keeps the contract of Core;
+- `fixtures` learns and compares the fixtures, and checks their verdicts.
+
+The [Plugin Author Guide](/alvie/guides/plugin-author-guide/) explains both.
+
+## Fixtures
+
+A fixture is a spec with the verdict of noninterference that the plugin must give on it: a planted leak that must be found, a safe spec that must give no witness, or a known attack.
+`fixtures` learns a model of the spec for each of the two values of the secret (and of the baseline variant, if there is one), compares them as `compare` does, and checks the verdict.
+Each fixture is a YAML file in the directory that the manifest's `fixtures:` names:
+
+```yaml
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: A balanced branch leaks through interrupts only
+spec: leak-interrupt.spec        # or a list of files; relative to the fixture
+secrets: [0, 1]
+config: { mitigation: none }     # optional: values of the parameters of the manifest
+baseline: no-interrupts          # optional: a variant whose witnesses do not count
+expect: leak                     # leak or no-leak
+```
+
+The values in `config:` override the options of the command line, which give the others (Sancus needs `--sancus` and `--tmpdir`); a parameter left out has its default.
+The fixtures of Tiny are in `plugins/tiny/fixtures`, and those of Sancus, which take a few minutes each, in `plugins/sancus/fixtures`.
+
 ## Checks across files
 
 After reading each file, Core checks that:
@@ -343,7 +377,8 @@ primary ::= atom | "(" body ")"
 ```
 
 `|` is a choice, `;` a sequence, `*` any number of repetitions, and `eps` the empty sequence.
-Whitespace is allowed anywhere between the parts.
+`;` binds tighter than `|`: write `(nop | eps); call` for "maybe `nop`, then `call`".
+Whitespace is allowed anywhere between the parts, and a comment runs from `//` to the end of the line.
 
 ### Constraints
 

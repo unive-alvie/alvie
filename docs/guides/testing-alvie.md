@@ -24,6 +24,10 @@ Run `dune build` first.
 | CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml, except `git`. | A few seconds. |
 | Input generation corpus | `dune exec tt_inputgen_golden -- check` | Nothing outside OCaml. | About 1 second. |
 | Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
+| Tiny and the commands of Core | `dune exec tt_tiny -- --color=never` | Nothing outside OCaml. | Under 1 second. |
+| The plugin template | `bash test/plugin_new.sh` | Nothing outside OCaml (mCRL2 for the template's fixtures). | Under a minute. |
+| Fixtures of Tiny | `_build/default/bin/alvie.exe tiny fixtures` | mCRL2. | A few seconds. |
+| Fixtures of Sancus | `_build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim` | The Sancus checkout, Verilator, the MSP430 toolchain, mCRL2. | About 10 minutes. |
 | Properties | `dune exec tt_properties -- test --color=never` | mCRL2. | About 1 second. |
 | Property commands | `bash test/property_cmd.sh` | mCRL2. | About 10 seconds. |
 | Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 2 minutes. |
@@ -54,6 +58,17 @@ This suite checks that a simulator that does not finish becomes an `ALVIE incomp
 This script runs the built executables with wrong input.
 It checks the exit code and the text of the message.
 It covers the input errors that the [Troubleshooting](/alvie/reference/troubleshooting/) page lists.
+
+### Tiny and the commands of Core (`tt_tiny`)
+
+This suite checks the generic commands of ALVIE/Core (`Alvie_cli.Runner`) on Tiny, the reference platform:
+
+- the semantics of Tiny: the cycles of each instruction, interrupts and their latency, the variant and the mitigation;
+- the conformance kit passes on Tiny, and fails on broken variants of it, one for each check (a clone that shares its state, a restore that does nothing, a `pre` that keeps the state, an undeclared observation, a legal input made invalid, a stale cache, a random observation);
+- learning is deterministic and leaves out the transitions that the spec does not allow, and model files name their plugin;
+- L# learns back the model that a backend replaying a learned model gives (`Runner.Make(N).Model_native`), a check of the learner and its oracle.
+
+`test/plugin_new.sh` makes a plugin with `alvie plugin new` in the tree, builds it, checks its files and runs its conformance (and its fixtures where mCRL2 is installed), then removes it.
 
 ### Input generation corpus (`tt_inputgen_golden`)
 
@@ -164,9 +179,12 @@ It runs these steps:
 4. `bash test/cli_diagnostics.sh`
 5. `dune exec tt_inputgen_golden -- check`
 6. `dune exec tt_plugin -- test --color=never`
+7. `dune exec tt_tiny -- --color=never`
+8. `bash test/plugin_new.sh`
 
 A second job runs the suites that need the simulator toolchain or mCRL2 in the published Docker image:
-`./regression.sh all`, `tt_attack`, `tt_properties` and `property_cmd.sh`.
+`./regression.sh all`, `tt_attack`, `tt_properties`, `property_cmd.sh`, the fixtures of Tiny, and `plugin_new.sh` with the template's fixtures.
+A third job, beside it, runs the fixtures of Sancus, which learn twelve models on the simulator.
 It first installs into the image the OCaml libraries that the checkout needs and the image may not have yet.
 
 The workflow `docs.yml` runs on pull requests that change `docs/`, `site/`, or the Dockerfile.
@@ -187,6 +205,8 @@ Run the suites yourself before you push a change that needs them, as the next ta
 | The learner or the oracles | `./regression.sh learning` |
 | The model comparison (`lib/core/compare/`, `fa.exe`, `alvie property`) or `plugins/sancus/view.yaml` | `./regression.sh witnesses`, `tt_properties` and `property_cmd.sh` |
 | A plugin file format, the spec language, or `plugins/sancus/` | `tt_plugin` (and `tt_plugin -- schemas` for a format change) |
+| The commands of Core (`lib/core/cli/`), the backend contract, or Tiny (`lib/core/tiny/`, `plugins/tiny/`) | `tt_tiny`, `cli_diagnostics.sh`, `plugin_new.sh` and `alvie tiny fixtures` |
+| The Sancus backend (`lib/sancus/`) | also `alvie sancus conformance` on a spec, and `alvie sancus fixtures` |
 | The libraries a library of `alvie-core` uses | `dune build -p alvie-core --build-dir _build-alvie-core @install` |
 | A specification in `spec-lib/` | A short learning run and a comparison |
 | A page in `docs/` | The documentation check below |
