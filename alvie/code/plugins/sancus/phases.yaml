@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=../../schemas/phases.schema.json
+# How the observations of Sancus move a test between its sections: the rules of the phase automaton of
+# lib/sancus/inputgen.ml (transition_nomemo), in the same order.
+format: 1
+rules:
+  - { match: Diverge, do: [{ stop: finished }] }
+  - { match: [Illegal, Unsupported], do: [{ stop: invalid }] }
+  - { match: [Time, Silent], do: [] }
+  # Leaving the enclave by a reset or a jump out starts the whole test again, from cleanup
+  - { match: [Reset, JmpOut], in: enclave, do: [reset, { enter: cleanup }] }
+  - { match: Reset, do: [reset, { enter: prepare }] }
+  - { match: JmpIn, do: [{ enter: enclave }] }
+  - { match: JmpOut, do: [{ enter: cleanup }] }
+  # An interrupt saves where the enclave is and starts the ISR
+  - { match: [JmpOut_Handle, Time_Handle], do: [{ interrupt: isr }] }
+  # reti resumes the enclave; a reti that returns to unprotected mode is a postponed jump out
+  - { match: Reti, when: { mode: PM }, do: [resume] }
+  - { match: Reti, when: { mode: UM }, do: [resume, { switch: cleanup }] }

@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=../../schemas/observations.schema.json
+# What the Sancus backend observes after each input (lib/sancus/output_internal.ml). The payload is what an
+# attacker in unprotected mode can observe, plus the cycle count k and the mode the processor ended in.
+format: 1
+types:
+  mode: { enum: [UM, PM] }
+  payload:
+    fields:
+      k: int
+      gie: bool
+      umem_val: word
+      reg_val: word
+      timerA_counter: word
+      mode: mode
+kinds:
+  Diverge: { doc: The simulation did not end within its time budget }
+  Illegal: { doc: The input cannot run here (e.g. an instruction that is not allowed) }
+  Unsupported: { doc: The backend cannot simulate this input }
+  Reset: { doc: The system was reset }
+  Silent: { doc: Nothing observable happened }
+  JmpIn: payload
+  JmpOut: payload
+  Reti: payload
+  Time: payload
+  JmpOut_Handle: { fields: { time: payload, handle: payload }, doc: The enclave jumped out and an interrupt was handled }
+  Time_Handle: { fields: { time: payload, handle: payload }, doc: The input ran and an interrupt was handled }

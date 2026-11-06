@@ -18,6 +18,11 @@ The [How ALVIE Works](/alvie/guides/concepts/) page explains how the terms fit t
   It is a separate project.
 - **System under learning (SUL)**: The system that ALVIE tests.
   In ALVIE/Sancus, it is a simulation of the Sancus processor.
+- **ALVIE/Core**: The part of ALVIE that does not depend on a platform: learning, input generation, comparison, and the spec language.
+- **Plugin**: What connects ALVIE/Core to a platform: YAML files that declare the platform's sections, atoms, observations, phase rules and attacker view, and a backend that runs inputs on it.
+  See the [Plugin Files Reference](/alvie/reference/plugin-files/).
+- **Atom class**: The set of atoms that the inputs of a section can be, for example the attacker's actions or the enclave's instructions.
+- **Attacker view**: What the attacker sees of each observation, declared in the plugin's `view.yaml`.
 
 ## Learning
 

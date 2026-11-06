@@ -23,11 +23,12 @@ Run `dune build` first.
 | Diagnostics | `dune exec test/diagnostics.exe -- --color=never` | Nothing outside OCaml. | Under 1 second. |
 | CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml, except `git`. | A few seconds. |
 | Input generation corpus | `dune exec tt_inputgen_golden -- check` | Nothing outside OCaml. | About 1 second. |
+| Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 2 minutes. |
 | Witness regression | `./regression.sh witnesses` (from the repository root) | mCRL2. | A few minutes. |
 | Learning regression | `./regression.sh learning` (from the repository root) | The Sancus checkout, Verilator, the MSP430 toolchain, mCRL2. | About 5 minutes on 16 cores. |
 
-The first four suites are the fast checks.
+The first five suites are the fast checks.
 They do not need the simulator, mCRL2, or a `sancus-core-gap` checkout.
 This is a design rule.
 Keep them independent of external tools, so that every contributor can run them.
@@ -115,6 +116,28 @@ If a model, a graph or a count changes, find out why before you accept it.
 A change can show a bug, or a real improvement.
 When it is on purpose, regenerate the checked-in files with the wrapper scripts, update the counts in `witness-counts.txt` and in the attack catalogue together, and write the reason in the commit message.
 
+### Plugin files (`tt_plugin`)
+
+This suite checks the plugin files of ALVIE/Core and the generic spec language on `plugins/sancus/`:
+
+- the Sancus plugin files load, and the JSON Schemas in `schemas/` are up to date;
+- every spec in `spec-lib/` parses, with the grammar of `plugins/sancus/atoms.yaml`, to the same values as with `testdl.ml`;
+- random atoms of every class, and every spec of `spec-lib/`, parse back to themselves after printing;
+- errors in plugin files and specs are reported where they are, with the expected message.
+
+When you change the format of a plugin file, regenerate the schemas and commit them:
+
+```bash
+dune exec tt_plugin -- schemas
+```
+
+The values of atoms and observations are benchmarked by `test/value_bench.exe`, which is not run in CI.
+It compares sorting, hashing and equality of today's inputs with values and interned values:
+
+```bash
+dune exec --profile release test/value_bench.exe
+```
+
 ## What continuous integration runs
 
 The workflow `alvie-tests.yml` runs on every pull request and on every push to `main` and `alvie-ng`.
@@ -126,9 +149,11 @@ It runs these steps:
 3. `dune exec tt_features -- test --color=never`
 4. `bash test/cli_diagnostics.sh`
 5. `dune exec tt_inputgen_golden -- check`
+6. `dune exec tt_plugin -- test --color=never`
 
 A second job runs the simulator-backed suites in the published Docker image, which has the simulator toolchain and mCRL2:
 `./regression.sh all` and `tt_attack`.
+It first installs into the image the OCaml libraries that the checkout needs and the image may not have yet.
 
 The workflow `docs.yml` runs on pull requests that change `docs/`, `site/`, or the Dockerfile.
 It copies `docs/` into the site, builds the site, and checks every internal link.
@@ -147,6 +172,7 @@ Run the suites yourself before you push a change that needs them, as the next ta
 | The simulator interface, the VCD analysis, or the output payload | `tt_attack` and `./regression.sh learning` |
 | The learner or the oracles | `./regression.sh learning` |
 | The model comparison (`lib/core/compare/`, `lib/sancus-compare/`, `fa.exe`) | `./regression.sh witnesses` |
+| A plugin file format, the spec language, or `plugins/sancus/` | `tt_plugin` (and `tt_plugin -- schemas` for a format change) |
 | The libraries a library of `alvie-core` uses | `dune build -p alvie-core --build-dir _build-alvie-core @install` |
 | A specification in `spec-lib/` | A short learning run and a comparison |
 | A page in `docs/` | The documentation check below |

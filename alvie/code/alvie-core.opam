@@ -23,6 +23,8 @@ depends: [
   "ppx_jane"
   "ppx_sexp_conv"
   "shexp"
+  "yaml"
+  "yojson"
   "odoc" {with-doc}
 ]
 build: [

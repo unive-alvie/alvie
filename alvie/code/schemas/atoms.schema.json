@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/atoms.schema.json",
+  "title": "ALVIE plugin atoms",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "types": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "syntax": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ],
+            "description": "The syntax of a type with a single form"
+          },
+          "args": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "int": {
+                      "type": "array",
+                      "items": { "type": "integer" },
+                      "description": "An integer from lowest to highest: [lowest, highest]"
+                    },
+                    "list": {
+                      "type": "string",
+                      "description": "A list of values of this type (at least one)"
+                    },
+                    "exclude": {
+                      "type": "array",
+                      "items": { "type": "string" },
+                      "description": "Variants of the element type not allowed in the list"
+                    },
+                    "sep": {
+                      "type": "string",
+                      "description": "The separator of the elements (default ;)"
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "int, symbol, a declared type, { int: [lowest, highest] } or { list: <type>, exclude: [...], sep: ... }"
+            }
+          },
+          "variants": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "syntax": {
+                  "anyOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ],
+                  "description": "The syntax template, or a list of them (the first is used to print)"
+                },
+                "args": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "anyOf": [
+                      { "type": "string" },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "int": {
+                            "type": "array",
+                            "items": { "type": "integer" },
+                            "description": "An integer from lowest to highest: [lowest, highest]"
+                          },
+                          "list": {
+                            "type": "string",
+                            "description": "A list of values of this type (at least one)"
+                          },
+                          "exclude": {
+                            "type": "array",
+                            "items": { "type": "string" },
+                            "description": "Variants of the element type not allowed in the list"
+                          },
+                          "sep": {
+                            "type": "string",
+                            "description": "The separator of the elements (default ;)"
+                          }
+                        },
+                        "required": [],
+                        "additionalProperties": false
+                      }
+                    ],
+                    "description": "int, symbol, a declared type, { int: [lowest, highest] } or { list: <type>, exclude: [...], sep: ... }"
+                  },
+                  "description": "The arguments, by name, with their types"
+                },
+                "secret": {
+                  "type": "object",
+                  "properties": {
+                    "expand": {
+                      "type": "string",
+                      "description": "The text the secret becomes, with {value} for the value of the secret: e.g. #{value}"
+                    }
+                  },
+                  "required": [ "expand" ],
+                  "additionalProperties": false,
+                  "description": "Makes this variant the hole of the secret"
+                },
+                "doc": { "type": "string" }
+              },
+              "required": [ "syntax" ],
+              "additionalProperties": false
+            },
+            "description": "The variants of the type, by name"
+          },
+          "doc": { "type": "string" }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "description": "The types of the arguments of atoms"
+    },
+    "atoms": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "syntax": {
+              "anyOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ],
+              "description": "The syntax template, or a list of them (the first is used to print)"
+            },
+            "args": {
+              "type": "object",
+              "additionalProperties": {
+                "anyOf": [
+                  { "type": "string" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "int": {
+                        "type": "array",
+                        "items": { "type": "integer" },
+                        "description": "An integer from lowest to highest: [lowest, highest]"
+                      },
+                      "list": {
+                        "type": "string",
+                        "description": "A list of values of this type (at least one)"
+                      },
+                      "exclude": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Variants of the element type not allowed in the list"
+                      },
+                      "sep": {
+                        "type": "string",
+                        "description": "The separator of the elements (default ;)"
+                      }
+                    },
+                    "required": [],
+                    "additionalProperties": false
+                  }
+                ],
+                "description": "int, symbol, a declared type, { int: [lowest, highest] } or { list: <type>, exclude: [...], sep: ... }"
+              },
+              "description": "The arguments, by name, with their types"
+            },
+            "secret": {
+              "type": "object",
+              "properties": {
+                "expand": {
+                  "type": "string",
+                  "description": "The text the secret becomes, with {value} for the value of the secret: e.g. #{value}"
+                }
+              },
+              "required": [ "expand" ],
+              "additionalProperties": false,
+              "description": "Makes this variant the hole of the secret"
+            },
+            "doc": { "type": "string" }
+          },
+          "required": [ "syntax" ],
+          "additionalProperties": false
+        }
+      },
+      "description": "The atom classes (e.g. attacker, victim), each with its atoms"
+    }
+  },
+  "required": [ "format", "atoms" ],
+  "additionalProperties": false
+}

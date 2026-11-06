@@ -35,7 +35,9 @@
   ppx_hash
   ppx_jane
   ppx_sexp_conv
-  shexp)
+  shexp
+  yaml
+  yojson)
  (tags
   ("automata learning" "formal verification" "alvie")))
 
@@ -71,7 +73,10 @@
   ppx_jane
   ppx_sexp_conv
   qcheck
-  shexp)
+  qcheck-core
+  shexp
+  yaml
+  yojson)
  (tags
   ("automata learning" "formal verification" "sancus" "side-channels" "alvie")))
 
