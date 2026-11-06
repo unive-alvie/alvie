@@ -46,6 +46,7 @@ This is the main experiment driver.
 | `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
 | `--bad-probability <float>` | `0.20` | Probability of generating an input not driven by the specification |
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
+| `--inputgen` | `core` | The input generator: `core`, the generator of ALVIE/Core driven by `plugins/sancus/`, or `legacy`, the former one, to reproduce models learned with earlier versions (it does not support constraints) |
 | `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/guides/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
 | `--sancus-master-key <hex>` | _(default key)_ | Master key passed to the Sancus simulator |
 | `--dry` | false | Dry run: set up the simulator but do not learn |

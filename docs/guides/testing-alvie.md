@@ -55,12 +55,14 @@ It covers the input errors that the [Troubleshooting](/alvie/reference/troublesh
 
 ### Input generation corpus (`tt_inputgen_golden`)
 
-This suite pins down what the input generator offers.
+This suite pins down what the input generator of ALVIE/Core offers.
 The corpus `test/golden/inputgen.sexp` holds random walks, with a fixed seed, on the learned models in `results/`.
-For every prefix of a walk, it records the actions that `Inputgen.get_options` offers next.
+For every prefix of a walk, it records the actions that the generator offers next.
 Each prefix is a history that the learner really observed, so the check needs neither the simulator nor mCRL2.
 
-`check` recomputes the options of every prefix and prints each difference, with the model and the length of the prefix.
+`check` recomputes the options of every prefix and prints each difference, with the model, the length of the prefix, the current section and the number of resets before it.
+`--show-history` also prints the inputs and outputs before each difference.
+`--engine legacy` checks the former generator of ALVIE/Sancus (`Inputgen`) instead; it differs from the corpus where it broke the prefix rule (see the CHANGELOG).
 It exits with code 1 when it finds a difference, and with code 2 when the corpus, a model or a specification is missing.
 
 A change to the input generator must keep the corpus unless the change is on purpose.

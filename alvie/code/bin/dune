@@ -2,7 +2,7 @@
  (name alvie_cli_diagnostics)
  (wrapped false)
  (modules cli_diagnostics)
- (libraries sancus core core_unix)
+ (libraries sancus alvie_plugin core core_unix)
 )
 
 (executables

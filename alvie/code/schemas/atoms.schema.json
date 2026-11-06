@@ -115,6 +115,14 @@
                   "additionalProperties": false,
                   "description": "Makes this variant the hole of the secret"
                 },
+                "attributes": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  },
+                  "description": "For each attribute, the arguments that give its values"
+                },
                 "doc": { "type": "string" }
               },
               "required": [ "syntax" ],
@@ -190,6 +198,14 @@
               "additionalProperties": false,
               "description": "Makes this variant the hole of the secret"
             },
+            "attributes": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "description": "For each attribute, the arguments that give its values"
+            },
             "doc": { "type": "string" }
           },
           "required": [ "syntax" ],
@@ -197,6 +213,21 @@
         }
       },
       "description": "The atom classes (e.g. attacker, victim), each with its atoms"
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "of": {
+            "type": "string",
+            "description": "The type of the values of the attribute"
+          }
+        },
+        "required": [ "of" ],
+        "additionalProperties": false
+      },
+      "description": "The attributes of atoms that constraints can use (e.g. reads: { of: reg })"
     }
   },
   "required": [ "format", "atoms" ],

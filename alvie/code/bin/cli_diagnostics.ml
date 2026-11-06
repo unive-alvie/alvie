@@ -43,6 +43,20 @@ let parse_spec ~enclave_spec ~attacker_spec =
   | Error message ->
     fail "Could not parse the TestDL specifications: %s. Check --encl-spec and --att-spec." message
 
+(*
+  Parses the specs with the grammar of plugins/sancus (ALVIE/Core's spec language), which also reads constraint
+  blocks, and gives them as well in the form of testdl.ml, for the simulator.
+*)
+let parse_spec_files ~enclave_spec_file ~attacker_spec_file =
+  let plugin = Lazy.force Sancus.Generic_inputgen.plugin in
+  match Alvie_plugin.Spec.parse_files plugin [ enclave_spec_file; attacker_spec_file ] with
+  | Error diags ->
+    fail "Could not parse the TestDL specifications (--encl-spec and --att-spec):\n%s" (Alvie_plugin.Diag.list_to_string diags)
+  | Ok spec ->
+    (match Sancus.Atom_value.to_test_spec spec with
+     | Ok old -> (spec, old)
+     | Error m -> fail "The specifications use something that the simulator does not support: %s." m)
+
 let validate_oracle oracle =
   if not (List.mem ["randomwalk"; "pac"; "exhaustive"] oracle ~equal:String.equal) then
     fail "Unknown --oracle value %S. Choose randomwalk, pac, or exhaustive." oracle

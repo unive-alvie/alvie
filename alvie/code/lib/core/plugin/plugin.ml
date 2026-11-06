@@ -90,17 +90,23 @@ let check_cross ~(manifest : Manifest_file.t) ~(sections : Sections_file.t) ~(gr
       | Hidden | Tag | Distinct | All -> ());
   List.rev !errors
 
-let load dir : (t, Diag.t list) Result.t =
+(*
+  Loads the plugin whose files read gives: read name is the text of the file name (relative to the plugin's
+  directory), or an error. Diagnostics name the files dir/name.
+*)
+let load_with ~dir ~(read : string -> (string, string) Result.t) : (t, Diag.t list) Result.t =
   let path f = Filename.concat dir f in
-  match Manifest_file.load ~file:(path manifest_name) with
+  let text f = Result.map_error (read f) ~f:(fun m -> [ Diag.errorf "cannot read %s: %s" (path f) m ]) in
+  let load f parse = Result.bind (text f) ~f:(fun t -> parse ~file:(path f) t) in
+  match load manifest_name Manifest_file.load_string with
   | Error es -> Error es
   | Ok manifest ->
     let f = manifest.files in
-    let sections = Sections_file.load ~file:(path f.sections) in
-    let grammar = Atoms_file.load ~file:(path f.atoms) in
-    let observations = Observations_file.load ~file:(path f.observations) in
-    let phases = Rules_file.load_phases ~file:(path f.phases) in
-    let view = Rules_file.load_view ~file:(path f.view) in
+    let sections = load f.sections Sections_file.load_string in
+    let grammar = load f.atoms Atoms_file.load_string in
+    let observations = load f.observations Observations_file.load_string in
+    let phases = load f.phases Rules_file.load_phases_string in
+    let view = load f.view Rules_file.load_view_string in
     let errors r = match r with Ok _ -> [] | Error es -> es in
     match sections, grammar, observations, phases, view with
     | Ok sections, Ok grammar, Ok observations, Ok phases, Ok view ->
@@ -108,6 +114,18 @@ let load dir : (t, Diag.t list) Result.t =
        | [] -> Ok { dir; manifest; sections; grammar; observations; phases; view }
        | es -> Error es)
     | _ -> Error (errors sections @ errors grammar @ errors observations @ errors phases @ errors view)
+
+(* Loads the plugin in directory dir *)
+let load dir : (t, Diag.t list) Result.t =
+  load_with ~dir ~read:(fun name ->
+      match In_channel.read_all (Filename.concat dir name) with
+      | text -> Ok text
+      | exception Sys_error m -> Error m)
+
+(* Loads a plugin from files embedded in a program: (name, text) *)
+let load_embedded ~dir (files : (string * string) list) =
+  load_with ~dir ~read:(fun name ->
+      match List.Assoc.find files ~equal:String.equal name with Some t -> Ok t | None -> Error "not embedded")
 
 (* The atom class of a section *)
 let atoms_of t section = Option.bind (Sections_file.find t.sections section) ~f:(fun s -> s.atoms)

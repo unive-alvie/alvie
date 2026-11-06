@@ -26,7 +26,7 @@ let () =
   let spec = Result.ok_or_failwith (Result.map_error (Spec.parse_files plugin [ etdl; atdl ]) ~f:Diag.list_to_string) in
   let spec = Result.ok_or_failwith (Result.map_error (Spec.expand_secret plugin spec ~value:"0") ~f:Diag.to_string) in
   (* The atoms as values and as Sancus inputs, tagged by their section's role as Input.t is *)
-  let pairs = List.concat_map spec ~f:(fun s ->
+  let pairs = List.concat_map spec.sections ~f:(fun s ->
       List.map (Spec.atoms s.body) ~f:(fun v ->
           let input = if String.equal s.name "enclave" then Input.IEnclave (Result.ok_or_failwith (Atom_value.to_enclave v))
             else Input.IAttacker (Result.ok_or_failwith (Atom_value.to_attacker v)) in

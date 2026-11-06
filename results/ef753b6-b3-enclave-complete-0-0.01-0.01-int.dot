@@ -55,13 +55,9 @@ digraph G {
   2182 [shape=circle, ];
   2202 [shape=circle, ];
   2230 [shape=circle, ];
-  2251 [shape=circle, ];
-  2337 [shape=circle, ];
-  2353 [shape=circle, ];
-  2626 [shape=circle, ];
+  2593 [shape=circle, ];
   2783 [shape=circle, ];
   2814 [shape=circle, ];
-  6559 [shape=circle, ];
   6560 [shape=circle, ];
   6564 [shape=circle, ];
   6652 [shape=circle, ];
@@ -71,163 +67,48 @@ digraph G {
   7115 [shape=circle, ];
   7158 [shape=circle, ];
   7159 [shape=circle, ];
-  7186 [shape=circle, ];
-  7423 [shape=circle, ];
+  7394 [shape=circle, ];
   7512 [shape=circle, ];
   7542 [shape=circle, ];
-  7708 [shape=circle, ];
-  7986 [shape=circle, ];
-  8034 [shape=circle, ];
-  8174 [shape=circle, ];
-  8454 [shape=circle, ];
   8554 [shape=circle, ];
-  9525 [shape=circle, ];
-  9550 [shape=circle, ];
-  9862 [shape=circle, ];
-  10080 [shape=circle, ];
-  10182 [shape=circle, ];
   10441 [shape=circle, ];
-  10448 [shape=circle, ];
   10455 [shape=circle, ];
   10465 [shape=circle, ];
-  10488 [shape=circle, ];
-  10497 [shape=circle, ];
+  10496 [shape=circle, ];
   10501 [shape=circle, ];
-  10618 [shape=circle, ];
-  10625 [shape=circle, ];
-  10679 [shape=circle, ];
   10733 [shape=circle, ];
-  10825 [shape=circle, ];
-  11316 [shape=circle, ];
-  11317 [shape=circle, ];
-  11332 [shape=circle, ];
-  11333 [shape=circle, ];
-  11391 [shape=circle, ];
-  11392 [shape=circle, ];
-  11825 [shape=circle, ];
-  11826 [shape=circle, ];
-  11827 [shape=circle, ];
-  11828 [shape=circle, ];
-  11829 [shape=circle, ];
-  11830 [shape=circle, ];
-  11831 [shape=circle, ];
-  11834 [shape=circle, ];
-  11846 [shape=circle, ];
-  11847 [shape=circle, ];
-  11848 [shape=circle, ];
-  11849 [shape=circle, ];
-  11850 [shape=circle, ];
-  11857 [shape=circle, ];
-  11867 [shape=circle, ];
-  11868 [shape=circle, ];
-  11869 [shape=circle, ];
-  11870 [shape=circle, ];
-  12037 [shape=circle, ];
-  12038 [shape=circle, ];
-  12039 [shape=circle, ];
-  12040 [shape=circle, ];
-  12041 [shape=circle, ];
-  12074 [shape=circle, ];
-  12075 [shape=circle, ];
-  12076 [shape=circle, ];
-  12459 [shape=circle, ];
-  12497 [shape=circle, ];
-  12498 [shape=circle, ];
-  13068 [shape=circle, ];
-  13602 [shape=circle, ];
-  14156 [shape=circle, ];
-  14176 [shape=circle, ];
-  14177 [shape=circle, ];
-  14569 [shape=circle, ];
-  14570 [shape=circle, ];
-  14709 [shape=circle, ];
-  15125 [shape=circle, ];
-  15126 [shape=circle, ];
-  15185 [shape=circle, ];
-  16469 [shape=circle, ];
-  16470 [shape=circle, ];
-  16471 [shape=circle, ];
-  16472 [shape=circle, ];
-  16473 [shape=circle, ];
-  17689 [shape=circle, ];
-  17690 [shape=circle, ];
-  19506 [shape=circle, ];
-  19507 [shape=circle, ];
-  19508 [shape=circle, ];
-  19509 [shape=circle, ];
-  19510 [shape=circle, ];
-  19511 [shape=circle, ];
-  19512 [shape=circle, ];
-  19513 [shape=circle, ];
-  19514 [shape=circle, ];
-  19941 [shape=circle, ];
-  19942 [shape=circle, ];
-  19954 [shape=circle, ];
-  19955 [shape=circle, ];
-  19956 [shape=circle, ];
-  19957 [shape=circle, ];
-  19958 [shape=circle, ];
-  22543 [shape=circle, ];
-  22544 [shape=circle, ];
-  22647 [shape=circle, ];
-  22648 [shape=circle, ];
-  22657 [shape=circle, ];
-  22658 [shape=circle, ];
-  22818 [shape=circle, ];
-  23327 [shape=circle, ];
-  23328 [shape=circle, ];
-  23338 [shape=circle, ];
-  23526 [shape=circle, ];
-  23618 [shape=circle, ];
-  23619 [shape=circle, ];
-  23620 [shape=circle, ];
-  23857 [shape=circle, ];
-  24573 [shape=circle, ];
-  24574 [shape=circle, ];
-  24575 [shape=circle, ];
-  24576 [shape=circle, ];
-  24577 [shape=circle, ];
-  24578 [shape=circle, ];
-  24579 [shape=circle, ];
-  24618 [shape=circle, ];
-  24619 [shape=circle, ];
-  24650 [shape=circle, ];
-  24651 [shape=circle, ];
-  24652 [shape=circle, ];
-  24653 [shape=circle, ];
-  25152 [shape=circle, ];
-  25153 [shape=circle, ];
-  25154 [shape=circle, ];
-  25155 [shape=circle, ];
-  25158 [shape=circle, ];
-  25239 [shape=circle, ];
-  25240 [shape=circle, ];
-  25241 [shape=circle, ];
-  25242 [shape=circle, ];
-  25285 [shape=circle, ];
-  26106 [shape=circle, ];
-  29576 [shape=circle, ];
-  29577 [shape=circle, ];
-  29939 [shape=circle, ];
-  30815 [shape=circle, ];
-  30816 [shape=circle, ];
-  30817 [shape=circle, ];
-  30880 [shape=circle, ];
-  30881 [shape=circle, ];
-  32597 [shape=circle, ];
-  32598 [shape=circle, ];
-  32599 [shape=circle, ];
-  32600 [shape=circle, ];
-  32601 [shape=circle, ];
-  32603 [shape=circle, ];
-  32604 [shape=circle, ];
-  32605 [shape=circle, ];
-  33029 [shape=circle, ];
-  38383 [shape=circle, ];
-  38560 [shape=circle, ];
-  45774 [shape=circle, ];
-  45775 [shape=circle, ];
-  46480 [shape=circle, ];
+  12956 [shape=circle, ];
+  12957 [shape=circle, ];
+  12958 [shape=circle, ];
+  12968 [shape=circle, ];
+  13147 [shape=circle, ];
+  13148 [shape=circle, ];
+  13149 [shape=circle, ];
+  13575 [shape=circle, ];
+  14052 [shape=circle, ];
+  14053 [shape=circle, ];
+  14064 [shape=circle, ];
+  14251 [shape=circle, ];
+  14582 [shape=circle, ];
+  16605 [shape=circle, ];
+  16606 [shape=circle, ];
+  16607 [shape=circle, ];
+  17136 [shape=circle, ];
+  17137 [shape=circle, ];
+  17157 [shape=circle, ];
+  18278 [shape=circle, ];
+  18279 [shape=circle, ];
+  18280 [shape=circle, ];
+  18281 [shape=circle, ];
+  18282 [shape=circle, ];
+  18283 [shape=circle, ];
+  18284 [shape=circle, ];
+  21929 [shape=circle, ];
+  21930 [shape=circle, ];
+  21931 [shape=circle, ];
+  21932 [shape=circle, ];
+  21933 [shape=circle, ];
+  21934 [shape=circle, ];
   
   
   0 -> 9 [label="((IAttacker(CTimerEnable 1))(((OTime((k 15)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()8))",
@@ -308,9 +189,9 @@ digraph G {
                ];
   336 -> 2230 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 5)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
-  343 -> 2251 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 7)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  343 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 7)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
-  344 -> 2353 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  344 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   365 -> 2182 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 5)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
@@ -318,15 +199,15 @@ digraph G {
                ];
   370 -> 2202 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()35))",
                ];
-  374 -> 2337 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  374 -> 2783 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
-  376 -> 2353 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  376 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   384 -> 2230 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 6)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   396 -> 2783 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
-  399 -> 2251 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 8)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  399 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 8)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 4)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   434 -> 435 [label="((IEnclave(CInst(I_CMP(S_IMM 0)(D_R(R 4)))))(((OTime((k 1)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 3)(mode PM))))()24))",
               ];
@@ -360,10 +241,10 @@ digraph G {
                ];
   502 -> 2202 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()35))",
                ];
-  507 -> 2251 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 10)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  507 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 10)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   508 -> 0 [label="((IAttacker CReti)((OReset)()26))", ];
-  512 -> 2626 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 7)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  512 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 7)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   527 -> 528 [label="((IEnclave(CInst(I_CMP(S_IMM 0)(D_R(R 4)))))(((OTime((k 1)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 3)(mode PM))))()24))",
               ];
@@ -389,7 +270,7 @@ digraph G {
                ];
   581 -> 2166 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 9)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
-  589 -> 2626 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 7)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  589 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 7)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   594 -> 2230 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 9)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
@@ -397,7 +278,7 @@ digraph G {
                ];
   601 -> 2783 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 5)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
-  602 -> 2251 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 10)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
+  602 -> 2593 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 10)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
   604 -> 2814 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 2)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM)))(OTime((k 8)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()37))",
                ];
@@ -418,33 +299,19 @@ digraph G {
                 ];
   2230 -> 7159 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
                 ];
-  2251 -> 7186 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
+  2593 -> 7394 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
                 ];
-  2251 -> 11846 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
-                 ];
-  2337 -> 7512 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
-                ];
-  2337 -> 12497 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
-                 ];
-  2353 -> 6559 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
-                ];
-  2353 -> 7423 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
-                ];
-  2626 -> 7423 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
-                ];
-  2626 -> 11857 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
+  2593 -> 10441 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
                  ];
   2783 -> 7512 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
                 ];
-  2783 -> 10448 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
+  2783 -> 10441 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
                  ];
   2814 -> 7542 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()38))",
                 ];
-  2814 -> 22543 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
+  2814 -> 12968 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()38))",
                  ];
-  6559 -> 19506 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
-                 ];
-  6560 -> 7708 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
+  6560 -> 2182 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
                 ];
   6564 -> 8554 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
                 ];
@@ -452,451 +319,123 @@ digraph G {
                 ];
   6655 -> 1 [label="((IAttacker CReti)(((OTime((k 19)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 4)(mode UM))))()35))",
              ];
-  7080 -> 9525 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+  7080 -> 7088 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  7088 -> 7986 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
+  7088 -> 2069 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
                 ];
   7115 -> 10455 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()39))",
                  ];
-  7158 -> 9550 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+  7158 -> 7159 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  7159 -> 8034 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
+  7159 -> 2230 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
                 ];
-  7186 -> 10488 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
-                 ];
-  7423 -> 10497 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
+  7394 -> 10496 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
                  ];
   7512 -> 10441 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
                  ];
   7542 -> 10501 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
                  ];
-  7708 -> 6560 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
+  8554 -> 2182 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()45))",
                 ];
-  7708 -> 8174 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()50))",
-                ];
-  7986 -> 7088 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
-                ];
-  7986 -> 11332 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()50))",
+  10441 -> 2783 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
                  ];
-  8034 -> 7159 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
-                ];
-  8034 -> 8454 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()50))",
-                ];
-  8174 -> 10618 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()59))",
-                 ];
-  8454 -> 19941 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()59))",
-                 ];
-  8554 -> 9862 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()45))",
-                ];
-  9525 -> 10080 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
-                 ];
-  9550 -> 10182 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
-                 ];
-  9862 -> 6564 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()48))",
-                ];
-  9862 -> 22647 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
-                 ];
-  10080 -> 7080 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()48))",
-                 ];
-  10080 -> 14176 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
-                  ];
-  10182 -> 7158 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()48))",
-                 ];
-  10182 -> 19954 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
-                  ];
-  10441 -> 10625 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
-                  ];
-  10448 -> 10679 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
-                  ];
   10455 -> 10733 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode PM))))()45))",
                   ];
-  10465 -> 10825 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
-                  ];
-  10488 -> 11867 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
-                  ];
-  10497 -> 11825 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
-                  ];
-  10501 -> 24573 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()45))",
-                  ];
-  10618 -> 32597 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()65))",
-                  ];
-  10625 -> 7512 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()49))",
+  10465 -> 2166 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
                  ];
-  10625 -> 11846 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
+  10496 -> 18278 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()45))",
                   ];
-  10679 -> 10448 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
-                  ];
-  10679 -> 11316 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()51))",
+  10501 -> 12956 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()45))",
                   ];
   10733 -> 7115 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()48))",
                  ];
-  10733 -> 24650 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
+  10733 -> 21929 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
                   ];
-  10825 -> 10465 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
+  12956 -> 12957 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()49))",
                   ];
-  10825 -> 11391 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()50))",
+  12956 -> 12968 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
                   ];
-  11316 -> 11317 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()61))",
+  12957 -> 12958 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()50))",
                   ];
-  11317 -> 11834 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()67))",
+  12958 -> 16605 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode PM))))()56))",
                   ];
-  11332 -> 11333 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()59))",
+  12968 -> 13147 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
                   ];
-  11333 -> 14156 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()65))",
+  13147 -> 12968 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
                   ];
-  11391 -> 11392 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()59))",
+  13147 -> 13148 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()51))",
                   ];
-  11392 -> 25152 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode PM))))()65))",
+  13148 -> 13149 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM))))()61))",
                   ];
-  11825 -> 7423 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()49))",
+  13149 -> 13575 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode PM))))()67))",
+                  ];
+  13575 -> 14052 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
+                  ];
+  13575 -> 14064 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
+                  ];
+  14052 -> 14053 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM))))()83))",
+                  ];
+  14053 -> 14251 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode PM))))()89))",
+                  ];
+  14064 -> 13575 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
+                  ];
+  14251 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()98))",
                  ];
-  11825 -> 11826 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
+  14251 -> 14582 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()98))",
                   ];
-  11826 -> 11827 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()54))",
-                  ];
-  11827 -> 11826 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()58))",
-                  ];
-  11827 -> 11828 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()60))",
-                  ];
-  11828 -> 11829 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()61))",
-                  ];
-  11829 -> 11830 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()67))",
-                  ];
-  11830 -> 11831 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  11830 -> 13068 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                  ];
-  11831 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()72))",
+  14582 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 7)(timerA_counter 0)(mode UM))))()105))",
                  ];
-  11834 -> 11316 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
+  16605 -> 16606 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()60))",
                   ];
-  11834 -> 12037 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
+  16605 -> 17157 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()58))",
                   ];
-  11846 -> 11847 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()54))",
+  16606 -> 16607 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM))))()61))",
                   ];
-  11847 -> 11846 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()58))",
+  16607 -> 17136 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode PM))))()67))",
                   ];
-  11847 -> 11848 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()60))",
-                  ];
-  11848 -> 11849 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()61))",
-                  ];
-  11849 -> 11850 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()67))",
-                  ];
-  11850 -> 11848 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  11850 -> 17689 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                  ];
-  11857 -> 12074 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
-                  ];
-  11867 -> 7186 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()48))",
+  17136 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
                  ];
-  11867 -> 11868 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
+  17136 -> 17137 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
                   ];
-  11868 -> 11869 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()53))",
-                  ];
-  11869 -> 11868 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()56))",
-                  ];
-  11869 -> 11870 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()58))",
-                  ];
-  11870 -> 13068 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()59))",
-                  ];
-  12037 -> 12038 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  12038 -> 12037 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()78))",
-                  ];
-  12038 -> 12039 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  12039 -> 12040 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()83))",
-                  ];
-  12040 -> 12041 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()89))",
-                  ];
-  12041 -> 508 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()98))",
-                ];
-  12041 -> 11831 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()98))",
-                  ];
-  12074 -> 11857 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
-                  ];
-  12074 -> 12075 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()51))",
-                  ];
-  12075 -> 12076 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()61))",
-                  ];
-  12076 -> 12459 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()67))",
-                  ];
-  12459 -> 12075 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  12459 -> 16469 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                  ];
-  12497 -> 12498 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
-                  ];
-  12498 -> 7186 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()49))",
+  17137 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 4)(timerA_counter 0)(mode UM))))()72))",
                  ];
-  12498 -> 12497 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()46))",
+  17157 -> 17136 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()64))",
                   ];
-  13068 -> 13602 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  13602 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()78))",
+  18278 -> 7394 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()49))",
                  ];
-  13602 -> 11831 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()82))",
+  18278 -> 18279 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
                   ];
-  14156 -> 11332 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
+  18279 -> 18280 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()54))",
                   ];
-  14156 -> 14569 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
+  18280 -> 18279 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()58))",
                   ];
-  14176 -> 14177 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()53))",
+  18280 -> 18281 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()60))",
                   ];
-  14177 -> 14176 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()56))",
+  18281 -> 18282 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()61))",
                   ];
-  14177 -> 30815 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()58))",
+  18282 -> 18283 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()67))",
                   ];
-  14569 -> 14570 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  14570 -> 14569 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                  ];
-  14570 -> 14709 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  14709 -> 15125 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()79))",
-                  ];
-  15125 -> 15126 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()85))",
-                  ];
-  15126 -> 508 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()92))",
-                ];
-  15126 -> 15185 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()93))",
-                  ];
-  15185 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()99))",
+  18283 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
                  ];
-  16469 -> 16470 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
+  18283 -> 18284 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
                   ];
-  16470 -> 16469 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()78))",
-                  ];
-  16470 -> 16471 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  16471 -> 16472 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()83))",
-                  ];
-  16472 -> 16473 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()89))",
-                  ];
-  16473 -> 1 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))((OMaybeDiverge)()89))",
-              ];
-  16473 -> 1 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))((OMaybeDiverge)()89))",
-              ];
-  17689 -> 17690 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  17690 -> 11831 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()82))",
-                  ];
-  17690 -> 17689 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()78))",
-                  ];
-  19506 -> 6559 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()47))",
+  18284 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()72))",
                  ];
-  19506 -> 19507 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()50))",
+  21929 -> 21930 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()53))",
                   ];
-  19507 -> 19508 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()59))",
+  21930 -> 21929 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()56))",
                   ];
-  19508 -> 19509 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()65))",
+  21930 -> 21931 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()58))",
                   ];
-  19509 -> 19507 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
+  21931 -> 21932 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()59))",
                   ];
-  19509 -> 19510 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
+  21932 -> 21933 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode PM))))()65))",
                   ];
-  19510 -> 19511 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  19511 -> 19510 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                  ];
-  19511 -> 19512 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  19512 -> 19513 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()79))",
-                  ];
-  19513 -> 19514 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()85))",
-                  ];
-  19514 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()92))",
+  21933 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
                  ];
-  19514 -> 16473 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()93))",
+  21933 -> 21934 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()68))",
                   ];
-  19941 -> 19942 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()65))",
-                  ];
-  19942 -> 8454 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                 ];
-  19942 -> 29576 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                  ];
-  19954 -> 19955 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()53))",
-                  ];
-  19955 -> 19954 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()56))",
-                  ];
-  19955 -> 19956 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()58))",
-                  ];
-  19956 -> 19957 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()59))",
-                  ];
-  19957 -> 19958 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()65))",
-                  ];
-  19958 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                 ];
-  19958 -> 29939 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()68))",
-                  ];
-  22543 -> 22544 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()44))",
-                  ];
-  22544 -> 22543 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
-                  ];
-  22544 -> 22657 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()51))",
-                  ];
-  22647 -> 22648 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()53))",
-                  ];
-  22648 -> 22647 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()56))",
-                  ];
-  22648 -> 24578 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()58))",
-                  ];
-  22657 -> 22658 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM))))()61))",
-                  ];
-  22658 -> 22818 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode PM))))()67))",
-                  ];
-  22818 -> 23327 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  22818 -> 23338 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                  ];
-  23327 -> 23328 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM))))()83))",
-                  ];
-  23328 -> 23526 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode PM))))()89))",
-                  ];
-  23338 -> 23618 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  23526 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()98))",
-                 ];
-  23526 -> 23857 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()98))",
-                  ];
-  23618 -> 23338 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()78))",
-                  ];
-  23618 -> 23619 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  23619 -> 23620 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM))))()83))",
-                  ];
-  23620 -> 16473 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode PM))))()89))",
-                  ];
-  23857 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 7)(timerA_counter 0)(mode UM))))()105))",
-                 ];
-  24573 -> 24574 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()48))",
-                  ];
-  24573 -> 24618 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()49))",
-                  ];
-  24574 -> 24575 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()54))",
-                  ];
-  24575 -> 24574 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()58))",
-                  ];
-  24575 -> 24576 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()60))",
-                  ];
-  24576 -> 24577 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM))))()61))",
-                  ];
-  24577 -> 38383 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode PM))))()67))",
-                  ];
-  24578 -> 24579 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()59))",
-                  ];
-  24579 -> 32603 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()65))",
-                  ];
-  24618 -> 24619 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()50))",
-                  ];
-  24619 -> 25239 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode PM))))()56))",
-                  ];
-  24650 -> 24651 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()53))",
-                  ];
-  24651 -> 24650 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()56))",
-                  ];
-  24651 -> 24652 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()58))",
-                  ];
-  24652 -> 24653 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()59))",
-                  ];
-  24653 -> 25158 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode PM))))()65))",
-                  ];
-  25152 -> 11391 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  25152 -> 25153 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                  ];
-  25153 -> 25154 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  25154 -> 25153 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                  ];
-  25154 -> 25155 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  25155 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()79))",
-                 ];
-  25158 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                 ];
-  25158 -> 25155 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()68))",
-                  ];
-  25239 -> 25240 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()58))",
-                  ];
-  25239 -> 25285 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()60))",
-                  ];
-  25240 -> 25241 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()64))",
-                  ];
-  25241 -> 25240 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                  ];
-  25241 -> 25242 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  25242 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 4)(timerA_counter 0)(mode UM))))()72))",
-                 ];
-  25285 -> 26106 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM))))()61))",
-                  ];
-  26106 -> 38560 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 3)(timerA_counter 0)(mode PM))))()67))",
-                  ];
-  29576 -> 29577 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  29577 -> 29576 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                  ];
-  29577 -> 29939 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  29939 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 42)(reg_val 0)(timerA_counter 0)(mode UM))))()79))",
-                 ];
-  30815 -> 30816 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()59))",
-                  ];
-  30816 -> 30817 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()65))",
-                  ];
-  30817 -> 30815 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()68))",
-                  ];
-  30817 -> 30880 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                  ];
-  30880 -> 30881 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  30881 -> 15185 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()78))",
-                  ];
-  30881 -> 30880 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                  ];
-  32597 -> 8174 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                 ];
-  32597 -> 32598 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                  ];
-  32598 -> 32599 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  32599 -> 32598 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                  ];
-  32599 -> 32600 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  32600 -> 32601 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()79))",
-                  ];
-  32601 -> 19514 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode PM))))()85))",
-                  ];
-  32603 -> 32604 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()65))",
-                  ];
-  32603 -> 33029 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()68))",
-                  ];
-  32604 -> 32605 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  32605 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()74))",
-                 ];
-  32605 -> 33029 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()78))",
-                  ];
-  33029 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()69))",
-                 ];
-  38383 -> 25242 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  38383 -> 45774 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                  ];
-  38560 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()68))",
-                 ];
-  38560 -> 25242 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()71))",
-                  ];
-  45774 -> 45775 [label="((IAttacker CReti)(((OTime((k 14)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM)))(OReti((k 1)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()74))",
-                  ];
-  45775 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()78))",
-                 ];
-  45775 -> 46480 [label="((IEnclave(CInst(I_MOV(S_AMP data_s)(D_R(R 4)))))(((OTime((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode PM))))()82))",
-                  ];
-  46480 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 5)(timerA_counter 0)(mode UM))))()83))",
+  21934 -> 2202 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()69))",
                  ];
   
   }

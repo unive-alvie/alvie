@@ -3,6 +3,14 @@
 # those of lib/sancus/attacker.ml and enclave.ml (see lib/sancus/atom_value.ml for the correspondence).
 format: 1
 
+# Attributes of atoms, for the constraints of specs, e.g.
+#   constraint { disjoint(writes(isr), reads(enclave)) };
+# The registers in the source operands are read, the ones in the destination written (also for &rN, whose
+# register is in fact read: a constraint on writes is then stricter than needed).
+attributes:
+  reads: { of: reg }
+  writes: { of: reg }
+
 types:
   reg:
     syntax: ["r{i}", "R{i}"]
@@ -30,11 +38,11 @@ types:
     variants:
       nop:  { syntax: nop }
       dint: { syntax: dint, doc: Disables interrupts }
-      mov:  { syntax: "mov {src}, {dst}", args: { src: src, dst: dst } }
-      add:  { syntax: "add {src}, {dst}", args: { src: src, dst: dst } }
-      cmp:  { syntax: "cmp {src}, {dst}", args: { src: src, dst: dst } }
-      push: { syntax: "push {src}", args: { src: src } }
-      jmp:  { syntax: "jmp {dst}", args: { dst: src }, doc: Branches to the operand (br) }
+      mov:  { syntax: "mov {src}, {dst}", args: { src: src, dst: dst }, attributes: { reads: [src], writes: [dst] } }
+      add:  { syntax: "add {src}, {dst}", args: { src: src, dst: dst }, attributes: { reads: [src, dst], writes: [dst] } }
+      cmp:  { syntax: "cmp {src}, {dst}", args: { src: src, dst: dst }, attributes: { reads: [src, dst], writes: [] } }
+      push: { syntax: "push {src}", args: { src: src }, attributes: { reads: [src], writes: [] } }
+      jmp:  { syntax: "jmp {dst}", args: { dst: src }, attributes: { reads: [dst], writes: [] }, doc: Branches to the operand (br) }
 
 atoms:
   attacker:
@@ -53,11 +61,12 @@ atoms:
       args:
         then: { list: attacker, exclude: [ifz] }
         else: { list: attacker, exclude: [ifz] }
+      attributes: { reads: [then, else], writes: [then, else] }
       doc: Runs the first list if the zero flag is set, the second otherwise
-    inst:           { syntax: "{i}", args: { i: inst } }
+    inst:           { syntax: "{i}", args: { i: inst }, attributes: { reads: [i], writes: [i] } }
 
   enclave:
-    inst: { syntax: "{i}", args: { i: inst } }
+    inst: { syntax: "{i}", args: { i: inst }, attributes: { reads: [i], writes: [i] } }
     ubr:  { syntax: ubr, doc: An unbalanced branch }
     rst:  { syntax: rst, doc: Resets the system (watchdog) }
     ifz:
@@ -65,8 +74,10 @@ atoms:
       args:
         then: { list: enclave, exclude: [ifz] }
         else: { list: enclave, exclude: [ifz] }
+      attributes: { reads: [then, else], writes: [then, else] }
       doc: Runs the first list if the zero flag is set, the second otherwise
     balanced_ifz:
       syntax: "balanced_ifz ({body})"
       args: { body: { list: inst } }
+      attributes: { reads: [body], writes: [body] }
       doc: A branch on the zero flag that takes the same time on both sides

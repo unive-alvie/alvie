@@ -1,0 +1,6 @@
+# A small plugin to test the input generator of ALVIE/Core: no backend, only the declarations.
+format: 1
+name: toy
+version: "1"
+core: "1"
+kind: native

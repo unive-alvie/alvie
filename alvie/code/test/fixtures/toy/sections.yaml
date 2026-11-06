@@ -1,0 +1,8 @@
+format: 1
+sections:
+  main: { role: attacker, atoms: ops, initial: true }
+  victim: { role: victim, atoms: ops }
+  irq: { role: attacker, atoms: ops }
+  bus: { role: attacker, kind: stimulus, atoms: ops }
+  blob: { role: victim, kind: opaque }
+secret: { hole: true }

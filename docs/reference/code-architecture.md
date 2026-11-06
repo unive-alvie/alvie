@@ -53,10 +53,12 @@ On the atoms of `spec-lib/`, interned values sort, hash and compare faster than 
 
 `learn.exe` performs one active-learning experiment:
 
-1. `Testdl.Parser` parses an enclave specification and an attacker specification.
+1. `Alvie_plugin.Spec` parses the enclave and the attacker specification with the grammar of `plugins/sancus/` (embedded in the executables), and `Atom_value` gives the result in the form of `testdl.ml` for the simulator.
 2. `Enclave` and `Attacker` compile the TestDL syntax into instruction/action templates.
    The secret placeholder is expanded before learning.
-3. `Inputgen` tracks which specification actions are legal after an observed input/output history and proposes the next input symbols.
+3. The input generator of ALVIE/Core (`Alvie_inputgen.Generator`, through `Generic_inputgen`) tracks which specification actions are legal after an observed input/output history and proposes the next input symbols.
+   It follows the test through its sections with `plugins/sancus/phases.yaml`, applies the prefix rule, and checks the constraints of the spec.
+   `--inputgen legacy` uses the former generator, `Inputgen`, instead.
 4. `Sancus.Verilog` implements the SUL (system under learning).
    It generates a program, runs the Sancus Verilog testbench, parses the VCD dump, and turns the trace into `Output_internal` observations.
    Compiled simulators are cached across runs, and only the top level of the testbench is traced.
@@ -75,7 +77,10 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/sancus/testdl.ml` | TestDL parser and specification types |
 | `lib/sancus/attacker.ml` | Attacker actions, compilation, derivatives, and action sets |
 | `lib/sancus/enclave.ml` | Enclave actions, compilation, derivatives, and action sets |
-| `lib/sancus/inputgen.ml` | Specification-guided input generation and matchability |
+| `lib/core/inputgen/generator.ml` | Input generation: phase rules, the prefix rule, interrupts, constraints |
+| `lib/core/inputgen/deriv.ml` | Derivatives of spec bodies |
+| `lib/sancus/generic_inputgen.ml` | The Core generator on Sancus inputs and outputs, with the embedded plugin files |
+| `lib/sancus/inputgen.ml` | The former input generator (`--inputgen legacy`); the simulator still uses its phase tracking |
 | `lib/sancus/sul/verilog.ml` | Sancus SUL and VCD-to-observation conversion |
 | `lib/sancus/output_internal.ml` | Observable output and timing payload types |
 | `lib/core/lsharp/lsharp.ml` | L# learning loop |
@@ -145,7 +150,7 @@ The backend must preserve the observable-output contract; changing payload seman
 ### Add an oracle
 
 Implement the `Oracle` functor signature in `lib/core/lsharp/oracles/oracle.mli`.
-The oracle supplies output queries and equivalence queries; it may use `Inputgen` to stay within the selected TestDL specification.
+The oracle supplies output queries and equivalence queries; it may use the input generator to stay within the selected TestDL specification.
 
 ## Build and test
 
