@@ -51,6 +51,16 @@ type action =
 
 type show = Hidden | Tag | Fields of string list list | Distinct | All [@@deriving sexp, equal]
 
+(*
+  A part of an observation, for observations that stand for several events (e.g. an instruction that ran and an
+  interrupt that was handled): a record field of the observation (field: <name>), its own fields (field: self), or
+  nothing but a kind (no field), shown as an observation of the kind as, with the input of the step or, with
+  input: interrupt, the built-in interrupt input. Parts are seen by the show rules; they are not split again.
+*)
+type part = { field : string option; as_kind : string; interrupt : bool } [@@deriving sexp, equal]
+
+type effect = Show of show | Parts of part list [@@deriving sexp, equal]
+
 type 'a rule = { kinds : string list option; sections : string list option; when_ : cond list; effect : 'a; pos : Diag.pos }
 
 let when_shape =
@@ -85,6 +95,14 @@ let show_shape : show Shape.t =
        Fields (List.map fs ~f:(String.split ~on:'.'))) in
   by_kind ~what:"what the attacker sees" ~scalar ~map:fields () ~doc:"hidden, tag, distinct, all or { fields: [...] }"
 
+let part_shape : part Shape.t =
+  let open Obj in
+  obj ~what:"a part"
+    (let+ field = opt "field" (Shape.string ()) ~doc:"The record field that the part shows (none: only its kind)"
+     and+ as_kind = req "as" (Shape.string ()) ~doc:"The kind the part is an observation of"
+     and+ interrupt = dflt "input" false (Shape.enum [ ("step", false); ("interrupt", true) ]) ~doc:"step (the input of the step, the default) or interrupt" in
+     { field; as_kind; interrupt })
+
 let rule_shape ~with_sections ~effect_name ~effect_doc (effect : 'a Shape.t) : 'a rule Shape.t =
   let open Obj in
   Shape.with_pos
@@ -104,10 +122,27 @@ let file_shape ~what rule =
      rules)
 
 let phases_shape = file_shape ~what:"a phases file" (rule_shape ~with_sections:true ~effect_name:"do" ~effect_doc:"The actions, in order" (Shape.list action_shape))
-let view_shape = file_shape ~what:"a view file" (rule_shape ~with_sections:false ~effect_name:"show" ~effect_doc:"What the attacker sees" show_shape)
+(* A view rule has show: or parts: *)
+let view_rule_shape =
+  let open Obj in
+  Shape.with_pos
+    (Shape.map_result
+       (obj ~what:"a rule"
+          (let+ kinds = opt "match" (one_or_list (Shape.string ())) ~doc:"The kinds of observations the rule applies to (all if absent)"
+           and+ when_ = dflt "when" [] when_shape ~doc:"The values of fields the rule requires"
+           and+ show = opt "show" show_shape ~doc:"What the attacker sees"
+           and+ parts = opt "parts" (Shape.list part_shape) ~doc:"The parts that the observation stands for, each seen by the other rules" in
+           (kinds, when_, show, parts)))
+       ~f:(fun n -> function
+           | kinds, when_, Some s, None -> Ok (kinds, when_, Show s)
+           | kinds, when_, None, Some ps -> Ok (kinds, when_, Parts ps)
+           | _ -> fail n "a view rule has either show: or parts:"))
+  |> Shape.map_value ~f:(fun ((kinds, when_, effect), pos) -> { kinds; sections = None; when_; effect; pos })
+
+let view_shape = file_shape ~what:"a view file" view_rule_shape
 
 type phases = action list rule list
-type view = show rule list
+type view = effect rule list
 
 let load_phases ~file : (phases, Diag.t list) Result.t = Shape.parse_file phases_shape file
 let load_view ~file : (view, Diag.t list) Result.t = Shape.parse_file view_shape file

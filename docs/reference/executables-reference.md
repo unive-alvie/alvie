@@ -114,6 +114,7 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 | `--witness-file-basename <base>` | _(required)_ | Output path prefix; produces `<base>_int.dot` |
 | `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files |
 | `--cex-limit <int>` | unlimited | Stops the search after the round that finds this many witnesses, in each of the two directions. One round can find several witnesses, so the result can have more. |
+| `--secrets <s1>,<s2>` | from the model names | The values of the secret in the first and the second model. By default they are read from the names `<commit>-<attacker>-<enclave>-<secret>-<eps>-<delta>[-int\|-nint].dot`. The comparison ignores them in the victim's code, so that the two runs of a witness run "the same code". |
 | `--debug` | false | Enable debug-level logging |
 
 ### Output

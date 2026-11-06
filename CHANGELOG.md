@@ -53,6 +53,28 @@
 - CI runs the corpus check with the fast checks, and runs `regression.sh all`
   and `tt_attack` in the published Docker image.
 
+### Comparison
+
+- Comparisons see what the attacker view declares (`plugins/sancus/view.yaml`),
+  and nothing in them is written for Sancus any more: the hooks of the
+  comparison engine are derived from the plugin files (hidden outputs and
+  public equality from the view, the end of a run from the phase rules, low
+  inputs and the victim's code from the roles of the sections, the victim's
+  code up to the secret from the expansions of the secret). The temporary
+  Sancus hooks (`lib/sancus-compare`) are removed.
+- The view can split an observation into parts (`parts:`): an interrupt
+  handled is the instruction then the handling, whose input is the
+  interrupt, as `fa.exe` did by hand.
+- mCRL2 compares what the attacker sees, not whole outputs: the cycle count
+  `k` no longer takes part. **B1 on `ef753b6` gives 31 witnesses instead of
+  29**; no other count changes. Witness graphs label the outputs that the
+  attacker does not see with `(hidden)`; their labels have a new form
+  (`ubr/Time(k = 2, ...)`), so all the graphs are generated again.
+- The catalogue of properties (`Ltscompare.Properties`, version 1):
+  noninterference with an optional baseline, inclusion and equivalence of
+  models with a distinguishing trace, and mCRL2 modal mu-calculus formulas
+  on one model. New suite `tt_properties` (needs mCRL2; run in CI).
+
 ### Backends
 
 - ALVIE/Core defines the contract with a backend (`Alvie_backend.Backend.S`):
