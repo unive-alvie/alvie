@@ -25,6 +25,7 @@ Run `dune build` first.
 | Input generation corpus | `dune exec tt_inputgen_golden -- check` | Nothing outside OCaml. | About 1 second. |
 | Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Properties | `dune exec tt_properties -- test --color=never` | mCRL2. | About 1 second. |
+| Property commands | `bash test/property_cmd.sh` | mCRL2. | About 10 seconds. |
 | Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 2 minutes. |
 | Witness regression | `./regression.sh witnesses` (from the repository root) | mCRL2. | A few minutes. |
 | Learning regression | `./regression.sh learning` (from the repository root) | The Sancus checkout, Verilator, the MSP430 toolchain, mCRL2. | About 5 minutes on 16 cores. |
@@ -165,7 +166,7 @@ It runs these steps:
 6. `dune exec tt_plugin -- test --color=never`
 
 A second job runs the suites that need the simulator toolchain or mCRL2 in the published Docker image:
-`./regression.sh all`, `tt_attack` and `tt_properties`.
+`./regression.sh all`, `tt_attack`, `tt_properties` and `property_cmd.sh`.
 It first installs into the image the OCaml libraries that the checkout needs and the image may not have yet.
 
 The workflow `docs.yml` runs on pull requests that change `docs/`, `site/`, or the Dockerfile.
@@ -184,7 +185,7 @@ Run the suites yourself before you push a change that needs them, as the next ta
 | A command-line option or an error message | `cli_diagnostics.sh` and `diagnostics.exe` |
 | The simulator interface, the VCD analysis, or the output payload | `tt_attack` and `./regression.sh learning` |
 | The learner or the oracles | `./regression.sh learning` |
-| The model comparison (`lib/core/compare/`, `fa.exe`) or `plugins/sancus/view.yaml` | `./regression.sh witnesses` and `tt_properties` |
+| The model comparison (`lib/core/compare/`, `fa.exe`, `alvie property`) or `plugins/sancus/view.yaml` | `./regression.sh witnesses`, `tt_properties` and `property_cmd.sh` |
 | A plugin file format, the spec language, or `plugins/sancus/` | `tt_plugin` (and `tt_plugin -- schemas` for a format change) |
 | The libraries a library of `alvie-core` uses | `dune build -p alvie-core --build-dir _build-alvie-core @install` |
 | A specification in `spec-lib/` | A short learning run and a comparison |

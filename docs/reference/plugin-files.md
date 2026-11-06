@@ -298,6 +298,13 @@ A `resume` into the middle of a run therefore replays the program from that posi
 
 Sections of kind `stimulus` choose afresh at every input, and an `opaque` section offers only the input `run`.
 
+## Checking a plugin
+
+`alvie plugin check DIR` reads the files of the plugin in `DIR`, checks them and their references to each other, and prints every problem with its place, or a summary of the plugin; without `DIR` it checks the plugin that `alvie` is built with.
+`alvie plugin schemas OUT` writes the JSON Schemas of the files, and those of the values of the plugin's atoms and observations, to `OUT`.
+
+The configuration parameters of the manifest are the options of the backend on the command line: `alvie learn --commit bf89c0b` sets the parameter `commit`.
+
 ## Checks across files
 
 After reading each file, Core checks that:
