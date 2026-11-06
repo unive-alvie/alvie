@@ -7,9 +7,8 @@ version: "2026.10"
 core: "1"
 kind: native
 description: >-
-  Sancus enclaves on the openMSP430, simulated with Verilator from the sancus-core-gap repository or run on an FPGA
-  board: the attacker prepares and enters the enclave, interrupts it with the timer, runs its own ISR, and resumes
-  or re-enters it.
+  Sancus enclaves on the openMSP430, simulated with Verilator from the sancus-core-gap repository: the attacker
+  prepares and enters the enclave, interrupts it with the timer, runs its own ISR, and resumes or re-enters it.
 
 config:
   sancus:
@@ -19,9 +18,7 @@ config:
   commit:
     type: string
     default: ef753b6
-    doc: >-
-      The commit of sancus-core-gap to simulate (ef753b6 has no Mind the Gap mitigations); with --target fpga, the
-      commit of the image loaded on the board, which the programs are built for
+    doc: The commit of sancus-core-gap to simulate (ef753b6 has no Mind the Gap mitigations)
   sancus-master-key:
     type: string
     default: cafe
@@ -30,17 +27,6 @@ config:
     type: path
     required: true
     doc: Where the generated programs and the simulators are built
-  target:
-    type: enum
-    values: [simulator, fpga]
-    default: simulator
-    doc: >-
-      Where the programs run: simulator (Verilator) or fpga (an openMSP430/Sancus board on the serial port
-      --fpga-port, programmed with the image of --commit; see docs/sancus/fpga.md)
-  fpga-port:
-    type: string
-    default: /dev/ttyUSB1
-    doc: The serial port of the FPGA board (with --target fpga)
   keep-repeated-reentries:
     type: bool
     default: "false"

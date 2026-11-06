@@ -50,7 +50,6 @@ let command =
         "--sancus-master-key"
         (optional_with_default "cafe" string)
         ~doc:"key A hex number to be used as the master key when building the processor (default: cafe)"
-    and target = Cli_diagnostics.target_param
     and commit =
       flag
         "--commit"
@@ -120,7 +119,6 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~target
             ~spec:(Generic_inputgen.spec_of_test_spec complete_spec1)
             ~ignore_interrupts:false
             () in
@@ -141,7 +139,6 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~target
             ~spec:(Generic_inputgen.spec_of_test_spec complete_spec2)
             ~ignore_interrupts:false
             () in

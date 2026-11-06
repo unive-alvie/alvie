@@ -77,21 +77,3 @@ let classify_failure message =
     None
 
 let protect ~debug f = Alvie_cli.Errors.protect ~classify:classify_failure ~debug f
-
-(* The options --target and --fpga-port of exec.exe and pbt.exe, which do not take the other parameters of the
-   manifest: their defaults and documentation are those of plugins/sancus/alvie-plugin.yaml *)
-let target_param =
-  let config = (Lazy.force Sancus.Generic_inputgen.plugin).manifest.config in
-  let param name =
-    List.find_exn config ~f:(fun (p : Alvie_plugin.Manifest_file.param) -> String.equal p.pname name) in
-  let flag_of name arg_type =
-    let p = param name in
-    let default = Option.value_exn p.default in
-    Command.Param.flag ("--" ^ name) (Command.Param.optional_with_default default arg_type)
-      ~doc:(sprintf "%s %s (default: %s)" (match p.ptype with P_enum vs -> String.concat ~sep:"|" vs | _ -> "value")
-              (Option.value p.pdoc ~default:"") default) in
-  let values = match (param "target").ptype with P_enum vs -> vs | _ -> [] in
-  Command.Param.map2
-    (flag_of "target" (Command.Arg_type.of_alist_exn (List.map values ~f:(fun v -> (v, v)))))
-    (flag_of "fpga-port" Command.Param.string)
-    ~f:(fun target fpga_port -> Sancus.Simulator.target_of_config ~target ~fpga_port)

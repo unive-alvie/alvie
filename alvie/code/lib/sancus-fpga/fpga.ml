@@ -1,6 +1,7 @@
 (*
-  The FPGA target of the Sancus backend (Simulator.target): runs the program of a step on an openMSP430/Sancus
-  board (an Arty S7 programmed with an instrumented image, see docs/sancus/fpga.md) instead of simulating it.
+  The board of ALVIE/Sancus-FPGA, as a target of the Sancus backend (Sancus.Simulator.target): runs the program of
+  a step on an openMSP430/Sancus board (an Arty S7 programmed with an instrumented image, see docs/sancus/fpga.md)
+  instead of simulating it.
 
   A query sends the program memory and the interrupt vectors of pmem.elf with a breakpoint, an instruction number,
   over the serial port; the board runs the program from reset and sends back a trace of the 50 clock cycles from the
@@ -14,6 +15,8 @@
   A query sends the whole program, so the board keeps no state of a test between queries.
 *)
 open! Core
+module Step_analysis = Sancus.Step_analysis
+module Output_internal = Sancus.Output_internal
 
 external serial_open : string -> int -> Core_unix.File_descr.t = "caml_alvie_serial_open"
 external serial_flush_input : Core_unix.File_descr.t -> unit = "caml_alvie_serial_flush_input" [@@noalloc]
@@ -220,3 +223,16 @@ let analyse ~diverges ~addr_of_label ~last_inst_number (labels : Step_analysis.l
       left_labels;
       instructions = List.map matched ~f:(fun e -> `Instruction (instruction e));
     }
+
+(* The board on port as the target of the Sancus backend: a step builds its program and runs it on the board *)
+let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
+  ignore (connect ~port : Core_unix.File_descr.t);
+  Other {
+    name = "fpga " ^ port;
+    run = (fun (cfg : Sancus.Simulator.cfg_t) ->
+      Sancus.Simulator.build_program cfg;
+      let diverges, trace = run ~port ~elf:cfg.pmem_elf ~last_inst_number:cfg.last_inst_number in
+      fun labels ->
+        analyse ~diverges ~addr_of_label:(Sancus.Simulator.addr_of_label cfg) ~last_inst_number:cfg.last_inst_number
+          labels trace);
+  }

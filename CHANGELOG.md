@@ -217,30 +217,34 @@ the documentation lists what users must do.
   shortest inputs on which they answer differently (`--observations-only`
   ignores the bookkeeping of Sancus outputs).
 
-### FPGA target
+### ALVIE/Sancus-FPGA
 
-- The Sancus backend runs its programs on a target: the Verilator simulator
-  (the default) or an openMSP430/Sancus board on an Arty S7
-  (`--target fpga`, with `--fpga-port`, default `/dev/ttyUSB1`). The options
-  are parameters of `plugins/sancus/alvie-plugin.yaml`, so `learn.exe`,
-  `alvie learn` and `alvie sancus …` take them; `exec.exe` and `pbt.exe` take
-  them too. A step takes about 20 ms on the board. The board must run an
-  `inst_number_50` image, and `--commit` must be the commit of that image:
-  the programs are built for it. New page: Running on an FPGA.
-- This ports the FPGA backend of the branch `feat/alvie-fpga` (and its later
-  fixes) as a target, not as a second backend: the program of a step, its
-  build, the bookkeeping, re-entries and the observations of the instructions
-  found (`Sancus.Step_analysis`) are the same for both targets. Only how a
-  step runs and how its instructions are found in the trace depend on the
-  target (`Sancus.Fpga`). The simulator's results do not change (regression:
-  no differences).
-- Differences from the branch: the serial port is the option `--fpga-port`
-  (not the variable `FPGA_PORT`); ALVIE does not program the board
-  (`FPGA_TCL` is removed); `learn.exe --fpga`, the `--fpga` option of the
-  wrapper scripts and the serial daemon (`fpga_daemon.py`, `run_fpga.py`) are
-  removed; the programs use the headers of `--commit`, not of the current
-  checkout. Copies of a backend, and several processes, can share a board:
-  each query locks the serial port.
+- New native plugin `sancus-fpga`: Sancus on an openMSP430/Sancus board (an
+  Arty S7 with an `inst_number_50` image), over its serial port. Its commands
+  are `alvie sancus-fpga learn|compare|property|exec|conformance|fixtures`,
+  with the options of `plugins/sancus-fpga/alvie-plugin.yaml`: `--commit`
+  (required: the commit of the image on the board), `--fpga-port` (default
+  `/dev/ttyUSB1`), `--sancus`, `--tmpdir`. A step takes 15 to 30 ms on the
+  board. New page: Running on an FPGA.
+- It shares the specs, inputs and observations of ALVIE/Sancus (its manifest
+  names the files of `plugins/sancus`), and its models have the inputs and
+  outputs of the simulator's: `alvie-model-compare` compares them.
+- It reuses the Sancus backend as a library, with the board as its target
+  (`Simulator.target`): the program of a step, its build, the bookkeeping,
+  re-entries and the observations of the instructions found
+  (`Sancus.Step_analysis`) are the simulator's. Only how a step runs and how
+  its instructions are found in the board's trace are its own
+  (`lib/sancus-fpga`). ALVIE/Sancus does not change (regression: no
+  differences).
+- This ports the FPGA backend of the branch `feat/alvie-fpga` and its later
+  fixes. Differences from the branch: the serial port is `--fpga-port` (not
+  the variable `FPGA_PORT`); ALVIE does not program the board (`FPGA_TCL` is
+  removed); `learn.exe --fpga`, the `--fpga` option of the wrapper scripts
+  and the serial daemon (`fpga_daemon.py`, `run_fpga.py`) are removed; the
+  programs use the headers of `--commit`, not of the current checkout.
+  Copies of a backend, and several processes, can share a board: each query
+  locks the serial port.
+- Fixtures: those of ALVIE/Sancus, each for the image of its commit.
 - New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
   (image `ef753b6`), with the simulator's expected observations except where
   the hardware differs, each with its reason. It needs the board, so CI does

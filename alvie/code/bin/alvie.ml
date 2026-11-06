@@ -7,6 +7,7 @@
     alvie pbt ...       property-based testing of two attacker specs (pbt.exe)
     alvie property ...  checks inclusion, equivalence or an mCRL2 formula on learned models
     alvie sancus ...    conformance, fixtures and exec of ALVIE/Core on Sancus
+    alvie sancus-fpga ...  the commands of ALVIE/Core on Sancus-FPGA, Sancus on a board (plugins/sancus-fpga)
     alvie tiny ...      the commands of ALVIE/Core on Tiny, the reference platform (plugins/tiny)
     alvie external DIR ...  the same commands on the external plugin in DIR (a program that speaks the protocol)
     alvie plugin check  checks the plugin files; alvie plugin schemas writes their JSON Schemas
@@ -50,6 +51,9 @@ let () =
          ("sancus", Alvie_cli.Runner.group ~only:[ "conformance"; "fixtures"; "exec" ]
                       ~summary:"The commands of ALVIE/Core on Sancus: conformance of the simulator, and the fixtures (learn and compare are the commands above)"
                       (module Sancus_runner.R));
+         ("sancus-fpga", Alvie_cli.Runner.group
+                           ~summary:"The commands of ALVIE/Core on Sancus-FPGA: Sancus on an openMSP430/Sancus board, with the specs of ALVIE/Sancus (see docs/sancus/fpga.md)"
+                           (module Sancus_runner.Fpga_r));
          ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
          ("external", external_command ());
          ("plugin", Alvie_cli.Plugin_cmd.command ~default:(lazy (Ok (Lazy.force Sancus.Generic_inputgen.plugin)))) ])

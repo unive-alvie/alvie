@@ -3,11 +3,11 @@
   that Core gives, runs it on a target, and turns the trace of the input's instructions into observations. Verilog
   is its adapter to the learner.
 
-  The target is where the program runs (target):
-  - Verilator: the Verilog testbench of sancus-core-gap, simulated; the trace is its VCD dump (analyse_dump);
-  - Fpga: an openMSP430/Sancus board over a serial port (Fpga); the trace is the board's 50-cycle window.
-  Everything else does not depend on the target: the program of a step (fill_template), its build (build_pmem),
-  the bookkeeping, re-entries, and the observations of the instructions found (Step_analysis).
+  The target is where the program runs (target): the Verilog testbench of sancus-core-gap, simulated with
+  Verilator, whose trace is its VCD dump (analyse_dump); or another target given by a plugin that reuses this
+  backend, such as the FPGA board of ALVIE/Sancus-FPGA (Sancus_fpga). Everything else does not depend on the target:
+  the program of a step (fill_template), its build (build_program), the bookkeeping, re-entries, and the
+  observations of the instructions found (Step_analysis).
 *)
 open! Core
 
@@ -20,15 +20,15 @@ type input_t = Input.t [@@deriving ord,sexp]
 type output_t = Output_internal.t [@@deriving ord,sexp]
 type label_t = string*string [@@deriving sexp,ord]
 
-(* Where the programs run *)
-type target = Verilator | Fpga of { port : string } [@@deriving ord, sexp]
-
-(* The target of the configuration parameters target and fpga-port (plugins/sancus/alvie-plugin.yaml) *)
-let target_of_config ~target ~fpga_port =
-  match target with
-  | "simulator" -> Verilator
-  | "fpga" -> Fpga { port = fpga_port }
-  | t -> failwithf "Sancus: unknown target %S (expected simulator or fpga)" t ()
+(*
+  Where the programs run: the simulator, or another target, given by how it runs a step. run cfg runs the program
+  of the step in cfg (its source is cfg.filledfile; build_program builds it) and returns the function that finds
+  the instructions of given labels in the trace. The configuration is the parameter, so that the target can be
+  one of its fields.
+*)
+type 'cfg target =
+  | Verilator
+  | Other of { name : string; run : 'cfg -> (label_t list -> Step_analysis.found) }
 
 
 let dbg_str () = match Logs.level () with | Some Logs.Debug -> "" | _ -> ">/dev/null 2>/dev/null"
@@ -66,7 +66,8 @@ type cfg_t = {
   reentries : cfg_t list;
   (* Where the test is in the spec after the last input (Generator.key) *)
   spec_key : string;
-  target : target;
+  (* Not compared, and shown by name only *)
+  target : (cfg_t target [@sexp.opaque]) [@compare fun _ _ -> 0];
 } [@@deriving ord,sexp,make]
 
 type t = cfg_t ref
@@ -152,10 +153,10 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   let submit_filled =
     String.substr_replace_all submit_template ~pattern:"{{tmp_dir}}" ~with_:r_tmpdir in
       Out_channel.write_all submitfile_filled ~data:submit_filled;
-  (* Compile the Verilog testbench beforehand (or reuse a previous compilation of the same sources); the FPGA
-     target needs no simulator, but its serial port *)
+  (* Compile the Verilog testbench beforehand (or reuse a previous compilation of the same sources); other targets
+     need no simulator *)
   let res = match target with
-    | Fpga { port } -> ignore (Fpga.connect ~port : Core_unix.File_descr.t); 0
+    | Other _ -> 0
     | Verilator ->
       let compile () = Sys_unix.command (Format.sprintf "%s \"%s\" %s %s %s" verilog_compile r_tmpdir basename submitfile_filled ">/dev/null 2>/dev/null") in
       Prof.time "sul.compile_simulator" (fun () ->
@@ -409,12 +410,11 @@ let run_simulator (cfg : cfg_t) =
       (* If res = 2, simulation diverged and we signal it! *)
       Result.Ok (res = 2, Prof.time "sul.vcd_parse" (fun () -> Vcd.vcd ~signals:analysed_signals cfg.dumpfile)))
 
-(* Builds the program and runs it on the board: whether it diverged, and its trace *)
-let run_fpga (cfg : cfg_t) ~port =
+(* Builds the program of the step (cfg.filledfile) into cfg.pmem_elf, for another target than the simulator *)
+let build_program (cfg : cfg_t) =
   invalidate_symtab ();
   let res = Prof.time "sul.build_pmem" (fun () -> build_pmem cfg) in
-  if res <> 0 then failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res);
-  Fpga.run ~port ~elf:cfg.pmem_elf ~last_inst_number:cfg.last_inst_number
+  if res <> 0 then failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
 
 let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) list) (dump : Vcd.vcd_t) : Step_analysis.found =
   Prof.time "sul.analyse_dump" @@ fun () ->
@@ -687,9 +687,7 @@ let run cfg (step : Alvie_backend.Backend.step) : output_t =
   (* Run the program on the target: the result finds the instructions of given labels in the trace *)
   let trace = match cfg'.target with
     | Verilator -> Result.map (run_simulator cfg') ~f:(fun (diverges, d) labels -> analyse_dump diverges cfg' labels d)
-    | Fpga { port } ->
-      let diverges, trace = run_fpga cfg' ~port in
-      Ok (fun labels -> Fpga.analyse ~diverges ~addr_of_label:(addr_of_label cfg') ~last_inst_number:cfg'.last_inst_number labels trace) in
+    | Other { run; _ } -> Ok (run cfg') in
   let last_inst_number, left_labels, elements = match trace with
     | Error o -> cfg'.last_inst_number, [], [o]
     | Ok find ->

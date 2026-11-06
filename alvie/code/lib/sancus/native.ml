@@ -1,7 +1,6 @@
 (*
   ALVIE/Sancus as a native plugin of ALVIE/Core (Alvie_backend.Native.S): the files of plugins/sancus and the
-  backend (Simulator, on the target of the parameter target), for Core's generic commands (alvie sancus
-  conformance and fixtures).
+  simulator, for Core's generic commands (alvie sancus conformance and fixtures).
 
   The backend is built as learn.exe builds it, from the configuration parameters of the manifest; like learn.exe,
   it runs from alvie/code (the scripts and the template are in ../scripts and ../src). The variant no-interrupts
@@ -19,7 +18,9 @@ module B = Verilog.Backend
 
 let none = ([], 0)
 
-let make ~config ~variant =
+(* The backend for the configuration and the variant, on the simulator or on target (another plugin's, see
+   Simulator.target): config has the parameters of plugins/sancus/alvie-plugin.yaml *)
+let make_with ?target ~config ~variant () =
   let get k = match List.Assoc.find config ~equal:String.equal k with Some v -> v | None -> failwithf "Sancus: no value for %s" k () in
   let ignore_interrupts = match variant with
     | None -> false
@@ -41,8 +42,10 @@ let make ~config ~variant =
     ~filledfile:"generic.s43" ~dumpfile:"tb_openMSP430.vcd"
     ~ignore_interrupts
     ~collapse_reentries:(not (String.equal (get "keep-repeated-reentries") "true"))
-    ~target:(Simulator.target_of_config ~target:(get "target") ~fpga_port:(get "fpga-port"))
+    ?target
     ()
+
+let make ~config ~variant = make_with ~config ~variant ()
 
 (*
   The codec of ALVIE/Sancus for the commands of Core (Alvie_cli.Runner.Make_codec): the learner works on the types

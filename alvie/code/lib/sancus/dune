@@ -3,8 +3,7 @@
 (library
  (name sancus)
   (public_name alvie-sancus.sancus)
-  (modules input output_internal testdl enclave common inputgen attacker step_analysis fpga simulator verilog atom_value sancus_plugin_files generic_inputgen native)
-  (foreign_stubs (language c) (names serial_stubs))
+  (modules input output_internal testdl enclave common inputgen attacker step_analysis simulator verilog atom_value sancus_plugin_files generic_inputgen native)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_deriving.fold ppx_sexp_conv ppx_hash ppx_let))
   (libraries prof alvie_plugin alvie_inputgen alvie_backend core logs angstrom core_unix.sys_unix core_unix vcd shexp.process ocamlgraph)
 )

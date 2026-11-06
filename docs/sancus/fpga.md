@@ -1,13 +1,14 @@
 ---
 title: Running on an FPGA
-description: Run ALVIE/Sancus on an openMSP430/Sancus board instead of the simulator.
+description: ALVIE/Sancus-FPGA, the plugin that runs Sancus on an openMSP430/Sancus board instead of the simulator.
 sidebar:
   order: 9
 ---
 
-ALVIE/Sancus can run its programs on an FPGA board instead of the Verilator simulator.
-Every command that runs Sancus takes the option `--target fpga`: `learn.exe` (`alvie learn`), `exec.exe`, `pbt.exe`, and `alvie sancus conformance` and `fixtures`.
-A step takes about 20 ms on the board, against about a second in the simulator.
+ALVIE/Sancus-FPGA is the plugin of Sancus on an FPGA board: it runs the programs of ALVIE/Sancus on the board instead of the Verilator simulator.
+Its commands are `alvie sancus-fpga learn`, `compare`, `property`, `exec`, `conformance` and `fixtures`.
+It takes the same specs as ALVIE/Sancus, and its models have the inputs and outputs of the simulator's: `alvie sancus-fpga compare` finds their witnesses, and `alvie-model-compare` compares a model of the board with one of the simulator.
+A step takes 15 to 30 ms on the board, against about a second in the simulator.
 
 ## Requirements
 
@@ -75,19 +76,30 @@ ACTION=="add", SUBSYSTEM=="usb-serial", DRIVER=="ftdi_sio", ATTR{latency_timer}=
 With the image of `ef753b6` on the board, we check that ALVIE and the board work together, from `alvie/code`:
 
 ```bash
-dune exec bin/alvie.exe -- sancus conformance --target fpga --commit ef753b6 \
+_build/default/bin/alvie.exe sancus-fpga conformance --commit ef753b6 \
   --spec ../../spec-lib/example/attacker.atdl --spec ../../spec-lib/example/enclave.etdl --secret 0 \
   --sancus ../../sancus-core-gap --tmpdir /tmp/alvie
 ```
 
 Every check must say `PASS`.
-Then we learn a model as with the simulator, with the same two options:
+Then we learn a model of the same spec:
 
 ```bash
-_build/default/bin/learn.exe --target fpga --commit ef753b6 \
-  --att-spec ../../spec-lib/example/attacker.atdl --encl-spec ../../spec-lib/example/enclave.etdl \
-  --secret 0 --sancus ../../sancus-core-gap --tmpdir /tmp/alvie --oracle pac --res /tmp/model.dot
+_build/default/bin/alvie.exe sancus-fpga learn --commit ef753b6 \
+  --spec ../../spec-lib/example/attacker.atdl --spec ../../spec-lib/example/enclave.etdl --secret 0 \
+  --sancus ../../sancus-core-gap --tmpdir /tmp/alvie --res /tmp/model-fpga-0.dot
 ```
+
+The fixtures of the plugin are those of ALVIE/Sancus, each for the image of its commit.
+We run only the fixtures of the image on the board, by name:
+
+```bash
+_build/default/bin/alvie.exe sancus-fpga fixtures --commit ef753b6 \
+  --sancus ../../sancus-core-gap --tmpdir /tmp/alvie attack-a-ef753b6
+```
+
+With the image of `bf89c0b`, the fixtures are `attack-a-bf89c0b`, `planted-leak` and `safe`.
+A fixture sets its own commit, so a fixture of another image runs without an error, and gives a wrong verdict.
 
 The suite `tt_attack_fpga` replays the attack traces of `tt_attack` on the board, which must run the image of `ef753b6`:
 
@@ -100,13 +112,18 @@ It is not part of CI, since it needs the board.
 
 ## Options
 
+The options of `alvie sancus-fpga` are those of `plugins/sancus-fpga/alvie-plugin.yaml`:
+
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--target simulator\|fpga` | `simulator` | Where the programs run |
+| `--commit COMMIT` | required | The commit of the image on the board |
 | `--fpga-port PATH` | `/dev/ttyUSB1` | The serial port of the board |
-| `--commit COMMIT` | `ef753b6` | With `--target fpga`, the commit of the image on the board |
+| `--sancus PATH` | required | The `sancus-core-gap` checkout |
+| `--tmpdir PATH` | required | Where the programs are built |
+| `--sancus-master-key HEX` | `cafe` | The key the image was built with |
+| `--keep-repeated-reentries` | | As in ALVIE/Sancus |
 
-`--sancus-master-key` must be the key the image was built with.
+The commands have the other options of ALVIE/Core: `--spec`, `--secret`, `--variant no-interrupts`, `--oracle`, `--seed`, and so on (see the [Executables Reference](/alvie/reference/executables-reference/#the-commands-of-a-plugin)).
 
 ## How a Step Runs
 
@@ -117,7 +134,7 @@ ALVIE finds the step's instructions in this trace and turns them into observatio
 If no trace comes within 2 seconds, the program reset or stopped before the breakpoint: ALVIE asks again for the window of the previous instruction.
 If no trace comes again, the step diverged (`OMaybeDiverge`).
 
-A query sends the whole program, so the board keeps no state of a test between queries.
+A query sends the whole program and runs it from reset, so a step does not depend on the previous query, except for the data memory (see below).
 Copies of a backend and several ALVIE processes can share a board: their queries take turns on the serial port.
 
 ## Differences from the Simulator

@@ -1,5 +1,6 @@
 (*
-  tt_attack_fpga: the attack traces of tt_attack, replayed on an FPGA board (the Sancus backend with --target fpga).
+  tt_attack_fpga: the attack traces of tt_attack, replayed on an FPGA board (ALVIE/Sancus-FPGA: the Sancus backend
+  with the board as its target).
 
   It needs the board, so it is not part of CI: see docs/sancus/fpga.md. The board must run the image
   inst_number_50_ef753b6 (the commit these expectations are for); the serial port is ALVIE_FPGA_PORT (default
@@ -59,7 +60,7 @@ let exec_fpga ~enclave_spec_fn ~attacker_spec_fn ~secret ~input_str ~ignore_inte
       ~templatefile:(cwd ^ "/../src/generic_template.s43")
       ~filledfile:"generic.s43" ~dumpfile:"tb_openMSP430.vcd"
       ~spec:(Generic_inputgen.spec_of_test_spec complete_spec)
-      ~ignore_interrupts ~target:(Simulator.Fpga { port }) () in
+      ~ignore_interrupts ~target:(Sancus_fpga.Fpga.target ~port) () in
   List.fold input_sequence ~init:[] ~f:(fun acc i -> acc @ [ Verilog.step sul i ])
 
 (* As tt_attack's comparison (k is not compared, payloads in PM are equal), without reg_val *)
