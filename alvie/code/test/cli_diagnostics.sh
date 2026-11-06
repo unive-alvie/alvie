@@ -144,6 +144,34 @@ expect_status 2 'Cannot tell the secrets of the models from their names: give th
   --m1-int "$TMP_DIR/invalid.dot" \
   --m2-int "$TMP_DIR/invalid.dot"
 
+# A model of a format this ALVIE does not know: a clear error, not a crash
+printf '// alvie-model format 99; plugin sancus 2099.01; core 9\ndigraph G {\n}\n' >"$TMP_DIR/future.dot"
+expect_status 2 'made by a newer ALVIE' \
+  _build/default/bin/fa.exe \
+  --tmpdir "$TMP_DIR/fa" \
+  --witness-file-basename "$TMP_DIR/fa/witness" \
+  --m1-int "$TMP_DIR/future.dot" \
+  --m2-int "$TMP_DIR/future.dot" \
+  --secrets 0,1
+
+# The alvie command: the plugin files, the options generated from the manifest, alvie property
+expect_status 0 'OK: plugin sancus' _build/default/bin/alvie.exe plugin check
+expect_status 0 'OK: plugin toy' _build/default/bin/alvie.exe plugin check test/fixtures/toy
+mkdir -p "$TMP_DIR/bad-plugin"
+cp test/fixtures/toy/*.yaml "$TMP_DIR/bad-plugin/"
+printf 'name: toy\nversion: yes\n' >"$TMP_DIR/bad-plugin/alvie-plugin.yaml"
+expect_status 2 'ALVIE error: the plugin has' _build/default/bin/alvie.exe plugin check "$TMP_DIR/bad-plugin"
+expect_status 0 'wrote .*sancus-atoms.values.schema.json' _build/default/bin/alvie.exe plugin schemas "$TMP_DIR/schemas"
+expect_status 0 '--keep-repeated-reentries' _build/default/bin/alvie.exe learn -help
+expect_status 0 '--sancus path' _build/default/bin/alvie.exe learn -help
+expect_status 2 'M1 names a file that does not exist' \
+  _build/default/bin/alvie.exe property inclusion "$TMP_DIR/missing.dot" "$TMP_DIR/future.dot" --tmpdir "$TMP_DIR/property"
+expect_status 2 'made by a newer ALVIE' \
+  _build/default/bin/alvie.exe property equivalence "$TMP_DIR/future.dot" "$TMP_DIR/future.dot" --tmpdir "$TMP_DIR/property"
+expect_status 2 '--formula names a file that does not exist' \
+  _build/default/bin/alvie.exe property formula "$REPO_ROOT/results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot" \
+  --formula "$TMP_DIR/missing.mcf" --tmpdir "$TMP_DIR/property"
+
 source "$REPO_ROOT/script_helpers.sh"
 alvie_run_background success 'true' "$TMP_DIR/success.log"
 alvie_run_background failure 'false' "$TMP_DIR/failure.log"

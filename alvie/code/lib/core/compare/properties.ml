@@ -76,6 +76,9 @@ module Make (H : Hooks.S) = struct
           match Shexp_process.(eval (run "pbes2bool" [ pbes ] |> capture_unit [ Stdout ])) with
           | out -> (match String.strip out with "true" -> Ok true | "false" -> Ok false | o -> Error (sprintf "pbes2bool answered %S" o))
           | exception e -> Error (sprintf "pbes2bool failed: %s" (Exn.to_string e))) in
-    (match Logs.level (), result with Some Debug, _ | _, Error _ -> () | _ -> ignore (Sys_unix.command (sprintf "rm -rf %s" (Filename.quote dir))));
+    (match Logs.level (), result with
+     | Some Debug, _ -> Logs.app (fun p -> p "The files of mCRL2 are in %s (actions.txt lists the actions)" dir)
+     | _, Error _ -> ()
+     | _ -> ignore (Sys_unix.command (sprintf "rm -rf %s" (Filename.quote dir))));
     result
 end

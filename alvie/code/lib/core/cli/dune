@@ -1,0 +1,6 @@
+; The command line of ALVIE/Core: options generated from a manifest, and the commands for plugin authors
+(library
+ (name alvie_cli)
+ (public_name alvie-core.cli)
+ (preprocess (pps ppx_jane))
+ (libraries core core_unix core_unix.command_unix alvie_plugin yojson))

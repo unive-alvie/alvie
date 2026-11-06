@@ -114,7 +114,7 @@ jobs:
         if: success() || failure()
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
-            'eval "$(opam env --switch=4.13.1)" && dune exec tt_properties -- test --color=never'
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_properties -- test --color=never && bash test/property_cmd.sh'
       - name: Keep the logs of a failed run
         if: failure()
         uses: actions/upload-artifact@v4
