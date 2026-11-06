@@ -98,8 +98,11 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/compare/view.ml` | The attacker view: parts and what the attacker sees of each |
 | `lib/core/compare/plugin_hooks.ml` | The hooks of the engine, derived from the plugin files |
 | `lib/core/compare/properties.ml` | The catalogue of properties |
-| `bin/learn.ml` | Experiment orchestration and model writing |
-| `bin/fa.ml` | Four-model flow-analysis comparison |
+| `bin/alvie.ml` | The `alvie` command: the subcommands below and `plugin` |
+| `bin/learn_cmd.ml` | `alvie learn` (`learn.exe`): experiment orchestration and model writing |
+| `bin/fa_cmd.ml` | `alvie compare` (`fa.exe`): four-model flow-analysis comparison |
+| `lib/core/cli/` | Options generated from a manifest (`Alvie_cli.Config`), and `alvie plugin` |
+| `lib/core/interop/interop.ml` | Model files: reading, writing, and their format line |
 
 ## The backend contract
 

@@ -53,6 +53,24 @@
 - CI runs the corpus check with the fast checks, and runs `regression.sh all`
   and `tt_attack` in the published Docker image.
 
+### Command line and files
+
+- One command, `alvie`, with the subcommands `learn`, `compare`, `exec`,
+  `pbt`, `property` and `plugin` (`check` and `schemas`, for plugin
+  authors). `alvie property` checks inclusion, equivalence or an mCRL2
+  formula on learned models, with exit status 4 when the property does not
+  hold. The
+  options of the backend are generated from the configuration parameters of
+  the plugin's manifest. `learn.exe`, `fa.exe`, `exec.exe` and `pbt.exe`
+  remain, as the same commands, for one release; their options and output
+  do not change, so alvie-ui, which runs `bin/learn.exe` and parses its
+  output, works as before.
+- Model files start with a line that gives their format, the plugin and the
+  version of Core (`// alvie-model format 1; plugin sancus 2026.10; core 1`).
+  Models without it read as before; a model of a later format is refused
+  with a message. The checked-in models get the line, and nothing else
+  changes in them.
+
 ### Comparison
 
 - Comparisons see what the attacker view declares (`plugins/sancus/view.yaml`),

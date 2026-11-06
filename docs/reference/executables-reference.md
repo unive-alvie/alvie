@@ -5,13 +5,68 @@ sidebar:
   order: 6
 ---
 
-All executables are built with `dune build` from inside `alvie/code/` and run as:
+All executables are built with `dune build` from inside `alvie/code/` and run from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
 
-```
-_build/default/bin/<name>.exe [flags]
+## The `alvie` command
+
+`alvie` gathers the tools of this page under one command:
+
+| Command | Same as | Does |
+| --- | --- | --- |
+| `alvie learn` | `learn.exe` | Learns a model |
+| `alvie compare` | `fa.exe` | Compares the four models of an experiment |
+| `alvie exec` | `exec.exe` | Runs a sequence of inputs on the simulator |
+| `alvie pbt` | `pbt.exe` | Property-based testing of two attacker specifications |
+| `alvie property inclusion M1 M2` | | Checks that every trace of `M1` is one of `M2`, or prints one that is not |
+| `alvie property equivalence M1 M2` | | Checks that two models have the same traces, or prints one of a single model |
+| `alvie property formula M -f F.mcf` | | Checks that a model satisfies an mCRL2 modal μ-calculus formula |
+| `alvie plugin check [DIR]` | | Checks the files of a plugin (by default `plugins/sancus`, which `alvie` is built with) and prints a summary, or every problem with its place |
+| `alvie plugin schemas OUT` | | Writes the JSON Schemas of the plugin files and of the plugin's values to `OUT` |
+
+```bash
+_build/default/bin/alvie.exe learn --att-spec ... --encl-spec ... --res model.dot --tmpdir /tmp/alvie --sancus ../../sancus-core-gap --oracle pac
+_build/default/bin/alvie.exe plugin check
 ```
 
-from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
+`learn.exe`, `fa.exe`, `exec.exe` and `pbt.exe` are the same commands under their former names.
+They remain for one release, for the scripts and tools that call them (alvie-ui runs `bin/learn.exe` and reads its output, which does not change), and the sections below describe them by these names.
+
+The options of the backend (`--sancus`, `--commit`, `--sancus-master-key`, `--tmpdir`, `--keep-repeated-reentries`) come from the configuration parameters of `plugins/sancus/alvie-plugin.yaml`: their names, types, defaults and help are those of the manifest.
+
+## Properties (`alvie property`)
+
+`alvie property` checks the other properties of the catalogue of ALVIE/Core (version 1) on learned models.
+Noninterference, the fourth, is `alvie compare`.
+Like `alvie compare`, it sees the models as the attacker does: through the view of `plugins/sancus/view.yaml`, with hidden outputs silent (`τ` in traces).
+Each needs mCRL2.
+
+```bash
+_build/default/bin/alvie.exe property equivalence ../../results/264f135-b7-enclave-complete-0-0.01-0.01-int.dot ../../results/264f135-b7-enclave-complete-1-0.01-0.01-int.dot
+_build/default/bin/alvie.exe property formula model.dot --formula my-property.mcf
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--tmpdir` | `/tmp/alvie` | Directory for the files given to mCRL2 |
+| `--formula`, `-f` | | The formula (`formula` only) |
+| `--debug` | | Debug-level logging, and keep the files of mCRL2; the command prints where they are |
+
+In a formula, the actions are the labels of the model, `input/Output(fields)`, made into mCRL2 identifiers: every character other than a letter or a digit becomes `_`.
+With `--debug`, `actions.txt`, next to the model given to mCRL2, lists each action and its label.
+
+The exit status is 0 when the property holds and 4 when it does not; when it does not, the output gives a trace that shows it (except for a formula).
+A mistake in the command or the files (a missing model, a model of a newer format, a formula that mCRL2 rejects) exits with 2 and a message.
+
+## Model files
+
+Learned models are Graphviz `.dot` files whose first line says what made them:
+
+```text
+// alvie-model format 1; plugin sancus 2026.10; core 1
+```
+
+Models without this line come from earlier versions; they read the same.
+A model of a later format is refused with a message: it needs a newer ALVIE.
 
 ---
 
