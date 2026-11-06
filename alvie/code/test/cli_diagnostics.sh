@@ -172,6 +172,35 @@ expect_status 2 '--formula names a file that does not exist' \
   _build/default/bin/alvie.exe property formula "$REPO_ROOT/results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot" \
   --formula "$TMP_DIR/missing.mcf" --tmpdir "$TMP_DIR/property"
 
+# The commands of Core on a native plugin (alvie tiny): the spec, the options of the manifest, models, fixtures
+TINY=plugins/tiny/fixtures
+expect_status 2 'the spec uses the secret (?): give its value with --secret' \
+  _build/default/bin/alvie.exe tiny learn --spec "$TINY/leak-time.spec" --res "$TMP_DIR/tiny.dot"
+expect_status 2 '--variant fast: plugin tiny has the variants no-interrupts' \
+  _build/default/bin/alvie.exe tiny learn --spec "$TINY/leak-time.spec" --secret 0 --variant fast --res "$TMP_DIR/tiny.dot"
+expect_status 1 'is not one of none or constant-time' \
+  _build/default/bin/alvie.exe tiny learn --spec "$TINY/leak-time.spec" --secret 0 --mitigation fast --res "$TMP_DIR/tiny.dot"
+expect_status 2 'cannot use "7" as the secret' \
+  _build/default/bin/alvie.exe tiny learn --spec "$TINY/leak-time.spec" --secret 7 --res "$TMP_DIR/tiny.dot"
+printf 'prepare { call };\nenclave { mov r9, 1; ret };\n' >"$TMP_DIR/bad.spec"
+expect_status 2 'bad.spec:2:' _build/default/bin/alvie.exe tiny learn --spec "$TMP_DIR/bad.spec" --res "$TMP_DIR/tiny.dot"
+expect_status 0 'Learned a model' _build/default/bin/alvie.exe tiny learn --spec "$TINY/leak-time.spec" --secret 0 --res "$TMP_DIR/tiny.dot"
+expect_status 2 'is a model of plugin tiny, not of sancus' \
+  _build/default/bin/alvie.exe property equivalence "$TMP_DIR/tiny.dot" "$TMP_DIR/tiny.dot" --tmpdir "$TMP_DIR/property"
+expect_status 2 '--secrets takes the two values of the secret' \
+  _build/default/bin/alvie.exe tiny compare --m1 "$TMP_DIR/tiny.dot" --m2 "$TMP_DIR/tiny.dot" --secrets 0 --witnesses "$TMP_DIR/w.dot"
+expect_status 2 'is a model of plugin sancus, not of tiny' \
+  _build/default/bin/alvie.exe tiny compare --m1 "$REPO_ROOT/results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot" --m2 "$TMP_DIR/tiny.dot" --secrets 0,1 --witnesses "$TMP_DIR/w.dot"
+printf 'timer 1\ncall\nmov r0, 0\nhalt\n' >"$TMP_DIR/inputs.txt"
+expect_status 2 'inputs.txt:4: the spec does not allow halt here (in isr); it allows: reti' \
+  _build/default/bin/alvie.exe tiny exec --spec "$TINY/leak-time.spec" --secret 0 --inputs "$TMP_DIR/inputs.txt"
+expect_status 2 'there is no fixture nope in plugins/tiny/fixtures' _build/default/bin/alvie.exe tiny fixtures nope --out "$TMP_DIR/fx"
+printf 'format: 1\nspec: leak-time.spec\nsecrets: [0, 0]\nexpect: leak\n' >"$TMP_DIR/fixtures-bad.yaml"
+mkdir -p "$TMP_DIR/fixtures" && mv "$TMP_DIR/fixtures-bad.yaml" "$TMP_DIR/fixtures/bad.yaml"
+expect_status 2 'secrets: give two different values of the secret' _build/default/bin/alvie.exe tiny fixtures --dir "$TMP_DIR/fixtures" --out "$TMP_DIR/fx"
+expect_status 2 '--tests must be greater than zero' _build/default/bin/alvie.exe tiny conformance --spec "$TINY/leak-time.spec" --secret 0 --tests 0
+expect_status 0 'PASS clone' _build/default/bin/alvie.exe tiny conformance --spec "$TINY/leak-time.spec" --secret 0 --tests 5
+
 source "$REPO_ROOT/script_helpers.sh"
 alvie_run_background success 'true' "$TMP_DIR/success.log"
 alvie_run_background failure 'false' "$TMP_DIR/failure.log"

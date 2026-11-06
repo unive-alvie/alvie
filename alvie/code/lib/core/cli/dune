@@ -3,4 +3,4 @@
  (name alvie_cli)
  (public_name alvie-core.cli)
  (preprocess (pps ppx_jane))
- (libraries core core_unix core_unix.command_unix alvie_plugin yojson))
+ (libraries core core_unix core_unix.command_unix alvie_plugin alvie_backend alvie_inputgen learninglib interop ltscompare logs logs.fmt yojson))
