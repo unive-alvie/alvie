@@ -93,7 +93,7 @@ For `trace_marker`, existing observations are enough, so we do not change output
 When a new action needs a genuinely new observation, we also:
 
 1. Add a new output variant in `alvie/code/lib/sancus/output_internal.ml`.
-2. Emit that variant in `alvie/code/lib/sancus/sul/verilog.ml` (`output_of_signals` / `analyse_dump`).
+2. Emit that variant in `alvie/code/lib/sancus/sul/simulator.ml` (`output_of_signals` / `analyse_dump`).
 3. Teach DFA progression how to consume it in `alvie/code/lib/sancus/inputgen.ml` (`transition_nomemo`).
 
 Without these three changes, the action may parse but cannot be learned correctly.

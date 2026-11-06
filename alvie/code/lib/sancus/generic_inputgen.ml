@@ -41,6 +41,30 @@ let observation (e : Output_internal.element_t) : V.t =
   | OJmpOut_Handle (p, p') -> V.Node ("JmpOut_Handle", [ ("time", payload p); ("handle", payload p') ])
   | OTime_Handle (p, p') -> V.Node ("Time_Handle", [ ("time", payload p); ("handle", payload p') ])
 
+let payload_of_fields fields : Output_internal.payload_t =
+  let get name = List.Assoc.find_exn fields ~equal:String.equal name in
+  let int name = match get name with V.Int i -> i | v -> failwithf "Generic_inputgen: %s is not an integer: %s" name (V.to_string v) () in
+  { k = int "k"; gie = (match get "gie" with V.Bool b -> b | _ -> failwith "Generic_inputgen: gie");
+    umem_val = int "umem_val"; reg_val = int "reg_val"; timerA_counter = int "timerA_counter";
+    mode = (match get "mode" with V.Sym "PM" -> PM | V.Sym "UM" -> UM | _ -> failwith "Generic_inputgen: mode") }
+
+(* The inverse of observation *)
+let element_of_observation (v : V.t) : Output_internal.element_t =
+  let payload = function V.Node ("payload", fields) -> payload_of_fields fields | v -> failwithf "Generic_inputgen: not a payload: %s" (V.to_string v) () in
+  match v with
+  | V.Node ("Diverge", []) -> OMaybeDiverge
+  | V.Node ("Illegal", []) -> OIllegal
+  | V.Node ("Unsupported", []) -> OUnsupported
+  | V.Node ("Reset", []) -> OReset
+  | V.Node ("Silent", []) -> OSilent
+  | V.Node ("JmpIn", fields) -> OJmpIn (payload_of_fields fields)
+  | V.Node ("JmpOut", fields) -> OJmpOut (payload_of_fields fields)
+  | V.Node ("Reti", fields) -> OReti (payload_of_fields fields)
+  | V.Node ("Time", fields) -> OTime (payload_of_fields fields)
+  | V.Node ("JmpOut_Handle", [ ("time", t); ("handle", h) ]) -> OJmpOut_Handle (payload t, payload h)
+  | V.Node ("Time_Handle", [ ("time", t); ("handle", h) ]) -> OTime_Handle (payload t, payload h)
+  | v -> failwithf "Generic_inputgen: not a Sancus observation: %s" (V.to_string v) ()
+
 (* Inputs *)
 
 let class_of_input (i : Input.t) = match i with IAttacker _ -> Some "attacker" | IEnclave _ -> Some "enclave" | INoInput -> None
@@ -83,11 +107,14 @@ let make_of_spec (spec : Alvie_plugin.Spec.t) : t =
   let gen = G.make (Lazy.force plugin) spec in
   { gen; cache = C.create gen ~step }
 
-(* The generator of a spec of testdl.ml whose secret is already expanded *)
-let make (spec : Testdl.test_spec_t) : t =
+(* A spec of testdl.ml as a spec of plugins/sancus (without constraints) *)
+let spec_of_test_spec (spec : Testdl.test_spec_t) : Alvie_plugin.Spec.t =
   let sections = List.map (Atom_value.of_test_spec spec) ~f:(fun (name, body) ->
       { Alvie_plugin.Spec.name; body; pos = { file = "<spec>"; line = 1; col = 1 } }) in
-  make_of_spec { sections; constraints = [] }
+  { sections; constraints = [] }
+
+(* The generator of a spec of testdl.ml whose secret is already expanded *)
+let make (spec : Testdl.test_spec_t) : t = make_of_spec (spec_of_test_spec spec)
 
 let intersperse (il : Input.t list) (ol : Output_internal.t list) =
   let rec go il ol acc =

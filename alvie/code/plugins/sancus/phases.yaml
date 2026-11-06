@@ -6,9 +6,9 @@ rules:
   - { match: Diverge, do: [{ stop: finished }] }
   - { match: [Illegal, Unsupported], do: [{ stop: invalid }] }
   - { match: [Time, Silent], do: [] }
-  # A reset starts every section again, from cleanup if the enclave was running
-  - { match: Reset, in: enclave, do: [reset, { enter: cleanup }] }
-  - { match: Reset, do: [reset, { enter: prepare }] }
+  # A reset reboots the processor: the test starts afresh from prepare, and the attacker's software can be new (the
+  # simulator compiles the code after a reset on its own)
+  - { match: Reset, do: [restart] }
   - { match: JmpIn, do: [{ enter: enclave }] }
   - { match: JmpOut, do: [{ enter: cleanup }] }
   # An interrupt saves where the enclave is and starts the ISR

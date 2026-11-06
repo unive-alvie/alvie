@@ -1,0 +1,6 @@
+; The contract between ALVIE/Core and a backend, and its adapter to the SUL of the learner
+(library
+ (name alvie_backend)
+ (public_name alvie-core.backend)
+ (preprocess (pps ppx_jane))
+ (libraries core alvie_plugin alvie_inputgen learninglib))

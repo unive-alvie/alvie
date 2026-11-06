@@ -77,7 +77,7 @@ let check_cross ~(manifest : Manifest_file.t) ~(sections : Sections_file.t) ~(gr
       check_rule r;
       List.iter r.effect ~f:(function
           | Rules_file.Enter s | Switch s | Interrupt s -> check_section r.pos s
-          | Reset | Resume | Stop _ -> ()));
+          | Restart | Reset | Resume | Stop _ -> ()));
   List.iter view ~f:(fun (r : Rules_file.show Rules_file.rule) ->
       check_rule r;
       match r.effect with

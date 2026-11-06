@@ -55,6 +55,17 @@ require_tool() {
   fi
 }
 
+# What kind of difference two models have: their states are numbered differently, they differ in the
+# bookkeeping only, or they answer some inputs differently (alvie-model-compare prints the shortest ones)
+explain_model_difference() {
+  local tool=$MM_DIR/_build/default/lib/core/tools/model_compare_main.exe
+  if [ ! -x "$tool" ]; then echo "build alvie/code to see how"; return; fi
+  if "$tool" "$1" "$2" >/dev/null 2>&1; then echo "isomorphic: only the state numbers differ"
+  elif "$tool" --observations-only "$1" "$2" >/dev/null 2>&1; then echo "isomorphic except for the bookkeeping of the outputs"
+  else echo "not isomorphic: $tool --observations-only $1 $2 shows the first difference"
+  fi
+}
+
 # compare_models <expected dir> <actual dir>: the .dot files of the two directories must be identical
 compare_models() {
   local expected_dir=$1 actual_dir=$2 expected actual n=0
@@ -65,7 +76,7 @@ compare_models() {
     if [ ! -f "$actual" ]; then
       difference "model $actual was not learned"
     elif ! cmp -s "$expected" "$actual"; then
-      difference "model $actual differs from $expected"
+      difference "model $actual differs from $expected ($(explain_model_difference "$expected" "$actual"))"
     fi
   done
   shopt -u nullglob

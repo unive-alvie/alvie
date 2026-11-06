@@ -51,7 +51,13 @@ let atoms (b : S.body) =
     Hashtbl.set atoms_memo ~key:b ~data:l;
     l
 
-(* The atoms that b accepts next, in the declaration order of the class cls *)
+let next_memo : (string * S.body, Value.t list) Hashtbl.t = Hashtbl.Poly.create ()
+
+(* The atoms that b accepts next, in the declaration order of the class cls (memoised: classes have one grammar) *)
 let next (g : Grammar.t) ~cls (b : S.body) : Value.t list =
-  List.filter (atoms b) ~f:(fun a -> not (is_empty (derive b a)))
-  |> List.sort ~compare:(Grammar.compare_atom g ~cls)
+  match Hashtbl.find next_memo (cls, b) with
+  | Some l -> l
+  | None ->
+    let l = List.filter (atoms b) ~f:(fun a -> not (is_empty (derive b a))) |> List.sort ~compare:(Grammar.compare_atom g ~cls) in
+    Hashtbl.set next_memo ~key:(cls, b) ~data:l;
+    l

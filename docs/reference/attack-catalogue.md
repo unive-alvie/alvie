@@ -100,9 +100,9 @@ New models learned with a different oracle or different limits can give a differ
 
 | Attack | `ef753b6` | Fixing commit | `bf89c0b` |
 | --- | --- | --- | --- |
-| B1 | 26 | 7 (`e8cf011`) | 3 |
+| B1 | 29 | 7 (`e8cf011`) | 3 |
 | B2 | 6 | 4 (`3170d5d`) | 3 |
-| B3 | 124 | 6 (`6475709`) | 9 |
+| B3 | 11 | 6 (`6475709`) | 9 |
 | B4 | 7 | 5 (`3636536`) | 3 |
 | B6 | 8 | 11 (`d54f031`) | 9 |
 | B7 | 8 | 9 (`264f135`) | 9 |
@@ -114,10 +114,10 @@ New models learned with a different oracle or different limits can give a differ
 
 Five points help you to read this table:
 
-- **The B3 count changed from 351 to 124 with the input generator of ALVIE/Core.**
-  The input generator now makes an enclave that the attacker re-enters with `reti` run the code it ran from that point the first time.
-  Before, a re-entered enclave could choose other actions at the same place, which no program can do, and the models of B3 on `ef753b6` had states for those impossible runs.
-  B3 is still found: the witnesses on `ef753b6` re-enter the enclave by `reti` (66 `reti` edges in the witness graph, against 2 on the fixing commit), whose count is still 6.
+- **The counts of B1 and B3 on `ef753b6` changed with ALVIE/Core** (B1: 26 to 29; B3: 351 to 11).
+  A re-entered enclave now runs the code it ran from that point the first time, and the simulator runs the code that the test ran.
+  Before, a re-entered enclave could run other instructions at the same place, which no program can do, and after two or more interrupts the simulated code left out the instructions run in between.
+  B3 is still found: the witness graph of `ef753b6` has jumps out of the enclave and `reti` edges that resume it in protected mode, and the graphs of the fixing commit and of `bf89c0b` have none.
 
 - **The counts do not fall to zero.**
   The enclave family includes `rst`, and a read and a write of unprotected memory.

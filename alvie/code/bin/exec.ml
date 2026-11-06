@@ -82,7 +82,6 @@ let command =
         Cli_diagnostics.require_secret_if_needed enclave secret;
         let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
         let complete_spec = let open Testdl in (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
-        let spec_dfa = Inputgen.build_spec_dfa complete_spec in
         let tmp = Input.IEnclave (Enclave.CIfZ ([CRst; CInst (I_NOP)], [CInst (I_NOP); CRst])) in
         (* let tmp = Input.IEnclave (Enclave.CInst (I_MOV (S_AMP "data_s", D_R (R 4)))) in *)
         Logs.debug (fun p -> p "tmp: %s" (Sexp.to_string (Sancus.Input.sexp_of_t tmp)));
@@ -180,7 +179,7 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
-            ~initial_spec:spec_dfa
+            ~spec:(Generic_inputgen.spec_of_test_spec complete_spec)
             ~ignore_interrupts:ignore_interrupts
             () in
             (* let input_sequence = [
@@ -207,7 +206,7 @@ let command =
               Sancus.Input.IEnclave (Enclave.CZeroOrNop (Common.I_MOV (Common.S_IMM "42", Common.D_R (R 5)), 2));
               Sancus.Input.IAttacker (Attacker.CReti) ] in *)
               ignore (Sys_unix.command (sprintf "rm -f %s/tb_openMSP430.vcd" tmpdir));
-              let cmd = sprintf "ln -sr %s %s/tb_openMSP430.vcd" !sul.dumpfile tmpdir in
+              let cmd = sprintf "ln -sr %s %s/tb_openMSP430.vcd" (Sancus.Verilog.dumpfile sul) tmpdir in
               ignore (Sys_unix.command cmd);
               List.iter input_sequence ~f:(fun i -> let o = Sancus.Verilog.step sul i in
               Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)));

@@ -114,6 +114,16 @@ The script writes everything under `results/regression/`, `counterexamples/regre
 Each difference is printed on a line that starts with `DIFFERENT:`, and the script reports all of them before it exits.
 The exit code is 0 when there is no difference, 1 when there are differences, and 2 when a tool or a file is missing or a step fails.
 
+When a model differs, the line says how, with `alvie-model-compare` (built in `alvie/code`):
+
+- *isomorphic: only the state numbers differ*: the learner asked other queries and numbered the states otherwise; the machine is the same;
+- *isomorphic except for the bookkeeping of the outputs*: the machine is the same, but the simulator labelled its code otherwise;
+- *not isomorphic*: the machines differ. Run the command that the line gives to see the shortest inputs on which they answer differently:
+
+```bash
+alvie/code/_build/default/lib/core/tools/model_compare_main.exe --observations-only results/<model>.dot results/regression/learning/<model>.dot
+```
+
 If a model, a graph or a count changes, find out why before you accept it.
 A change can show a bug, or a real improvement.
 When it is on purpose, regenerate the checked-in files with the wrapper scripts, update the counts in `witness-counts.txt` and in the attack catalogue together, and write the reason in the commit message.

@@ -58,9 +58,8 @@ On the atoms of `spec-lib/`, interned values sort, hash and compare faster than 
    The secret placeholder is expanded before learning.
 3. The input generator of ALVIE/Core (`Alvie_inputgen.Generator`, through `Generic_inputgen`) tracks which specification actions are legal after an observed input/output history and proposes the next input symbols.
    It follows the test through its sections with `plugins/sancus/phases.yaml`, applies the prefix rule, and checks the constraints of the spec.
-   `--inputgen legacy` uses the former generator, `Inputgen`, instead.
-4. `Sancus.Verilog` implements the SUL (system under learning).
-   It generates a program, runs the Sancus Verilog testbench, parses the VCD dump, and turns the trace into `Output_internal` observations.
+4. `Sancus.Verilog` implements the SUL (system under learning): the Sancus backend (`Sancus.Simulator`) behind the adapter of ALVIE/Core.
+   It generates a program from the programs of the sections that Core gives, runs the Sancus Verilog testbench, parses the VCD dump, and turns the trace into `Output_internal` observations.
    Compiled simulators are cached across runs, and only the top level of the testbench is traced.
 5. `Lsharp.LSharp` learns a Mealy machine using output queries and an equivalence oracle.
 6. `Interop` serializes the learned machine as a Graphviz `.dot` file.
@@ -80,8 +79,10 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/inputgen/generator.ml` | Input generation: phase rules, the prefix rule, interrupts, constraints |
 | `lib/core/inputgen/deriv.ml` | Derivatives of spec bodies |
 | `lib/sancus/generic_inputgen.ml` | The Core generator on Sancus inputs and outputs, with the embedded plugin files |
-| `lib/sancus/inputgen.ml` | The former input generator (`--inputgen legacy`); the simulator still uses its phase tracking |
-| `lib/sancus/sul/verilog.ml` | Sancus SUL and VCD-to-observation conversion |
+| `lib/sancus/inputgen.ml` | The former input generator, kept to compare with (`tt_inputgen_golden check --engine legacy`) |
+| `lib/sancus/sul/simulator.ml` | The Sancus backend: code generation, simulation, VCD-to-observation conversion |
+| `lib/sancus/sul/verilog.ml` | The Sancus SUL: the backend behind Core's adapter |
+| `lib/core/backend/` | The backend contract and its adapter to the learner |
 | `lib/sancus/output_internal.ml` | Observable output and timing payload types |
 | `lib/core/lsharp/lsharp.ml` | L# learning loop |
 | `lib/core/lsharp/observationtree.ml` | Observation tree and basis/frontier operations |
@@ -95,22 +96,29 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `bin/learn.ml` | Experiment orchestration and model writing |
 | `bin/fa.ml` | Four-model flow-analysis comparison |
 
-## The SUL contract
+## The backend contract
 
-`lib/core/lsharp/sul.mli` defines the backend contract:
+`lib/core/backend/backend.ml` (`Alvie_backend.Backend.S`) is the contract between ALVIE/Core and a backend:
 
-- `clone` creates an independent learning state;
-- `pre` initializes a fresh experiment;
-- `step` applies one input and returns one output;
-- `post` releases backend resources.
+- `pre` starts a test from the initial state of the platform;
+- `step` runs one input. Core gives the programs of all the sections, with the input included, and where the input is: its section, its position in the section's current run, and its atom. The backend generates the code, runs it to the end of the input, and returns the observations of the step (values of `observations.yaml`) and its bookkeeping;
+- `restore` is a dry step: Core already knows the observations (from an earlier test with the same prefix) and gives them back with the bookkeeping the backend returned then; the backend updates its state as if it had run the step;
+- `clone` makes an independent copy, for learning in parallel;
+- `post` ends a test.
 
-`step` also supports `silent` and `dry_output` arguments.
-L# uses these to separate observable steps from internal bookkeeping and to avoid rerunning a known output when exploring the observation tree.
+Bookkeeping is what the backend needs to continue a test but is not observed.
+Core stores it and gives it back, but never compares it: two steps are equal when their observations are.
 
-The simulator backend keeps a configuration record containing the generated program, the current specification state, labels, and the last instruction number. `pre` resets that configuration.
-The pending labels and the last instruction number are part of the returned output so that dry steps can restore them, but they are bookkeeping: output equality ignores them, so that states are told apart only by what is observed.
-When an enclave is resumed with `reti`, the backend also identifies a segment of execution between two re-entries with an identical segment immediately before it, so that an enclave that can be resumed repeatedly still has a finite model (see `--keep-repeated-reentries`).
-A step updates the specification state, generates the corresponding MSP430 program, runs the simulator, parses the VCD, and analyzes the trace at the instruction boundaries relevant to the input.
+`lib/core/backend/sul.ml` adapts a backend to the SUL of the learner (`lib/core/lsharp/sul.mli`), so that L# and the oracles do not change.
+The adapter follows the test with the input generator: it checks that each input is legal, computes the programs for the backend, turns dry steps into `restore`, and feeds the observations to the phase rules.
+An input that the spec does not allow, and any input after the test has stopped, gets the illegal output without running the backend.
+A codec translates between the learner's input and output types and Core's values: `Sul.Values` for a learner that works on values, as the toy backend of `tt_plugin` does; ALVIE/Sancus keeps its own types (`Input.t`, `Output_internal.t`), so that its model files keep their format.
+
+The Sancus backend is `lib/sancus/sul/simulator.ml`, and `Sancus.Verilog` is its adapter.
+It compiles the programs that Core gives into the testbench template: the input's occurrence is labelled, so that the analysis finds its instructions, and the other atoms run but are not analysed.
+Its bookkeeping is the code still to analyse and the number of the last instruction analysed.
+When an enclave is resumed with `reti`, the backend also identifies a segment of execution between two re-entries with an identical segment immediately before it, so that an enclave that can be resumed repeatedly still has a finite model (see `--keep-repeated-reentries`); it compares the places in the spec with the key that Core gives (`Generator.key`).
+A step generates the MSP430 program, runs the simulator, parses the VCD, and analyzes the trace at the instruction boundaries relevant to the input.
 
 ## Outputs and observability
 

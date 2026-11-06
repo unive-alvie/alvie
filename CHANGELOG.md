@@ -53,6 +53,46 @@
 - CI runs the corpus check with the fast checks, and runs `regression.sh all`
   and `tt_attack` in the published Docker image.
 
+### Backends
+
+- ALVIE/Core defines the contract with a backend (`Alvie_backend.Backend.S`):
+  `step` gets the programs of all the sections from Core and returns
+  observations (values) and bookkeeping; `restore` replays a step whose
+  observations Core already knows. An adapter turns any backend into the
+  SUL of the learner, so L# and the oracles are unchanged. `tt_plugin` learns
+  a small backend written for the tests, with nothing of Sancus.
+- The Sancus simulator is a backend of this contract (`Sancus.Simulator`). It
+  no longer reconstructs the code of the sections from the history
+  (`relevant_enclave`, `relevant_isr`, `relevant_cleanup` and `update_cfg`
+  are gone), and Core checks that inputs are legal, with the same rules as
+  the input generator: the former generator (`Inputgen`) is used only to
+  compare with, and `learn.exe --inputgen` is removed.
+- **Results change for 8 models, and for two witness counts on `ef753b6`**
+  (B1: 29 instead of 26; B3: 11 instead of 124). The former reconstruction of
+  the enclave code was wrong in three cases, where the code it simulated was
+  not the code the test had run:
+  - after two or more interrupts, it left out the instructions executed
+    between the first and the last resume (B1, B4: e.g. a write to
+    unprotected memory before the interrupt was lost after a re-entry by
+    `jin`, so the attacker read 0 instead of 42);
+  - after a re-entry by `reti`, the learner could still try other enclave
+    instructions than those the enclave had run there (B3; the input
+    generator stopped choosing them in the previous change, but the learner
+    also tries every input of its alphabet).
+  B3 is still found: the witness graph of `ef753b6` has 12 jumps out of the
+  enclave and 12 `reti` edges that resume it in protected mode, and the
+  graphs of `6475709` and `bf89c0b` have none. The counts on the fixing commits and on
+  `bf89c0b` do not change. 48 other models are learned with other state
+  numbers only (isomorphic, with the same bookkeeping).
+- A reset of Sancus restarts the test: the phase rule `restart` starts it
+  afresh from `prepare`, with new code, as the simulator always did. Before,
+  the input generator continued in `cleanup` after a reset in the enclave,
+  where the simulator then answered every input as illegal.
+- New tool `alvie-model-compare A.dot B.dot` (alvie-core): whether two models
+  are the same machine up to the numbering of their states, and otherwise the
+  shortest inputs on which they answer differently (`--observations-only`
+  ignores the bookkeeping of Sancus outputs).
+
 ### Input generation
 
 - Learning uses the input generator of ALVIE/Core, driven by the plugin files
