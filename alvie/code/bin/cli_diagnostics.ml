@@ -113,6 +113,8 @@ let protect ~debug f =
     report ~heading:"ALVIE error" ~message ~status:2
   | Sys_error message ->
     report ~heading:"ALVIE error" ~message ~status:2
+  | Interop.Unsupported_format message ->
+    report ~heading:"ALVIE error" ~message ~status:2
   | Failure message ->
     (match classify_failure message with
      | Some (heading, message, status) -> report ~heading ~message ~status
