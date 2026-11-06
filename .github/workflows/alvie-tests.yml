@@ -51,13 +51,20 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.opam/4.13.1
-          key: ${{ runner.os }}-ocaml-4.13.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/alvie.opam') }}
+          key: ${{ runner.os }}-ocaml-4.13.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/*.opam') }}
       - name: Install OCaml dependencies
         working-directory: alvie/code
         run: opam install -y . --deps-only --with-test
       - name: Build ALVIE
         working-directory: alvie/code
         run: opam exec -- dune build
+      # dune build -p builds a package with only the libraries of that package and of the installed ones: it fails
+      # (Library "sancus" not found) if alvie-core starts to depend on alvie-sancus or alvie-rtl-util.
+      - name: Check that alvie-core and alvie-rtl-util build on their own
+        working-directory: alvie/code
+        run: |
+          opam exec -- dune build -p alvie-core --build-dir _build-alvie-core @install
+          opam exec -- dune build -p alvie-rtl-util --build-dir _build-alvie-rtl-util @install
       - name: Run isolated feature suite
         working-directory: alvie/code
         run: opam exec -- dune exec tt_features -- test --color=never

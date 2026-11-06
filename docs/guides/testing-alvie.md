@@ -117,13 +117,15 @@ When it is on purpose, regenerate the checked-in files with the wrapper scripts,
 
 ## What continuous integration runs
 
-The workflow `alvie-tests.yml` runs on every pull request and on every push to `main`.
+The workflow `alvie-tests.yml` runs on every pull request and on every push to `main` and `alvie-ng`.
 It runs these steps:
 
 1. `dune build`
-2. `dune exec tt_features -- test --color=never`
-3. `bash test/cli_diagnostics.sh`
-4. `dune exec tt_inputgen_golden -- check`
+2. `dune build -p alvie-core @install` and `dune build -p alvie-rtl-util @install`, each in its own build directory.
+   They check that these packages build on their own: a library of `alvie-core` that uses one of `alvie-sancus` fails with `Library "sancus" not found`.
+3. `dune exec tt_features -- test --color=never`
+4. `bash test/cli_diagnostics.sh`
+5. `dune exec tt_inputgen_golden -- check`
 
 A second job runs the simulator-backed suites in the published Docker image, which has the simulator toolchain and mCRL2:
 `./regression.sh all` and `tt_attack`.
@@ -144,7 +146,8 @@ Run the suites yourself before you push a change that needs them, as the next ta
 | A command-line option or an error message | `cli_diagnostics.sh` and `diagnostics.exe` |
 | The simulator interface, the VCD analysis, or the output payload | `tt_attack` and `./regression.sh learning` |
 | The learner or the oracles | `./regression.sh learning` |
-| The model comparison (`cexfinder.ml`, `fa.exe`) | `./regression.sh witnesses` |
+| The model comparison (`lib/core/compare/`, `lib/sancus-compare/`, `fa.exe`) | `./regression.sh witnesses` |
+| The libraries a library of `alvie-core` uses | `dune build -p alvie-core --build-dir _build-alvie-core @install` |
 | A specification in `spec-lib/` | A short learning run and a comparison |
 | A page in `docs/` | The documentation check below |
 

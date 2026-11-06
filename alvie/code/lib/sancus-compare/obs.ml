@@ -1,4 +1,3 @@
-open Graph
 open Core
 open Sancus
 
@@ -57,62 +56,65 @@ module OutputExt = struct
   include (val Comparator.make ~compare ~sexp_of_t)
 end
 
-module Obs : sig
-  module EdgeAttributes : sig type t = Graphviz.DotAttributes.edge list end
-  type edge_attributes_t = EdgeAttributes.t
+(*
+  The Sancus hooks of the comparison engine (see lib/core/compare/hooks.ml). TEMPORARY: M5 replaces them with the
+  declarative attacker view of the Sancus plugin files.
+*)
+module Hooks = struct
+  module Input = InputExt
+  module Output = OutputExt
 
-  type t = IO of InputExt.t * OutputExt.t * edge_attributes_t [@@deriving sexp,ord,eq]
-  val default : t
-  val make : ?attributes:edge_attributes_t -> InputExt.t -> OutputExt.t -> t
-  val is_silent : t -> bool
-  val edge_attributes : t -> Graphviz.DotAttributes.edge list
+  (* The attacker chooses its own actions and when interrupts arrive *)
+  let is_low_input = function InputExt.IAttacker _ | InputExt.IInterrupt -> true | _ -> false
 
-  val show : t -> string
-  val pp : Format.formatter -> t -> unit
-  val parse : string -> t
-  val human_show : t -> string
-end =
-struct
-  module EdgeAttributes = struct
-    type t = Graphviz.DotAttributes.edge list
-
-    let sexp_of_t (_ : t) = Sexp.unit
-    let t_of_sexp (_ : Sexp.t) = []
-
-    let compare _ _ = 0
-    let equal _ _ = true
-  end
-  type edge_attributes_t = EdgeAttributes.t
-
-  type t = IO of InputExt.t * OutputExt.t * EdgeAttributes.t [@@deriving sexp,ord,eq]
-  let default = IO (InputExt.default, OutputExt.default, [])
-  let make ?(attributes = []) i o = IO (i, o, attributes)
-
-  let to_mcrl2_name (s : string) =
-    let replacements = [('(', "["); (')', "]")] in
-    let cnl = List.map (String.to_list s) ~f:(fun c ->
-      match List.find replacements ~f:(fun (s, _) -> Char.equal s c) with
-      | None -> String.of_char c | Some (_, e) -> e) in
-    (List.fold ~init:"" ~f:(fun str s -> str ^ s) cnl)
-
-  let of_mcrl2_name (s : string) =
-    let replacements = [('[', "("); (']', ")")] in
-    let cnl = List.map (String.to_list s) ~f:(fun c ->
-      match List.find replacements ~f:(fun (s, _) -> Char.equal s c) with
-      | None -> String.of_char c | Some (_, e) -> e) in
-    (List.fold ~init:"" ~f:(fun str s -> str ^ s) cnl)
-
-  let show io = to_mcrl2_name (Sexp.to_string_mach (sexp_of_t io))
-  let pp fmt io = Format.fprintf fmt "%s" (show io)
-  let parse s = Sexp.of_string_conv_exn (of_mcrl2_name s) t_of_sexp
-
-  let is_silent io =
-    match io with
-    | IO (_, (ODiverge | OIllegal | OException | OReset | OJmpOut), _) -> false
-    | IO (_, (OJmpIn p | OReti p | OHandle p | OTime p), _) when Output_internal.equal_mode_t p.mode UM -> false
+  (* The attacker sees the outputs of unprotected mode and the ones that stop or leave the enclave *)
+  let is_hidden o =
+    let open OutputExt in
+    match o with
+    | (ODiverge | OIllegal | OException | OReset | OJmpOut) -> false
+    | (OJmpIn p | OReti p | OHandle p | OTime p) when Output_internal.equal_mode_t p.mode UM -> false
     | _ -> true
 
-  let human_show (IO(i, o, _)) =
+  let is_final o = OutputExt.equal o OReset || OutputExt.equal o ODiverge
+
+  (* Two payloads of protected mode look the same; otherwise the attacker sees everything but the cycle count k *)
+  let equal_public_payload_t (p : OutputExt.payload_t)  (p' : OutputExt.payload_t) = let open Sancus.Output_internal in (equal_mode_t p.mode PM && equal_mode_t p'.mode PM) || (Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode)
+
+  let public_equal e e' =
+    let open OutputExt in
+    match e, e' with
+    | OIllegal, OIllegal | OReset, OReset | OSilent, OSilent | OUnsupported, OUnsupported | OJmpOut, OJmpOut -> true
+    | ODiverge, _ | _, ODiverge -> false (* this is always interesting, since something may be wrong *)
+    | OReti p, OReti p' | OTime p, OTime p' | OHandle p, OHandle p' -> (equal_public_payload_t p p')
+    | _ -> false
+
+  let in_victim (o : OutputExt.t) =
+    let open OutputExt in
+    let open Sancus.Output_internal in
+    match o with | (OReti p | OTime p | OHandle p) -> equal_mode_t p.mode PM | _ -> false
+
+  (* The enclave code of a run: its enclave instructions until the run leaves the enclave (an interrupt, reti or a jump out) *)
+  let encl_prefix p = List.take_while p ~f:(function
+            | (_, OutputExt.OHandle _) | (_, OutputExt.OReti _)  -> false
+            | (_, OutputExt.OJmpOut)  -> false
+            | _ -> true)
+
+  let encl_inputs p = List.filter_map p ~f:(function
+            | (InputExt.IEnclave _, OutputExt.OHandle _)  -> None
+            | (InputExt.IEnclave i, _) -> Some (InputExt.IEnclave i)
+            | _ -> None)
+
+  let victim_code run = encl_inputs (encl_prefix run)
+
+  (* FIXME: this is a bit ad-hoc but we easily reimplement if we keep track of S_SECRET in the inputs *)
+  let victim_code_up_to_secret run =
+    let rm_secret t = List.filter_map t ~f:(fun io -> match io with
+    | (InputExt.IEnclave (CInst (I_CMP (S_IMM _, D_R (R 4)))), _)  -> None
+    | (InputExt.IEnclave _, _)  -> Some io
+    | _ -> None) in
+    victim_code (rm_secret run)
+
+  let human_show (i : InputExt.t) (o : OutputExt.t) =
     let open Attacker in
     let open Enclave in
     let rec human_att_atom (a : Attacker.atom_t) = (match a with
@@ -161,6 +163,7 @@ struct
         | OSilent -> "τ") in
     sprintf "%s/%s" (human_input i) (human_output o)
 
-  let edge_attributes obs =
-    let (IO(_, _, attr)) = obs in (`Label (human_show obs))::attr
 end
+
+(* The observations of the compared models: they label the transitions of model and witness graphs *)
+module Obs = Ltscompare.Obs.Make (Hooks)

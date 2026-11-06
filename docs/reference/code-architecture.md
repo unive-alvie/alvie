@@ -10,6 +10,24 @@ sidebar:
 
 This document describes the ALVIE/Sancus implementation.
 
+## Packages
+
+The code in `alvie/code` is split into three opam packages, defined in `dune-project`:
+
+| Package | Directory | Libraries | Contents |
+| --- | --- | --- | --- |
+| `alvie-core` | `lib/core/` | `learninglib`, `prof`, `interop`, `ltscompare` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, and the comparison engine. It has no backend. |
+| `alvie-rtl-util` | `lib/rtl-util/` | `vcd` | Helpers for backends that simulate RTL designs: the VCD parser. It is not part of Core. |
+| `alvie-sancus` | `lib/sancus/`, `lib/sancus-compare/`, `bin/`, `test/` | `sancus`, `ltscomparator` | The Sancus backend, its comparison hooks, the executables and the test suites. |
+
+`alvie-core` does not depend on the other two packages: CI builds it on its own with `dune build -p alvie-core`, which fails if a library of `alvie-core` uses one of `alvie-sancus` or `alvie-rtl-util`.
+`dune build` builds all three, and the executables keep their paths (`_build/default/bin/learn.exe` and so on).
+
+The comparison engine (`Ltscompare.Cexfinder.Make`) does not know what the inputs and outputs of a model mean.
+A backend tells it through the `Ltscompare.Hooks.S` signature: which inputs the attacker chooses, which outputs the attacker cannot see, which outputs end a run, when two outputs look the same to the attacker, which outputs come from the victim, and which victim code a run executes.
+`lib/sancus-compare/obs.ml` gives the Sancus answers, and `fa.exe` uses the resulting instance.
+These hooks are temporary: they become the declarative attacker view of the plugin files in a later release of ALVIE/Core.
+
 ## End-to-end pipeline
 
 `learn.exe` performs one active-learning experiment:
@@ -27,7 +45,7 @@ This document describes the ALVIE/Sancus implementation.
 
 The learner is parameterized by the SUL and oracle interfaces.
 It keeps caches of apartness, frontier and frontier-to-basis candidates across the run, updated incrementally as the observation tree grows; they rely on the oracles numbering new tree nodes increasingly.
-The production configuration in `learn.exe` uses `Sancus.Verilog` with one of the oracle implementations in `lib/lsharp/oracles/`.
+The production configuration in `learn.exe` uses `Sancus.Verilog` with one of the oracle implementations in `lib/core/lsharp/oracles/`.
 
 ## Main modules
 
@@ -39,18 +57,21 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/sancus/inputgen.ml` | Specification-guided input generation and matchability |
 | `lib/sancus/sul/verilog.ml` | Sancus SUL and VCD-to-observation conversion |
 | `lib/sancus/output_internal.ml` | Observable output and timing payload types |
-| `lib/lsharp/lsharp.ml` | L# learning loop |
-| `lib/lsharp/observationtree.ml` | Observation tree and basis/frontier operations |
-| `lib/lsharp/oracles/` | PAC, random-walk, exhaustive, and incremental oracles |
-| `lib/vcd/vcd.ml` | VCD parser |
-| `lib/prof/prof.ml` | Optional profiler (`ALVIE_PROFILE=1`) |
-| `lib/ltscomparator/cexfinder.ml` | Model conversion and witness extraction |
+| `lib/core/lsharp/lsharp.ml` | L# learning loop |
+| `lib/core/lsharp/observationtree.ml` | Observation tree and basis/frontier operations |
+| `lib/core/lsharp/oracles/` | PAC, random-walk, exhaustive, and incremental oracles |
+| `lib/core/interop/interop.ml` | Reading and writing learned machines as `.dot` files |
+| `lib/core/compare/cexfinder.ml` | Model conversion, mCRL2 comparison and witness extraction, generic in the hooks |
+| `lib/core/compare/hooks.ml` | What the comparison engine needs to know about a backend's inputs and outputs |
+| `lib/rtl-util/vcd/vcd.ml` | VCD parser |
+| `lib/core/prof/prof.ml` | Optional profiler (`ALVIE_PROFILE=1`) |
+| `lib/sancus-compare/obs.ml` | The inputs and outputs that `fa.exe` compares, and the Sancus hooks |
 | `bin/learn.ml` | Experiment orchestration and model writing |
 | `bin/fa.ml` | Four-model flow-analysis comparison |
 
 ## The SUL contract
 
-`lib/lsharp/sul.mli` defines the backend contract:
+`lib/core/lsharp/sul.mli` defines the backend contract:
 
 - `clone` creates an independent learning state;
 - `pre` initializes a fresh experiment;
@@ -96,11 +117,13 @@ Follow the [Extending TestDL Actions](../../guides/spec-extending-actions/) guid
 ### Add a learning backend
 
 Implement the `SUL` signature, keep input and output types comparable and serializable, and instantiate `LSharp` with the new backend in an executable.
+To compare its models, implement `Ltscompare.Hooks.S` for its inputs and outputs and instantiate `Ltscompare.Cexfinder.Make`, as `lib/sancus-compare/` does.
+Depend only on the libraries of `alvie-core` (and `alvie-rtl-util` if the backend simulates RTL), not on `alvie-sancus`.
 The backend must preserve the observable-output contract; changing payload semantics changes learned models and their comparability.
 
 ### Add an oracle
 
-Implement the `Oracle` functor signature in `lib/lsharp/oracles/oracle.mli`.
+Implement the `Oracle` functor signature in `lib/core/lsharp/oracles/oracle.mli`.
 The oracle supplies output queries and equivalence queries; it may use `Inputgen` to stay within the selected TestDL specification.
 
 ## Build and test

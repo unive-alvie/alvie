@@ -1,4 +1,5 @@
 (library
  (name prof)
+ (public_name alvie-core.prof)
  (modules prof)
  (libraries unix))

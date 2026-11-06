@@ -1,11 +1,21 @@
+(*
+  The comparison engine: learned models as LTSs, trace inclusion checked with mCRL2 (ltscompare), witnesses (pairs
+  of runs that the attacker tells apart) and witness graphs. It is generic in the inputs and outputs of the models:
+  the backend gives its view of them through Hooks.S (see hooks.ml), and fa.exe of ALVIE/Sancus instantiates it in
+  lib/sancus-compare.
+*)
+
 open Learninglib
 open Lts
 
 open Shexp_process
 open Core
-open Obs
 
-module IIOMealy = Learninglib.Mealy.Mealy (Showableint.ShowableInt) (InputExt) (OutputExt)
+module Make (H : Hooks.S) = struct
+
+module Obs = Obs.Make (H)
+
+module IIOMealy = Learninglib.Mealy.Mealy (Showableint.ShowableInt) (H.Input) (H.Output)
 
 module I = struct type t = Int.t [@@deriving eq,ord,sexp,hash,show] end
 module ILTS = LTS (I) (Obs)
@@ -149,7 +159,7 @@ let update_cex_graph (cex_lts : i_lts_t) (path_m1 : Obs.t list) (path_m2 : Obs.t
             ~init:(ILTS.LTSSSet.empty, ILTS.LTSSSet.empty)
             ~f:(fun (acc, alt_acc) el ->
               (* Collect the set of successors of el s.t. they have the same input as obs, but possibly different outputs. *)
-              let alt_states = Map.fold (Map.filter_keys acc_lts.transition ~f:(fun (s, o) -> s = el && (match o, obs with | IO (i, _, _), IO (i', _, _) -> InputExt.equal i i'))) ~init:ILTS.LTSSSet.empty ~f:(fun ~key:_ ~data alt_acc -> Set.union alt_acc data) in
+              let alt_states = Map.fold (Map.filter_keys acc_lts.transition ~f:(fun (s, o) -> s = el && H.Input.equal (Obs.input o) (Obs.input obs))) ~init:ILTS.LTSSSet.empty ~f:(fun ~key:_ ~data alt_acc -> Set.union alt_acc data) in
               (match Map.find acc_lts.transition (el, obs) with
               | None -> acc
               | Some succ -> Set.union acc succ), Set.union alt_acc alt_states
@@ -195,19 +205,19 @@ let update_cex_graph (cex_lts : i_lts_t) (path_m1 : Obs.t list) (path_m2 : Obs.t
   i.e., make it look like the behavior ends there.
 *)
 let all_acyclic_cexs ~attributes (m : i_lts_t) (cex : Obs.t list): Obs.t list list =
-  let att_inputs p = List.filter_map p ~f:(function Obs.IO (InputExt.IAttacker i, _, _) -> Some (InputExt.IAttacker i) | Obs.IO (InputExt.IInterrupt, _, _) -> Some (InputExt.IInterrupt) | _ -> None) in
+  let att_inputs p = List.filter_map p ~f:(fun (Obs.IO (i, _, _)) -> if H.is_low_input i then Some i else None) in
   let cex_att = att_inputs cex in
-  let compatible att = List.is_prefix ~equal:InputExt.equal att ~prefix:cex_att || List.is_prefix ~equal:InputExt.equal cex_att ~prefix:att in
+  let compatible att = List.is_prefix ~equal:H.Input.equal att ~prefix:cex_att || List.is_prefix ~equal:H.Input.equal cex_att ~prefix:att in
   let same_att_inputs ol = not (List.is_empty ol) && not (List.is_empty cex) && compatible (att_inputs ol) in
   let successors = Map.fold m.transition ~init:Int.Map.empty ~f:(fun ~key:(s, obs) ~data acc ->
-    let IO (i, o, _) = obs in
+    let Obs.IO (i, o, _) = obs in
     Map.add_multi acc ~key:s ~data:(Obs.make ~attributes i o, data)) in
   let all : Obs.t list list ref = ref [] in
   let record path = if same_att_inputs path then all := path :: !all in
   (* Depth-first, keeping the states on the current path (on_path); rev_path and rev_att are the path and its attacker inputs, reversed *)
   let rec visit curr_state on_path rev_path rev_att =
     let is_final = match rev_path with
-      | Obs.IO(_, o, _) :: _ -> OutputExt.equal o OReset || OutputExt.equal o ODiverge
+      | Obs.IO(_, o, _) :: _ -> H.is_final o
       | [] -> false in
     match Map.find successors curr_state with
     | None -> record (List.rev rev_path)
@@ -215,7 +225,7 @@ let all_acyclic_cexs ~attributes (m : i_lts_t) (cex : Obs.t list): Obs.t list li
     | Some succ ->
       List.iter (List.rev succ) ~f:(fun (obs, next_set) ->
         let rev_att' = match obs with
-          | Obs.IO ((InputExt.IAttacker _ | InputExt.IInterrupt) as i, _, _) -> i :: rev_att
+          | Obs.IO (i, _, _) when H.is_low_input i -> i :: rev_att
           | _ -> rev_att in
         (* Extensions of a path whose attacker inputs disagree with cex's are all discarded: stop early *)
         if compatible (List.rev rev_att') then
@@ -226,42 +236,13 @@ let all_acyclic_cexs ~attributes (m : i_lts_t) (cex : Obs.t list): Obs.t list li
   visit m.initial (ILTS.LTSSSet.singleton m.initial) [] [];
   !all
 
-let encl_prefix p = List.take_while p ~f:(function
-          | Obs.IO (_, OutputExt.OHandle _, _) | Obs.IO (_, OutputExt.OReti _, _)  -> false
-          | Obs.IO (_, OutputExt.OJmpOut, _)  -> false
-          | _ -> true)
+(* Whether two runs execute the same victim code (one is a prefix of the other), according to code *)
+let same_code a b = List.is_prefix ~equal:H.Input.equal a ~prefix:b || List.is_prefix ~equal:H.Input.equal b ~prefix:a
 
-let encl_inputs p = List.filter_map p ~f:(function
-          | Obs.IO (InputExt.IEnclave _, OutputExt.OHandle _, _)  -> None
-          | Obs.IO (InputExt.IEnclave i, _, _) -> Some (InputExt.IEnclave i)
-          | _ -> None)
+let victim_code run = H.victim_code (List.map run ~f:Obs.to_pair)
+let victim_code_up_to_secret run = H.victim_code_up_to_secret (List.map run ~f:Obs.to_pair)
 
-let share_code_encl w w' = List.is_prefix ~equal:InputExt.equal (encl_inputs (encl_prefix w)) ~prefix:(encl_inputs (encl_prefix w')) || List.is_prefix ~equal:InputExt.equal (encl_inputs (encl_prefix w')) ~prefix:(encl_inputs (encl_prefix w))
-
-let equal_public_payload_t (p : OutputExt.payload_t)  (p' : OutputExt.payload_t) = let open Sancus.Output_internal in (equal_mode_t p.mode PM && equal_mode_t p'.mode PM) || (Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode)
-
-(* FIXME: this is a bit ad-hoc but we easily reimplement if we keep track of S_SECRET in the inputs *)
-let share_code_encl_up_to_secret w w' =
-  let rm_secret t = List.filter_map t ~f:(fun io -> match io with
-  | Obs.IO (InputExt.IEnclave (CInst (I_CMP (S_IMM _, D_R (R 4)))), _, _)  -> None
-  | Obs.IO (InputExt.IEnclave _, _, _)  -> Some io
-  | _ -> None) in
-  share_code_encl (rm_secret w) (rm_secret w')
-
-let outputext_public_equal e e' =
-  let open OutputExt in
-  match e, e' with
-  | OIllegal, OIllegal | OReset, OReset | OSilent, OSilent | OUnsupported, OUnsupported | OJmpOut, OJmpOut -> true
-  | ODiverge, _ | _, ODiverge -> false (* this is always interesting, since something may be wrong *)
-  | OReti p, OReti p' | OTime p, OTime p' | OHandle p, OHandle p' -> (equal_public_payload_t p p')
-  | _ -> false
-
-let is_PM io =
-  let open OutputExt in
-  let open Sancus.Output_internal in
-  match io with | Obs.IO (_, (OReti p | OTime p | OHandle p), _) -> equal_mode_t p.mode PM | _ -> false
-
-
+let in_victim obs = H.in_victim (Obs.output obs)
 
 (* In a witness graph, the run of the first model is black and dashed, the run of the second one red and dotted *)
 let m1_attributes = [`Color 0x000000; `Style `Dashed; `Fontcolor 0x000000;]
@@ -278,6 +259,7 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
   let cex_count = ref 0 in
   let finished = ref false in
   let m1r, m2r = ref m1, ref m2 in
+  let to_remove_code = List.map to_remove ~f:(fun (r1, r2) -> (victim_code r1, victim_code r2)) in
   while not !finished && (match limit with None -> true | Some limit -> !cex_count < limit) do
     Logs.debug (fun p -> p "===== FINDALL ITERATION START =====");
     (match find_cex_aut ~tmpdir !m1r !m2r with
@@ -303,8 +285,8 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
             | [], [] -> None
             | [], _ | _, [] -> Some (until_next_um ls, until_next_um rs)
             | l::ls, r::rs ->
-              (let  IO(_, lo, _), IO(_, ro, _) = l, r in
-                if (Obs.is_silent l && Obs.is_silent r) || outputext_public_equal lo ro then
+              (let Obs.IO(_, lo, _), Obs.IO(_, ro, _) = l, r in
+                if (Obs.is_silent l && Obs.is_silent r) || H.public_equal lo ro then
                   (* Keep them and continue recursively *)
                   match complete_witness ls rs with
                   | Some (ls', rs') -> Some (l::ls', r::rs')
@@ -326,12 +308,13 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
                   (*
                     Since we are looking for the preservation, we need to check: (1) same attacker (2) enclaves originally non-interferent (3) different public outputs.
 
-                    (1) is guaranteed by all_acyclic_cexs: it is a bit too weak and introduces a few false posivites, mitigated by share_code_encl_up_to_secret, but be careful!
-                    (2) is given by the checkCheck that (curr_m1, curr_m2) is not in to_remove (it includes interfering witnesses from original system) implies (2)
-                    (3) Is guaranteed by complete_witness + condition is_PM in the next if
+                    (1) is guaranteed by all_acyclic_cexs: it is a bit too weak and introduces a few false posivites, mitigated by the victim code up to the secret, but be careful!
+                    (2) is given by the check that (curr_m1, curr_m2) does not run the same victim code as a witness in to_remove (it includes interfering witnesses from original system)
+                    (3) Is guaranteed by complete_witness + condition in_victim in the next if
                   *)
                   let lc1, lc2 = List.last_exn curr_m1, List.last_exn curr_m2 in
-                  if not (List.mem to_remove (curr_m1, curr_m2) ~equal:(fun (r1, r2) (c1, c2) -> share_code_encl r1 c1 && share_code_encl r2 c2)) && share_code_encl_up_to_secret curr_m1 curr_m2 && not (is_PM lc1) && not (is_PM lc2) then
+                  let c1, c2 = victim_code curr_m1, victim_code curr_m2 in
+                  if not (List.exists to_remove_code ~f:(fun (r1, r2) -> same_code c1 r1 && same_code c2 r2)) && same_code (victim_code_up_to_secret curr_m1) (victim_code_up_to_secret curr_m2) && not (in_victim lc1) && not (in_victim lc2) then
                     (
                       cex_graph := update_cex_graph !cex_graph curr_m1 curr_m2;
                       all_witnesses := (curr_m1, curr_m2)::!all_witnesses;
@@ -388,3 +371,5 @@ let find_all_cex_sym ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : in
   let empty_graph : i_lts_t = { initial = 0; states = ILTS.LTSSSet.singleton 0; transition = ILTS.LTSMap.empty } in
   let graph = List.fold union ~init:empty_graph ~f:(fun g (w1, w2) -> update_cex_graph g w1 w2) in
   List.length union, graph, List.rev union
+
+end
