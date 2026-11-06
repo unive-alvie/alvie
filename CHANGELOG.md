@@ -217,6 +217,35 @@ the documentation lists what users must do.
   shortest inputs on which they answer differently (`--observations-only`
   ignores the bookkeeping of Sancus outputs).
 
+### FPGA target
+
+- The Sancus backend runs its programs on a target: the Verilator simulator
+  (the default) or an openMSP430/Sancus board on an Arty S7
+  (`--target fpga`, with `--fpga-port`, default `/dev/ttyUSB1`). The options
+  are parameters of `plugins/sancus/alvie-plugin.yaml`, so `learn.exe`,
+  `alvie learn` and `alvie sancus …` take them; `exec.exe` and `pbt.exe` take
+  them too. A step takes about 20 ms on the board. The board must run an
+  `inst_number_50` image, and `--commit` must be the commit of that image:
+  the programs are built for it. New page: Running on an FPGA.
+- This ports the FPGA backend of the branch `feat/alvie-fpga` (and its later
+  fixes) as a target, not as a second backend: the program of a step, its
+  build, the bookkeeping, re-entries and the observations of the instructions
+  found (`Sancus.Step_analysis`) are the same for both targets. Only how a
+  step runs and how its instructions are found in the trace depend on the
+  target (`Sancus.Fpga`). The simulator's results do not change (regression:
+  no differences).
+- Differences from the branch: the serial port is the option `--fpga-port`
+  (not the variable `FPGA_PORT`); ALVIE does not program the board
+  (`FPGA_TCL` is removed); `learn.exe --fpga`, the `--fpga` option of the
+  wrapper scripts and the serial daemon (`fpga_daemon.py`, `run_fpga.py`) are
+  removed; the programs use the headers of `--commit`, not of the current
+  checkout. Copies of a backend, and several processes, can share a board:
+  each query locks the serial port.
+- New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
+  (image `ef753b6`), with the simulator's expected observations except where
+  the hardware differs, each with its reason. It needs the board, so CI does
+  not run it.
+
 ### Input generation
 
 - Learning uses the input generator of ALVIE/Core, driven by the plugin files

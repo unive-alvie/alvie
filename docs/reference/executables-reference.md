@@ -114,7 +114,7 @@ A model of a later format is refused with a message: it needs a newer ALVIE, and
 
 ## 1. `learn.exe` — Learn a Mealy machine model
 
-**Purpose:** Runs the L# active automata learning algorithm against a Sancus Verilog simulation.
+**Purpose:** Runs the L# active automata learning algorithm against a Sancus Verilog simulation, or a Sancus board with `--target fpga` (see [Running on an FPGA](/alvie/sancus/fpga/)).
 Produces a `.dot` file representing the learned Mealy machine: the attacker's observable behavior of the enclave.
 This is the main experiment driver.
 
@@ -133,7 +133,9 @@ This is the main experiment driver.
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check |
+| `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check; with `--target fpga`, the commit of the image on the board |
+| `--target <simulator\|fpga>` | `simulator` | Where the programs run: the Verilator simulator, or an FPGA board (see [Running on an FPGA](/alvie/sancus/fpga/)) |
+| `--fpga-port <path>` | `/dev/ttyUSB1` | The serial port of the board, with `--target fpga` |
 | `--secret <value>` | absent | Secret substituted into the enclave specification; required when the spec contains `?` |
 | `--epsilon <float>` | `0.001` | PAC error bound, used only by `pac` |
 | `--delta <float>` | `0.001` | PAC confidence parameter, used only by `pac` |
@@ -257,7 +259,9 @@ Same setup flags as `learn.exe` (minus oracle/learning flags):
 | `--encl-spec <file>` | Enclave specification (`.etdl`) |
 | `--tmpdir <dir>` | Temp directory for simulation files |
 | `--sancus <dir>` | Path to Sancus simulator root |
-| `--commit <sha>` | Simulator git commit to use |
+| `--commit <sha>` | Simulator git commit to use; with `--target fpga`, the commit of the image on the board |
+| `--target <simulator\|fpga>` | Where the programs run (default: `simulator`) |
+| `--fpga-port <path>` | The serial port of the board, with `--target fpga` (default: `/dev/ttyUSB1`) |
 | `--secret <0\|1>` | Secret value |
 | `--ignore-interrupts` | Collapse interrupt outputs |
 | `--sancus-master-key <hex>` | Master key |
@@ -310,7 +314,9 @@ It is therefore a focused randomized reset-equivalence smoke test, not a replace
 | `--step-limit <int>` | deprecated | Compatibility alias for `--test-count` |
 | `--tmpdir <dir>` | _(required)_ | Temp directory |
 | `--sancus <dir>` | _(required)_ | Sancus simulator root |
-| `--commit <sha>` | `ef753b6` | Simulator git commit |
+| `--commit <sha>` | `ef753b6` | Simulator git commit; with `--target fpga`, the commit of the image on the board |
+| `--target <simulator\|fpga>` | `simulator` | Where the programs run; the two runs share the board |
+| `--fpga-port <path>` | `/dev/ttyUSB1` | The serial port of the board, with `--target fpga` |
 | `--sancus-master-key <hex>` | _(default)_ | Master key |
 | `--debug` | false | Debug logging |
 | `--info` | false | Info logging |
