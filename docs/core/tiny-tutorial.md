@@ -9,7 +9,7 @@ isNew: true
 This tutorial runs a whole ALVIE experiment on **Tiny**, the reference platform of ALVIE/Core.
 Tiny is a small processor written in OCaml, so learning a model takes a fraction of a second, and you need no simulator and no Sancus checkout.
 It has two planted timing leaks: one that any attacker sees, and one that only an attacker with interrupts sees.
-The steps are those of an experiment on Sancus (see [Getting Started](/alvie/getting-started/)), and [How ALVIE Works](/alvie/guides/concepts/) explains the ideas behind them.
+The steps are those of an experiment on Sancus (see [Getting Started](/alvie/getting-started/)), and [How ALVIE Works](/alvie/core/concepts/) explains the ideas behind them.
 
 You need the OCaml build of ALVIE (`dune build` in `alvie/code`, for example in the Docker image) and, to compare models, mCRL2.
 Run every command from `alvie/code`.
@@ -98,7 +98,7 @@ Learned a model of 17 states and 19 transitions in 0.1s (961 queries, 1541 steps
 ```
 
 Learning is deterministic: the same spec and options give the same model (`--seed` changes the random choices).
-The options of the learner are those of [Choosing Learner Settings](/alvie/guides/learning-settings/): `--oracle pac` (the default) with `--epsilon` and `--delta`, or `--oracle randomwalk`.
+The options of the learner are those of [Choosing Learner Settings](/alvie/core/learning-settings/): `--oracle pac` (the default) with `--epsilon` and `--delta`, or `--oracle randomwalk`.
 
 ## 5. Compare them
 
@@ -113,7 +113,7 @@ noninterference does not hold: 3 witnesses (see /tmp/tiny/time-witnesses.dot)
 ```
 
 The exit status is 4 when there are witnesses, so scripts can test it.
-Render the witness graph with Graphviz (`dot -Tsvg /tmp/tiny/time-witnesses.dot -o witnesses.svg`) and read it as [Reading and Checking a Witness](/alvie/guides/interpreting-results/) explains: one witness is the run without a timer, where the enclave returns after `Exit(time = 4)` for secret 0 and `Exit(time = 3)` for secret 1.
+Render the witness graph with Graphviz (`dot -Tsvg /tmp/tiny/time-witnesses.dot -o witnesses.svg`) and read it as [Reading and Checking a Witness](/alvie/core/interpreting-results/) explains: one witness is the run without a timer, where the enclave returns after `Exit(time = 4)` for secret 0 and `Exit(time = 3)` for secret 1.
 
 ## 6. Is the leak caused by interrupts?
 
@@ -217,5 +217,5 @@ PASS safe-no-branch           no leak
 ## Next
 
 - Change the enclave of a spec and predict the verdict before you check it.
-- [Plugin Author Guide](/alvie/guides/plugin-author-guide/): Tiny is also the smallest complete plugin; the guide shows how to make your own.
+- [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/): Tiny is also the smallest complete plugin; the guide shows how to make your own.
 - [Getting Started](/alvie/getting-started/): the same experiment on Sancus, with its simulator.

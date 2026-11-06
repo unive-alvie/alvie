@@ -2,7 +2,7 @@
 title: Plugin Author Guide
 description: Make an ALVIE plugin for a new platform with alvie plugin new, native in OCaml or external in Python, and check its files, its backend (conformance) and its verdicts (fixtures).
 sidebar:
-  order: 9
+  order: 1
   badge:
     text: Preview
     variant: note
@@ -12,10 +12,10 @@ isNew: true
 A plugin connects ALVIE/Core to a platform: its files declare what tests are made of and what the attacker sees, and its backend runs the tests.
 Core does the rest: it generates the inputs that a spec allows, learns models, and compares them.
 This guide takes you from nothing to a plugin that learns, checks and finds a leak.
-Read the [Tiny tutorial](/alvie/guides/tiny-tutorial/) first: it uses a finished plugin.
+Read the [Tiny tutorial](/alvie/core/tiny-tutorial/) first: it uses a finished plugin.
 
-A plugin is **native**, with a backend in OCaml linked with Core, or **external**, with a backend that is a program in any language speaking the [protocol of Core](/alvie/reference/protocol/).
-The Python SDK makes external plugins easy to write; native ones are faster (see [Cost](/alvie/reference/protocol/#cost)).
+A plugin is **native**, with a backend in OCaml linked with Core, or **external**, with a backend that is a program in any language speaking the [protocol of Core](/alvie/plugin-authors/protocol/).
+The Python SDK makes external plugins easy to write; native ones are faster (see [Cost](/alvie/plugin-authors/protocol/#cost)).
 
 ## 1. Make a plugin from the template
 
@@ -76,7 +76,7 @@ When `observations.yaml` changes, write the constructors again: `alvie plugin ty
 
 ## 2. Describe the platform
 
-The [Plugin Files Reference](/alvie/reference/plugin-files/) documents each file; Tiny (`plugins/tiny`) and Sancus (`plugins/sancus`) are examples.
+The [Plugin Files Reference](/alvie/plugin-authors/plugin-files/) documents each file; Tiny (`plugins/tiny`) and Sancus (`plugins/sancus`) are examples.
 In the order that usually works:
 
 1. **`sections.yaml`**: the parts of a test, who writes them (attacker or victim) and which atoms each runs. Most platforms have the attacker before and after the victim (`prepare` and `cleanup`), and an interrupt handler if the attacker can interrupt it.
@@ -90,7 +90,7 @@ In the order that usually works:
 
 ## 3. Write the backend
 
-The backend implements the contract between Core and a platform: `Alvie_backend.Backend.S` (`lib/core/backend/backend.ml`) for a native plugin, the class `Backend` of the SDK for one in Python (its methods have the same names, and the [protocol](/alvie/reference/protocol/) has the same messages):
+The backend implements the contract between Core and a platform: `Alvie_backend.Backend.S` (`lib/core/backend/backend.ml`) for a native plugin, the class `Backend` of the SDK for one in Python (its methods have the same names, and the [protocol](/alvie/plugin-authors/protocol/) has the same messages):
 
 | Function | Does |
 | --- | --- |
@@ -140,13 +140,13 @@ PASS clone         a clone continues as the original would, and does not change 
 
 `restore` and `clone` are checked only if the manifest declares the capability.
 A failure prints the first test that shows it; replay it with `exec`.
-For an external plugin, `conformance` also checks the protocol: an answer that is not one, or a plugin that crashes or hangs, stops it with a message and the end of the plugin's log (see [Errors](/alvie/reference/protocol/#errors)).
+For an external plugin, `conformance` also checks the protocol: an answer that is not one, or a plugin that crashes or hangs, stops it with a message and the end of the plugin's log (see [Errors](/alvie/plugin-authors/protocol/#errors)).
 Use `--tests`, `--length` and `--seed` for more or other tests, and run `conformance` on several specs: it only explores what a spec allows.
 
 ## 5. Check the verdicts: fixtures
 
 A backend can keep the contract and still model the platform wrongly.
-Fixtures pin down what the plugin must find: write a spec for a leak you know of, one that is safe, and the known attacks on your platform, each with its verdict (see [Fixtures](/alvie/reference/plugin-files/#fixtures)).
+Fixtures pin down what the plugin must find: write a spec for a leak you know of, one that is safe, and the known attacks on your platform, each with its verdict (see [Fixtures](/alvie/plugin-authors/plugin-files/#fixtures)).
 
 ```bash
 _build/default/lib/plugins/my-chip/main.exe fixtures
@@ -162,7 +162,7 @@ A failing fixture keeps its models and witness graph in `--out`.
 
 ## 6. Use the plugin
 
-The commands of `alvie-my-chip` are those of the [Tiny tutorial](/alvie/guides/tiny-tutorial/): learn models of your specs, compare them, and read the witnesses.
+The commands of `alvie-my-chip` are those of the [Tiny tutorial](/alvie/core/tiny-tutorial/): learn models of your specs, compare them, and read the witnesses.
 To add the plugin to `alvie` itself, as `alvie my-chip ...`, add a line to `bin/alvie.ml` and the library to `bin/dune`, as for `tiny`.
 
 ## Limits of this release

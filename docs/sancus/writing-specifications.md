@@ -3,7 +3,7 @@ title: Designing Your Own Specifications
 description: How to plan, write, check, and refine attacker and enclave specifications for a new ALVIE experiment.
 sidebar:
   label: Writing Specifications
-  order: 6
+  order: 3
   badge:
     text: A
     variant: caution
@@ -14,9 +14,9 @@ This guide shows how to design the specifications for an experiment that is not 
 It explains the decisions that come before the syntax.
 It then gives a method to check that a specification works.
 
-The [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) and the [TestDL Action Reference](/alvie/reference/testdl-action-reference/) define the syntax.
-The [V-B1 tutorial](/alvie/guides/testdl-tutorial-vb1/) reads a complete specification line by line.
-Read [How ALVIE Works](/alvie/guides/concepts/) before this guide.
+The [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) and the [TestDL Action Reference](/alvie/sancus/testdl-action-reference/) define the syntax.
+The [V-B1 tutorial](/alvie/sancus/testdl-tutorial-vb1/) reads a complete specification line by line.
+Read [How ALVIE Works](/alvie/core/concepts/) before this guide.
 
 ## 1. Define the question
 
@@ -155,7 +155,7 @@ _build/default/bin/learn.exe \
    Does it show the actions that you expect?
 4. **Full run.**
    Learn with the oracle that you plan to report.
-   See [Choosing Learner Settings](/alvie/guides/learning-settings/).
+   See [Choosing Learner Settings](/alvie/core/learning-settings/).
 
 ## 6. Use a control experiment
 
@@ -227,7 +227,7 @@ Use each result to decide the next change.
 
 | Result | Next step |
 | --- | --- |
-| A witness. | Read it, and replay it. See [Reading and Checking a Witness](/alvie/guides/interpreting-results/). Decide if it is a program flaw or a processor problem. |
+| A witness. | Read it, and replay it. See [Reading and Checking a Witness](/alvie/core/interpreting-results/). Decide if it is a program flaw or a processor problem. |
 | A witness that is a program flaw. | Fix the enclave specification so that its branches are balanced. Learn again. |
 | No witness, and the controls work. | Add one capability to the attacker, or one command to the enclave. Learn again. |
 | No witness, and the positive control fails. | The specification is too weak. Add the missing capability. |
@@ -248,6 +248,6 @@ Then you can reproduce the result later.
 
 ## Related pages
 
-- [Attack Catalogue](/alvie/reference/attack-catalogue/) shows the specifications for the known attacks.
-- [Extending TestDL Actions](/alvie/guides/spec-extending-actions/) explains how to add a new kind of action.
+- [Attack Catalogue](/alvie/sancus/attack-catalogue/) shows the specifications for the known attacks.
+- [Extending TestDL Actions](/alvie/sancus/spec-extending-actions/) explains how to add a new kind of action.
 - [Troubleshooting](/alvie/reference/troubleshooting/) lists errors and fixes.

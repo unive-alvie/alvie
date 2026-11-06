@@ -11,7 +11,7 @@ sidebar:
 In this tutorial, we add a TestDL action called `trace_marker` and verify that ALVIE/Sancus accepts, compiles, and displays it.
 Together, we follow it from the TestDL token we write in a specification, through the instruction generated for it, to the simulator trace and learned model we inspect at the end.
 The completed exercise lives on the [`feat/testdl-trace-marker-implementation`](https://github.com/unive-alvie/alvie/tree/feat/testdl-trace-marker-implementation) branch, which we use only as a reference while we work from `main`.
-For TestDL syntax outside this exercise, we use the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/).
+For TestDL syntax outside this exercise, we use the [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/).
 
 ## What We Change
 

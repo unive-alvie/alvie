@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+ALVIE becomes a framework: ALVIE/Core learns and compares models for any
+platform that a plugin describes, and ALVIE/Sancus is its plugin for Sancus.
+Experiments on Sancus run as before, with the same specs, commands and model
+files; some results change, because 2026.10 got them wrong (see the Fixes,
+Input generation, Backends and Comparison sections). New: Tiny, the reference
+platform; the commands of Core for any plugin; conformance checks and
+fixtures; external plugins and the Python SDK. "Migrating from 2026.10" in
+the documentation lists what users must do.
+
+### Documentation
+
+- The documentation is grouped by reader: ALVIE/Core, ALVIE/Sancus, Writing
+  Plugins, Reference, and Developing ALVIE. The addresses of the pages that
+  moved lead to their new ones.
+- New pages: Migrating from 2026.10, Tutorial: Find a Leak on Tiny, Plugin
+  Author Guide, External Plugin Protocol, Making a Release; How ALVIE Works
+  explains ALVIE/Core and its plugins.
+- The version of ALVIE is set in one place (`dune-project`); `alvie
+  --version` gives it.
+
+
 ### Fixes
 
 - The simulator backend no longer fails with `Could not clone Sancus

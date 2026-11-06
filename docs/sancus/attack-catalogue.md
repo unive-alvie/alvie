@@ -2,7 +2,7 @@
 title: Attack Catalogue
 description: The known Sancus vulnerabilities that ALVIE reproduces, with their commits, specification files, and expected results.
 sidebar:
-  order: 3
+  order: 4
 isNew: true
 ---
 
@@ -71,7 +71,7 @@ Open the file to see exactly what the attacker can do.
 
 The wrapper scripts learn all models for one attack and compare them.
 The third argument is the output namespace.
-See [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/) for details.
+See [Reproducing the Simulation Experiments](/alvie/sancus/walkthrough-repro/) for details.
 
 For B1, B2, B3, B4, B6, and B7, give the fixing commit:
 
@@ -88,7 +88,7 @@ For B8 and B9, there is no fixing commit:
 ```
 
 Each run learns four models for each commit.
-See [How ALVIE Works](/alvie/guides/concepts/) for the reason.
+See [How ALVIE Works](/alvie/core/concepts/) for the reason.
 
 ## Expected results
 
@@ -139,9 +139,9 @@ Five points help you to read this table:
 
 To check one fix, compare the original commit with the fixing commit.
 The witnesses that disappear are the effect of the fix.
-The [Reading and Checking a Witness](/alvie/guides/interpreting-results/) guide shows how to read them.
+The [Reading and Checking a Witness](/alvie/core/interpreting-results/) guide shows how to read them.
 
 ## A worked example
 
-The [TestDL Tutorial: V-B1 Example](/alvie/guides/testdl-tutorial-vb1/) explains the B1 specification and its witness line by line.
+The [TestDL Tutorial: V-B1 Example](/alvie/sancus/testdl-tutorial-vb1/) explains the B1 specification and its witness line by line.
 It is the best first example of an attack.

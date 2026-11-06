@@ -2,7 +2,7 @@
 title: External Plugin Protocol
 description: The protocol between ALVIE/Core and the backend of an external plugin (version 1), its messages, errors, process management, and the Python SDK.
 sidebar:
-  order: 10
+  order: 3
   badge:
     text: Preview
     variant: note
@@ -10,9 +10,9 @@ isNew: true
 ---
 
 The backend of an **external** plugin is a program, in any language, that speaks this protocol with ALVIE/Core.
-Its manifest says how to start it (`kind: external`, `command: [python3, backend.py]`), and its other files are those of any plugin (see the [Plugin Files Reference](/alvie/reference/plugin-files/)).
+Its manifest says how to start it (`kind: external`, `command: [python3, backend.py]`), and its other files are those of any plugin (see the [Plugin Files Reference](/alvie/plugin-authors/plugin-files/)).
 `alvie external DIR ...` runs the commands of Core on the plugin in `DIR`.
-The [Plugin Author Guide](/alvie/guides/plugin-author-guide/) shows how to make one with the Python SDK.
+The [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/) shows how to make one with the Python SDK.
 
 ## Transport
 
@@ -33,7 +33,7 @@ The [Plugin Author Guide](/alvie/guides/plugin-author-guide/) shows how to make 
 | `post` | `instance` | `{}` |
 | `shutdown` | `{}` | `{}`, then the plugin exits |
 
-These are the operations of the backend contract (see [Code Architecture](/alvie/reference/code-architecture/#the-backend-contract)):
+These are the operations of the backend contract (see [Code Architecture](/alvie/development/code-architecture/#the-backend-contract)):
 
 - `initialize` is the handshake. It makes instance 0 for the configuration and the variant. Core checks that the plugin speaks version 1, and that its name, version and capabilities are those of the manifest.
 - `pre` starts a test, and `post` ends it.

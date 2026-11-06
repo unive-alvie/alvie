@@ -2,7 +2,7 @@
 title: 'TestDL Tutorial: V-B1 Example'
 description: A one-hour introduction to the TestDL languages through a worked V-B1 example.
 sidebar:
-  order: 4
+  order: 2
 ---
 
 This one-hour tutorial is our first practical session with the two small languages used by ALVIE/Sancus.
@@ -10,7 +10,7 @@ We learn them through the specification used to reproduce the V-B1 vulnerability
 We use a reduced fast profile while reading the languages, then reproduce the real attack from the complete V-B1 models tracked in the repository.
 V-B1 is used as the second case study because it is a published vulnerability whose checked-in models let a new user reproduce and inspect a genuine witness without waiting for full learning.
 
-The complete syntax and semantics are in the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
+The complete syntax and semantics are in the [TestDL Action Reference](/alvie/sancus/testdl-action-reference/).
 We use that page when we need details.
 This tutorial focuses on where to start and what each part is doing.
 
@@ -106,7 +106,7 @@ ifz (mov #42, &unprot_mem; nop)
     (nop; mov #42, &unprot_mem)
 ```
 
-The full meaning of `ifz`, operands, memory labels, and instruction atoms is covered by the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
+The full meaning of `ifz`, operands, memory labels, and instruction atoms is covered by the [TestDL Action Reference](/alvie/sancus/testdl-action-reference/).
 
 ## 3. Read the attacker specification
 
@@ -143,8 +143,8 @@ Here it configures a timer, enables the enclave with its memory boundaries, and 
 This example uses `nop`, so cleanup has no extra effect.
 
 These bodies use the same `; `, `|`, `eps`, repetition, and grouping operators as enclave expressions.
-The [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) describes their grammar.
-The [TestDL Action Reference](/alvie/reference/testdl-action-reference/) defines the actions.
+The [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) describes their grammar.
+The [TestDL Action Reference](/alvie/sancus/testdl-action-reference/) defines the actions.
 
 ## 4. Learn one small model directly
 
@@ -267,7 +267,7 @@ It is the V-B1 attack: a one-cycle implementation/model mismatch after `reti` be
 
 The witness is evidence for this threat model and these learned models.
 It is not a claim that every Sancus program leaks, nor does it automatically provide a code repair.
-The [Log and Output Reference](/alvie/reference/log-output-reference/) explains fields such as `k`, `gie`, `timerA_counter`, `PM`, and `UM`.
+The [Log and Output Reference](/alvie/sancus/log-output-reference/) explains fields such as `k`, `gie`, `timerA_counter`, `PM`, and `UM`.
 
 ## 7. Optional: learn the models yourself
 
@@ -288,7 +288,7 @@ The wrapper learns secret 0/1 models with and without interrupts for the vulnera
 
 Results, logs, and temporary files are placed under `results/fast/`, `logs/fast/`, and `tmp/fast/`.
 It takes a few minutes on a machine with several cores, so it is not part of the one-hour tutorial.
-See [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/) for wrapper behavior and [Executables Reference](/alvie/reference/executables-reference/) for the underlying commands.
+See [Reproducing the Simulation Experiments](/alvie/sancus/walkthrough-repro/) for wrapper behavior and [Executables Reference](/alvie/reference/executables-reference/) for the underlying commands.
 
 For the full paper profile, replace `fast` with a separate namespace and use the complete specifications.
 Expect it to take longer: the slowest complete models take about 5 minutes each.
@@ -306,10 +306,10 @@ Keep the original under `spec-lib/` unchanged, then pass `/tmp/my-b1.atdl` as `-
 
 We can now change one timer, choice, or action and rerun the direct command with a new `--res` and `--tmpdir`.
 Parser errors usually come from a missing semicolon, unmatched parenthesis, unknown action, or invalid register.
-For exact syntax, consult the [action reference](/alvie/reference/testdl-action-reference/), and use [Extending TestDL Actions](/alvie/guides/spec-extending-actions/) when adding a new language construct.
+For exact syntax, consult the [action reference](/alvie/sancus/testdl-action-reference/), and use [Extending TestDL Actions](/alvie/sancus/spec-extending-actions/) when adding a new language construct.
 
 ## Related files
 
 - Complete V-B1 attacker profile: `spec-lib/b1.atdl`
 - Complete enclave profile: `spec-lib/enclave-complete.etdl`
-- Full experiment workflow: [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/)
+- Full experiment workflow: [Reproducing the Simulation Experiments](/alvie/sancus/walkthrough-repro/)

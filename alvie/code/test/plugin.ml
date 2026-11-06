@@ -174,7 +174,7 @@ let test_value_json_round_trip () =
     (QCheck.Test.make ~count:2000 ~name:"JSON" (QCheck.make ~print:Value.to_string (gen_type p.grammar 2 ~exclude:[] "attacker")) (fun v ->
          match Value.of_json (Value.to_json v) with Ok v' -> Value.equal v v' | Error e -> QCheck.Test.fail_reportf "%s" e))
 
-(* The example of docs/reference/plugin-files.md *)
+(* The example of docs/plugin-authors/plugin-files.md *)
 let test_value_json_example () =
   let p = Lazy.force sancus in
   let v = Result.ok_or_failwith (Result.map_error (Grammar.parse_value p.grammar ~file:"atom" ~ty:"enclave" "mov r5, r6") ~f:Diag.to_string) in

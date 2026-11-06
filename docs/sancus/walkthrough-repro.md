@@ -2,7 +2,7 @@
 title: Reproducing the Simulation Experiments
 description: Build ALVIE/Sancus and reproduce the paper experiments.
 sidebar:
-  order: 3
+  order: 1
 ---
 
 In this guide, we build ALVIE/Sancus, run its checked-in example, and then reproduce an attack experiment.

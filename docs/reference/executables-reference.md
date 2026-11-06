@@ -2,7 +2,7 @@
 title: Executables Reference
 description: Command-line reference for ALVIE/Sancus tools.
 sidebar:
-  order: 6
+  order: 2
 ---
 
 All executables are built with `dune build` from inside `alvie/code/` and run from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
@@ -22,9 +22,9 @@ All executables are built with `dune build` from inside `alvie/code/` and run fr
 | `alvie property formula M -f F.mcf` | | Checks that a model satisfies an mCRL2 modal μ-calculus formula |
 | `alvie plugin check [DIR]` | | Checks the files of a plugin (by default `plugins/sancus`, which `alvie` is built with) and prints a summary, or every problem with its place |
 | `alvie plugin schemas OUT` | | Writes the JSON Schemas of the plugin files and of the plugin's values to `OUT` |
-| `alvie plugin new NAME [--external]` | | Makes a plugin from the template: native, or external in Python (see the [Plugin Author Guide](/alvie/guides/plugin-author-guide/)) |
+| `alvie plugin new NAME [--external]` | | Makes a plugin from the template: native, or external in Python (see the [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/)) |
 | `alvie plugin types DIR OUT.py` | | Writes the Python constructors of the observations of the plugin in `DIR` |
-| `alvie external DIR ...` | | The commands of ALVIE/Core on the external plugin in `DIR` (see the [protocol](/alvie/reference/protocol/)) |
+| `alvie external DIR ...` | | The commands of ALVIE/Core on the external plugin in `DIR` (see the [protocol](/alvie/plugin-authors/protocol/)) |
 | `alvie tiny ...` | | The commands of ALVIE/Core on Tiny, the reference platform (see [below](#the-commands-of-a-plugin)) |
 | `alvie sancus conformance`, `fixtures`, `exec` | | The same commands on Sancus: the conformance of the simulator, and the fixtures of `plugins/sancus` |
 
@@ -66,7 +66,7 @@ A mistake in the command or the files (a missing model, a model of a newer forma
 
 ALVIE/Core has the same commands for every plugin: `alvie tiny ...` for Tiny, `alvie-NAME ...` for a native plugin made with `alvie plugin new`, and `alvie external DIR ...` for an external one (`alvie external plugins/tiny-py ...` for Tiny in Python).
 Their options include those of the plugin's manifest: `--mitigation` for Tiny.
-The [Tiny tutorial](/alvie/guides/tiny-tutorial/) uses each of them.
+The [Tiny tutorial](/alvie/core/tiny-tutorial/) uses each of them.
 
 | Command | Does |
 | --- | --- |
@@ -143,12 +143,12 @@ This is the main experiment driver.
 | `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
 | `--bad-probability <float>` | `0.20` | Probability of generating an input not driven by the specification |
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
-| `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/guides/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
+| `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/core/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
 | `--sancus-master-key <hex>` | _(default key)_ | Master key passed to the Sancus simulator |
 | `--dry` | false | Dry run: set up the simulator but do not learn |
-| `--report` | false | Print a line of learning statistics on stderr (see the [log output reference](../log-output-reference/#learning-statistics)) |
+| `--report` | false | Print a line of learning statistics on stderr (see the [log output reference](/alvie/sancus/log-output-reference/#learning-statistics)) |
 | `--debug` | false | Enable debug-level logging |
-| `--info` | false | Enable info-level logging: one line per equivalence-query round and one per counterexample (see the [log output reference](../log-output-reference/#info-level-output)) |
+| `--info` | false | Enable info-level logging: one line per equivalence-query round and one per counterexample (see the [log output reference](/alvie/sancus/log-output-reference/#info-level-output)) |
 
 ### Environment variables
 
@@ -164,7 +164,7 @@ This is the main experiment driver.
 
 A Mealy machine in `.dot` format is written to `--res`.
 Each edge is labelled `input / output`, where inputs and outputs use the symbolic alphabet defined in the specifications.
-See the [Log and Output Reference](../log-output-reference/) for output token meanings.
+See the [Log and Output Reference](/alvie/sancus/log-output-reference/) for output token meanings.
 
 ### Quick example
 
@@ -219,7 +219,7 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 `<witness-file-basename>_int.dot` — a `.dot` graph whose paths are distinguishing traces (attack witnesses).
 If no counterexample exists, the file contains one state and no transitions.
 The tool prints the number of violations only with `--debug`.
-See [Reading and Checking a Witness](/alvie/guides/interpreting-results/) for how to read the graph.
+See [Reading and Checking a Witness](/alvie/core/interpreting-results/) for how to read the graph.
 
 ### Quick example
 
