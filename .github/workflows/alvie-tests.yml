@@ -80,9 +80,12 @@ jobs:
       - name: Run the suite of Tiny and of the commands of Core
         working-directory: alvie/code
         run: opam exec -- dune exec tt_tiny -- --color=never
-      - name: Check the plugin template
+      - name: Check the plugin templates
         working-directory: alvie/code
         run: opam exec -- bash test/plugin_new.sh
+      - name: Check external plugins (Tiny in Python)
+        working-directory: alvie/code
+        run: opam exec -- bash test/rpc.sh
 
   # The simulator-backed suites need Verilator, the MSP430 toolchain and mCRL2: they run in the published image,
   # as its own user (alvie), on a checkout that this user can write.

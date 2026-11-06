@@ -109,6 +109,10 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/tiny/tiny.ml` | Tiny, the reference platform (`plugins/tiny`) |
 | `lib/sancus/native.ml` | ALVIE/Sancus as a native plugin, for `alvie sancus conformance` and `fixtures` |
 | `lib/core/plugin/fixture_file.ml` | The fixtures of a plugin |
+| `lib/core/backend/protocol.ml` | The protocol with external plugins: its messages and its JSON Schema |
+| `lib/core/rpc/rpc_backend.ml`, `proc.ml` | An external plugin as a native one: the process, the calls, timeouts, recording and replay |
+| `lib/core/cli/python_types.ml` | `alvie plugin types`: the Python constructors of a plugin's observations |
+| `sdk/python/alvie_plugin.py` | The Python SDK |
 | `lib/core/interop/interop.ml` | Model files: reading, writing, and their format line |
 
 ## The backend contract
@@ -135,6 +139,7 @@ A native plugin is a module of signature `Alvie_backend.Native.S`: its plugin fi
 `Alvie_cli.Runner.Make` turns it into the commands of Core: `learn` (L# with the PAC or random-walk oracle, inputs chosen by the generator from the spec), `compare` (noninterference with `Plugin_hooks`), `property`, `exec`, `conformance` (random tests of the spec, checked against the contract) and `fixtures`.
 `alvie tiny` and `alvie sancus` are these commands for Tiny and Sancus, and `alvie plugin new` makes a plugin with its own `alvie-NAME`.
 `Runner.Make(N).Model_native` replays a learned model as a native plugin, to test the learner.
+`Alvie_rpc.Rpc_backend.native ~dir` makes the module of an external plugin at run time, from its directory: `alvie external DIR` gives it the same commands.
 
 The Sancus backend is `lib/sancus/sul/simulator.ml`, and `Sancus.Verilog` is its adapter.
 It compiles the programs that Core gives into the testbench template: the input's occurrence is labelled, so that the analysis finds its instructions, and the other atoms run but are not analysed.
