@@ -3,6 +3,7 @@
 
   - alvie plugin check [DIR]: reads the plugin files of DIR (by default the plugin the program was built with) and
     their checks across files, and reports every problem with its place, or a summary of the plugin.
+  - alvie plugin new NAME: makes a native plugin from the template (Plugin_template), which works from the start.
   - alvie plugin schemas [DIR] OUT: writes the JSON Schemas of the plugin files (for editors) and of the values of
     the plugin's atoms and observations (for the external protocol) to OUT.
 *)
@@ -37,6 +38,29 @@ let command ~(default : (Plugin.t, Diag.t list) Result.t Lazy.t) =
           fun () ->
             let p = load ~default dir in
             printf "OK: %s\n" (summary p)));
+      ("new", Command.basic ~summary:"Make a native plugin from the template: plugins/NAME and lib/plugins/NAME, from the directory alvie/code"
+         ~readme:(fun () -> "The template is a small platform that works: its fixtures and the conformance checks pass. Change it into yours: the plugin files in plugins/NAME, the backend in lib/plugins/NAME. External plugins (a program in any language) come with the protocol of ALVIE/Core.")
+         (let%map_open.Command name = anon ("NAME" %: string)
+          and root = flag "--root" (optional_with_default "." string) ~doc:"dir the directory alvie/code of ALVIE (default: the current one)" in
+          fun () ->
+            Errors.protect ~debug:false (fun () ->
+                let valid = String.length name >= 2 && Char.is_lowercase name.[0]
+                            && String.for_all name ~f:(fun c -> Char.is_lowercase c || Char.is_digit c || Char.equal c '-')
+                            && not (String.is_suffix name ~suffix:"-") in
+                if not valid then Errors.fail "%S is not a name for a plugin: use lowercase letters, digits and -, starting with a letter (e.g. my-chip)." name;
+                if List.mem [ "sancus"; "tiny"; "core"; "plugin" ] name ~equal:String.equal then Errors.fail "%s is taken: choose another name." name;
+                let root = Errors.require_directory ~option:"--root" root in
+                if not (Sys_unix.file_exists_exn (Filename.concat root "dune-project")) then
+                  Errors.fail "%s is not the directory alvie/code of ALVIE (it has no dune-project): run from there, or give it with --root." root;
+                let files = Plugin_template.files ~name in
+                List.iter [ Filename.concat "plugins" name; Filename.concat "lib/plugins" name ] ~f:(fun d ->
+                    if Sys_unix.file_exists_exn (Filename.concat root d) then Errors.fail "%s exists already: choose another name, or remove it." (Filename.concat root d));
+                List.iter files ~f:(fun (path, text) ->
+                    let path = Filename.concat root path in
+                    Core_unix.mkdir_p (Filename.dirname path);
+                    Out_channel.write_all path ~data:text;
+                    printf "wrote %s\n" path);
+                printf "\nNext:\n  dune build\n  dune exec alvie -- plugin check plugins/%s\n  dune exec alvie-%s -- conformance --spec plugins/%s/fixtures/leak.spec --secret 0\n  dune exec alvie-%s -- fixtures\nthen change the files into your platform (see the Plugin Author Guide).\n" name name name name)));
       ("schemas", Command.basic ~summary:"Write the JSON Schemas of the plugin files and of the plugin's values to OUT"
          (let%map_open.Command out = anon ("OUT" %: string) and dir = flag "--plugin" (optional string) ~doc:"dir the plugin (default: the one this program was built with)" in
           fun () ->
