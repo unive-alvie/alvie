@@ -42,6 +42,7 @@ let command =
         "--sancus-master-key"
         (optional_with_default "cafe" string)
         ~doc:"key A hex number to be used as the master key when building the processor (default: cafe)"
+     and target = Cli_diagnostics.target_param
      and commit =
       flag
         "--commit"
@@ -179,6 +180,7 @@ let command =
             ~templatefile:(cwd ^ "/../src/generic_template.s43")
             ~filledfile:"generic.s43"
             ~dumpfile:"tb_openMSP430.vcd"
+            ~target
             ~spec:(Generic_inputgen.spec_of_test_spec complete_spec)
             ~ignore_interrupts:ignore_interrupts
             () in
@@ -205,9 +207,13 @@ let command =
               Sancus.Input.IEnclave (Enclave.CInst (Common.I_CMP (Common.S_IMM "0", Common.D_R (R 4))));
               Sancus.Input.IEnclave (Enclave.CZeroOrNop (Common.I_MOV (Common.S_IMM "42", Common.D_R (R 5)), 2));
               Sancus.Input.IAttacker (Attacker.CReti) ] in *)
-              ignore (Sys_unix.command (sprintf "rm -f %s/tb_openMSP430.vcd" tmpdir));
-              let cmd = sprintf "ln -sr %s %s/tb_openMSP430.vcd" (Sancus.Verilog.dumpfile sul) tmpdir in
-              ignore (Sys_unix.command cmd);
+              (* The VCD dump of the simulator, in --tmpdir (the FPGA gives none) *)
+              (match target with
+               | Sancus.Simulator.Verilator ->
+                 ignore (Sys_unix.command (sprintf "rm -f %s/tb_openMSP430.vcd" tmpdir));
+                 let cmd = sprintf "ln -sr %s %s/tb_openMSP430.vcd" (Sancus.Verilog.dumpfile sul) tmpdir in
+                 ignore (Sys_unix.command cmd)
+               | Fpga _ -> ());
               List.iter input_sequence ~f:(fun i -> let o = Sancus.Verilog.step sul i in
               Logs.debug (fun m -> m "exec result: %s" (Output_internal.show o)));
        )

@@ -1,6 +1,7 @@
 (*
   ALVIE/Sancus as a native plugin of ALVIE/Core (Alvie_backend.Native.S): the files of plugins/sancus and the
-  simulator, for Core's generic commands (alvie sancus conformance and fixtures).
+  backend (Simulator, on the target of the parameter target), for Core's generic commands (alvie sancus
+  conformance and fixtures).
 
   The backend is built as learn.exe builds it, from the configuration parameters of the manifest; like learn.exe,
   it runs from alvie/code (the scripts and the template are in ../scripts and ../src). The variant no-interrupts
@@ -40,6 +41,7 @@ let make ~config ~variant =
     ~filledfile:"generic.s43" ~dumpfile:"tb_openMSP430.vcd"
     ~ignore_interrupts
     ~collapse_reentries:(not (String.equal (get "keep-repeated-reentries") "true"))
+    ~target:(Simulator.target_of_config ~target:(get "target") ~fpga_port:(get "fpga-port"))
     ()
 
 (*
