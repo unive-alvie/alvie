@@ -130,7 +130,7 @@ let test_mutant ?(length = 30) mutation expected () =
 (* Learning *)
 
 let test_learning_is_deterministic () =
-  let learn () = (R.learn ~config:[] ~variant:None ~spec:(spec "leak-time.spec") ~oracle:(Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:0).model in
+  let learn () = (R.learn ~config:[] ~variant:None ~spec:(spec "leak-time.spec") ~oracle:(Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:0 ()).model in
   let a = learn () and b = learn () in
   Alcotest.(check int) "the same states" (Set.length a.states) (Set.length b.states);
   Alcotest.(check bool) "the same transitions" true (Map.equal (fun (o, s) (o', s') -> R.O.equal o o' && s = s') a.transition b.transition);
@@ -139,7 +139,7 @@ let test_learning_is_deterministic () =
 let test_model_files () =
   let dir = Core_unix.mkdtemp (Filename.concat (Filename.temp_dir_name) "tt_tiny") in
   let file = Filename.concat dir "m.dot" in
-  let m = (R.learn ~config:[] ~variant:None ~spec:(spec "safe-no-branch.spec") ~oracle:(Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:0).model in
+  let m = (R.learn ~config:[] ~variant:None ~spec:(spec "safe-no-branch.spec") ~oracle:(Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:0 ()).model in
   R.write_model file m;
   Alcotest.(check string) "the header" "// alvie-model format 1; plugin tiny 2026.10; core 1" (List.hd_exn (In_channel.read_lines file));
   let m' = R.read_model ~what:"M" file in
@@ -153,10 +153,10 @@ let test_model_files () =
 let test_model_backend () =
   let spec_ = spec "leak-interrupt.spec" in
   let oracle = R.Pac { epsilon = 0.01; delta = 0.01; round_limit = None } in
-  let m = (R.learn ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0).model in
+  let m = (R.learn ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0 ()).model in
   let module MN = R.Model_native (struct let model = m end) in
   let module R2 = Alvie_cli.Runner.Make (MN) in
-  let m' = (R2.learn ~config:[] ~variant:None ~spec:spec_ ~oracle:(R2.Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:1).model in
+  let m' = (R2.learn ~config:[] ~variant:None ~spec:spec_ ~oracle:(R2.Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:1 ()).model in
   Alcotest.(check int) "the same number of states" (Set.length m.states) (Set.length m'.states);
   Alcotest.(check int) "the same number of transitions" (Map.length m.transition) (Map.length m'.transition);
   (* random walks on both *)
