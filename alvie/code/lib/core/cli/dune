@@ -12,3 +12,8 @@
  (action
   (with-stdout-to %{targets}
    (system "printf '(* Generated from sdk/python by lib/core/cli/dune *)\nlet alvie_plugin_py = {alvie_py|'; cat %{deps}; printf '|alvie_py}\n'"))))
+
+; The version of ALVIE (the version of dune-project), for alvie --version
+(rule
+ (targets version.ml)
+ (action (with-stdout-to %{targets} (echo "let version = \"%{version:alvie-core}\"\n"))))

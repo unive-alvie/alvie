@@ -2,7 +2,7 @@
 title: Plugin Files Reference
 description: The YAML files that declare an ALVIE plugin (manifest, sections, atoms, observations, phase rules, attacker view) and the spec language built from them.
 sidebar:
-  order: 9
+  order: 2
   badge:
     text: Preview
     variant: note
@@ -317,7 +317,7 @@ Two more checks need the backend, and run with the plugin's commands (`alvie tin
 - `conformance` runs random tests of a spec and checks that the backend keeps the contract of Core;
 - `fixtures` learns and compares the fixtures, and checks their verdicts.
 
-The [Plugin Author Guide](/alvie/guides/plugin-author-guide/) explains both.
+The [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/) explains both.
 
 ## Fixtures
 

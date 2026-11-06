@@ -1,14 +1,14 @@
 ---
 title: Code Architecture
-description: The ALVIE/Sancus implementation.
+description: The modules of ALVIE/Core, of the plugins Tiny and ALVIE/Sancus, and of the command line.
 sidebar:
-  order: 8
+  order: 2
   badge:
     text: A
     variant: caution
 ---
 
-This document describes the ALVIE/Sancus implementation.
+This document describes the implementation: ALVIE/Core, its plugins Tiny and ALVIE/Sancus, and the command line.
 
 ## Packages
 
@@ -16,7 +16,7 @@ The code in `alvie/code` is split into three opam packages, defined in `dune-pro
 
 | Package | Directory | Libraries | Contents |
 | --- | --- | --- | --- |
-| `alvie-core` | `lib/core/` | `learninglib`, `prof`, `interop`, `ltscompare`, `alvie_plugin` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, the comparison engine, and the plugin files and spec language. It has no backend. |
+| `alvie-core` | `lib/core/`, `plugins/tiny/`, `sdk/` | `learninglib`, `prof`, `interop`, `ltscompare`, `alvie_plugin`, `alvie_inputgen`, `alvie_backend`, `alvie_cli`, `alvie_rpc`, `alvie_tiny` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, the comparison engine, the plugin files and spec language, the input generator, the backend contract and its protocol, the commands of Core, external plugins, and Tiny, the reference platform. It has no Sancus code. |
 | `alvie-rtl-util` | `lib/rtl-util/` | `vcd` | Helpers for backends that simulate RTL designs: the VCD parser. It is not part of Core. |
 | `alvie-sancus` | `lib/sancus/`, `plugins/sancus/`, `bin/`, `test/` | `sancus` | The Sancus backend, its plugin files, the executables and the test suites. |
 
@@ -33,7 +33,7 @@ The view also splits observations that stand for several events into parts (`par
 
 ### Plugin files and values
 
-`alvie_plugin` reads the files that declare a plugin (see the [Plugin Files Reference](../plugin-files/)) and parses specs with them:
+`alvie_plugin` reads the files that declare a plugin (see the [Plugin Files Reference](/alvie/plugin-authors/plugin-files/)) and parses specs with them:
 
 | Module | Responsibility |
 | --- | --- |
@@ -154,7 +154,7 @@ Outputs distinguish normal, interrupt, reset, illegal, unsupported, and divergen
 Timed payloads contain the cycle count `k`, interrupt-enable state, the public `r4` value, the observed unprotected memory value, the timer counter, and the processor mode.
 
 The payload is deliberately smaller than the simulator state: it represents what the attacker can observe.
-See the [Log and Output Reference](../log-output-reference/) for the rendered symbols and payload fields.
+See the [Log and Output Reference](/alvie/sancus/log-output-reference/) for the rendered symbols and payload fields.
 
 ## Learning and comparison boundaries
 
@@ -173,7 +173,7 @@ This is why a single successful learning run is not a complete attack result: th
 ### Add a TestDL action
 
 Update the syntax and parser, the attacker or enclave atom type, compilation, derivative/action-set logic, and tests.
-Follow the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide.
+Follow the [Extending TestDL Actions](/alvie/sancus/spec-extending-actions/) guide.
 
 ### Add a learning backend
 
@@ -196,7 +196,7 @@ dune build
 bash test/cli_diagnostics.sh
 ```
 
-The [Testing ALVIE](/alvie/guides/testing-alvie/) guide explains each suite, what it needs, and when to run it.
+The [Testing ALVIE](/alvie/development/testing-alvie/) guide explains each suite, what it needs, and when to run it.
 
 `test/cli_diagnostics.sh` runs the ALVIE-only diagnostic suite, including TestDL parsing and command-line validation.
 It does not require the Sancus simulator or mCRL2.

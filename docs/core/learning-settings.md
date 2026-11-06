@@ -3,7 +3,7 @@ title: Choosing Learner Settings
 description: How to choose the equivalence oracle and its limits, and how to balance run time against confidence in the learned model.
 sidebar:
   label: Learner Settings
-  order: 5
+  order: 3
   badge:
     text: A
     variant: caution
@@ -15,7 +15,7 @@ Weak settings finish fast and can give an incomplete model.
 Strong settings give more confidence and take longer.
 This guide helps you to choose.
 
-Read [How ALVIE Works](/alvie/guides/concepts/) first.
+Read [How ALVIE Works](/alvie/core/concepts/) first.
 The commands run from `alvie/code`.
 
 ## The three oracles
@@ -81,7 +81,7 @@ The first round samples these numbers of paths:
   Without it, the oracle runs until a round finds no difference.
 
 With `--info`, `learn.exe` logs one line for each round, with the size of the hypothesis and the number of queries so far, and one line for each counterexample that a round finds.
-See the [Log and Output Reference](/alvie/reference/log-output-reference/#info-level-output).
+See the [Log and Output Reference](/alvie/sancus/log-output-reference/#info-level-output).
 
 The guarantee is for one model.
 An ALVIE experiment uses four models, so the combined bounds are weaker.
@@ -202,7 +202,7 @@ The option `--ignore-interrupts` changes `timer_enable`.
 The action no longer enables the timer interrupt, so the timer cannot interrupt the enclave.
 Use it to learn the baseline models for a four-model comparison.
 Always give the baseline run the same oracle and limits as the main run.
-The [Reading and Checking a Witness](/alvie/guides/interpreting-results/) guide explains how the comparison uses them.
+The [Reading and Checking a Witness](/alvie/core/interpreting-results/) guide explains how the comparison uses them.
 
 ## Repeated enclave re-entries
 

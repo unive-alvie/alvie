@@ -2,13 +2,13 @@
 title: TestDL Action Reference
 description: Syntax and semantics of TestDL actions.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 This reference explains what each existing TestDL action means conceptually and where it is typically used.
 
-It complements the [TestDL Specification Reference](../testdl-specification-reference/) for writing specifications.
-It also complements the [V-B1 TestDL tutorial](../../guides/testdl-tutorial-vb1/) (a worked example) and the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide.
+It complements the [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) for writing specifications.
+It also complements the [V-B1 TestDL tutorial](/alvie/sancus/testdl-tutorial-vb1/) (a worked example) and the [Extending TestDL Actions](/alvie/sancus/spec-extending-actions/) guide.
 
 ## Reading notes
 
@@ -136,4 +136,4 @@ Secret expansion is implemented for enclave actions; attacker actions should not
 ALVIE/Sancus classifies execution into output categories such as jump-in/jump-out, timing observations, reset, illegal, and interrupt-handle/reti events.
 
 You usually do not need to reason at this level while authoring specs.
-If you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](../../guides/spec-extending-actions/) guide for output/DFA updates.
+If you add new actions that create genuinely new event classes, see the [Extending TestDL Actions](/alvie/sancus/spec-extending-actions/) guide for output/DFA updates.

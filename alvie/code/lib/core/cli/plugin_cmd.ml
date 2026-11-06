@@ -58,7 +58,7 @@ let command ~(default : (Plugin.t, Diag.t list) Result.t Lazy.t) =
                   let dir = Filename.concat "plugins" name in
                   match Plugin.load_with ~dir ~read:(fun f -> match List.Assoc.find yaml_files ~equal:String.equal (Filename.concat dir f) with
                       | Some t -> Ok t | None -> Error (sprintf "no file %s in the template" f)) with
-                  | Ok p -> Python_types.generate p
+                  | Ok p -> Python_types.generate ~out:(Filename.concat dir (String.map name ~f:(fun c -> if Char.equal c '-' then '_' else c) ^ "_types.py")) p
                   | Error ds -> failwithf "the template does not load (a bug):\n%s" (Diag.list_to_string ds) () in
                 let files = Plugin_template.files ~external_ ~name ~types () in
                 List.iter [ Filename.concat "plugins" name; Filename.concat "lib/plugins" name ] ~f:(fun d ->
@@ -76,7 +76,7 @@ let command ~(default : (Plugin.t, Diag.t list) Result.t Lazy.t) =
          (let%map_open.Command dir = anon ("DIR" %: string) and out = anon ("OUT" %: string) in
           fun () ->
             let p = load ~default (Some dir) in
-            Out_channel.write_all out ~data:(Python_types.generate p);
+            Out_channel.write_all out ~data:(Python_types.generate ~out p);
             printf "wrote %s\n" out));
       ("schemas", Command.basic ~summary:"Write the JSON Schemas of the plugin files and of the plugin's values to OUT"
          (let%map_open.Command out = anon ("OUT" %: string) and dir = flag "--plugin" (optional string) ~doc:"dir the plugin (default: the one this program was built with)" in

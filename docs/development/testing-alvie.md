@@ -2,7 +2,7 @@
 title: Testing ALVIE
 description: The ALVIE test suites, what each one needs, when to run it, and how to add a test.
 sidebar:
-  order: 8
+  order: 1
   badge:
     text: A
     variant: caution
@@ -130,7 +130,7 @@ Run it from the repository root.
 
 - `./regression.sh witnesses` compares the checked-in models of `results/` again with `fa.exe`.
   Every witness graph, including the one of the Getting Started example, must be identical to the one in `counterexamples/`, and every witness count must be the one in `alvie/code/test/regression/witness-counts.txt`.
-  These are the counts of the [Attack Catalogue](/alvie/reference/attack-catalogue/).
+  These are the counts of the [Attack Catalogue](/alvie/sancus/attack-catalogue/).
 - `./regression.sh learning` learns every checked-in model again, with the settings of the wrapper scripts.
   Every model must be identical, byte for byte, to the checked-in one: learning is deterministic, because the learner uses a fixed random seed.
   It then runs the witness check on the new models.
@@ -228,7 +228,7 @@ Run the suites yourself before you push a change that needs them, as the next ta
 `./regression.sh witnesses` checks all the checked-in models at once.
 To check one attack by hand, run `fa.exe` with `--debug` on its four checked-in models.
 For example, for B6 on the original commit, the count must be 8.
-The command is in [Reading and Checking a Witness](/alvie/guides/interpreting-results/#8-run-a-known-answer-check).
+The command is in [Reading and Checking a Witness](/alvie/core/interpreting-results/#8-run-a-known-answer-check).
 
 ## Documentation check
 
