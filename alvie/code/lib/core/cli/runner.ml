@@ -352,9 +352,10 @@ module Make (N : Native.S) = struct
       (match m.fixtures with
        | None -> Errors.fail "plugin %s declares no fixtures (fixtures: in alvie-plugin.yaml); give a directory with --dir." m.name
        | Some f ->
-         let d = Filename.concat (Filename.concat "plugins" m.name) f in
+         (* relative to the plugin's directory (plugins/<name> for a plugin built into a program) *)
+         let d = Filename.concat (plugin ()).dir f in
          if Sys_unix.is_directory_exn d then d
-         else Errors.fail "the fixtures of plugin %s are in %s, which is not a directory here: run from the directory that has plugins/, or give --dir." m.name d)
+         else Errors.fail "the fixtures of plugin %s are in %s, which is not a directory here: run from the directory alvie/code, or give --dir." m.name d)
 
   type verdict = { fixture : string; passed : bool; summary : string }
 

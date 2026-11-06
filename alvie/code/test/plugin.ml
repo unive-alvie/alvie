@@ -42,7 +42,7 @@ let test_sancus_loads () =
 
 let test_schemas_up_to_date () =
   let dir = Filename.concat code_dir "schemas" in
-  List.iter (Plugin.file_schemas ()) ~f:(fun (name, schema) ->
+  List.iter (Plugin.file_schemas () @ [ ("protocol.schema.json", Alvie_backend.Protocol.json_schema ()) ]) ~f:(fun (name, schema) ->
       let expected = Yojson.Safe.pretty_to_string schema ^ "\n" in
       let path = Filename.concat dir name in
       let actual = try In_channel.read_all path with Sys_error _ -> "" in
@@ -530,7 +530,7 @@ let () =
     (* Regenerates the JSON Schemas of the plugin files *)
     let dir = Filename.concat code_dir "schemas" in
     Core_unix.mkdir_p dir;
-    List.iter (Plugin.file_schemas ()) ~f:(fun (name, schema) ->
+    List.iter (Plugin.file_schemas () @ [ ("protocol.schema.json", Alvie_backend.Protocol.json_schema ()) ]) ~f:(fun (name, schema) ->
         Out_channel.write_all (Filename.concat dir name) ~data:(Yojson.Safe.pretty_to_string schema ^ "\n");
         printf "wrote %s\n" (Filename.concat dir name))
   | _ ->
