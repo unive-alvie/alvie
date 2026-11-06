@@ -33,14 +33,14 @@ let run_external dir rest =
       | Ok p when Poly.equal p.manifest.kind Alvie_plugin.Manifest_file.Native ->
         Alvie_cli.Errors.fail "the plugin in %s is native: it is built into a program of its own (alvie-%s), not run with alvie external." dir p.manifest.name
       | Ok _ -> ());
-  Command_unix.run ~version:"2026.10" ~argv:(("alvie external " ^ dir) :: rest)
+  Command_unix.run ~version:Alvie_cli.Version.version ~argv:(("alvie external " ^ dir) :: rest)
     (Alvie_cli.Runner.commands (Alvie_rpc.Rpc_backend.native ~dir))
 
 let () =
   match Array.to_list (Sys.get_argv ()) with
   | _ :: "external" :: dir :: rest when not (String.is_prefix dir ~prefix:"-") -> run_external dir rest
   | _ ->
-  Command_unix.run ~version:"2026.10"
+  Command_unix.run ~version:Alvie_cli.Version.version
     (Core.Command.group ~summary:"ALVIE: learn models of a system and compare them to find information leaks"
        [ ("learn", Learn_cmd.command);
          ("compare", Fa_cmd.command);

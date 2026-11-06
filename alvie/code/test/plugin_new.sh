@@ -33,8 +33,8 @@ grep -q "is not a name for a plugin" "$OUT/bad.log"
 _build/default/bin/alvie.exe plugin new "$NAME-py" --external > "$OUT/new-py.log"
 cmp -s sdk/python/alvie_plugin.py "plugins/$NAME-py/alvie_plugin.py" || { echo "the external template does not have the SDK of this checkout" >&2; exit 1; }
 PYMOD=$(echo "$NAME-py" | tr - _)
-_build/default/bin/alvie.exe plugin types "plugins/$NAME-py" "$OUT/types.py" > /dev/null
-cmp -s "$OUT/types.py" "plugins/$NAME-py/${PYMOD}_types.py" || { echo "the types of the external template are not those of alvie plugin types" >&2; exit 1; }
+_build/default/bin/alvie.exe plugin types "plugins/$NAME-py" "$OUT/${PYMOD}_types.py" > /dev/null
+cmp -s "$OUT/${PYMOD}_types.py" "plugins/$NAME-py/${PYMOD}_types.py" || { echo "the types of the external template are not those of alvie plugin types" >&2; exit 1; }
 _build/default/bin/alvie.exe plugin check "plugins/$NAME-py" > /dev/null
 _build/default/bin/alvie.exe external "plugins/$NAME-py" conformance --spec "plugins/$NAME-py/fixtures/leak.spec" --secret 0 > "$OUT/conformance-py.log" || { cat "$OUT/conformance-py.log" >&2; exit 1; }
 if command -v lts2pbes > /dev/null; then
