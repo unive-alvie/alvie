@@ -99,8 +99,9 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/compare/plugin_hooks.ml` | The hooks of the engine, derived from the plugin files |
 | `lib/core/compare/properties.ml` | The catalogue of properties |
 | `bin/alvie.ml` | The `alvie` command: the subcommands below and `plugin` |
-| `bin/learn_cmd.ml` | `alvie learn` (`learn.exe`): experiment orchestration and model writing |
-| `bin/fa_cmd.ml` | `alvie compare` (`fa.exe`): four-model flow-analysis comparison |
+| `bin/learn_cmd.ml` | `alvie learn` (`learn.exe`): its options, their checks and `--report`; the learning is the runner's (`Sancus_runner`) |
+| `bin/fa_cmd.ml` | `alvie compare` (`fa.exe`): its options and output; the comparison is the runner's |
+| `bin/sancus_runner.ml` | The commands of Core on Sancus, with the codec of Sancus (`Sancus.Native.Codec`) |
 | `lib/core/cli/config.ml` | Options generated from a manifest (`Alvie_cli.Config`) |
 | `lib/core/cli/runner.ml` | The commands of Core for any native plugin: learn, compare, property, exec, conformance, fixtures |
 | `lib/core/cli/errors.ml` | How every command reports its errors, and its exit statuses |
@@ -131,13 +132,14 @@ Core stores it and gives it back, but never compares it: two steps are equal whe
 `lib/core/backend/sul.ml` adapts a backend to the SUL of the learner (`lib/core/lsharp/sul.mli`), so that L# and the oracles do not change.
 The adapter follows the test with the input generator: it checks that each input is legal, computes the programs for the backend, turns dry steps into `restore`, and feeds the observations to the phase rules.
 An input that the spec does not allow, and any input after the test has stopped, gets the illegal output without running the backend.
-A codec translates between the learner's input and output types and Core's values: `Sul.Values` for a learner that works on values, as the toy backend of `tt_plugin` does; `Sul.Atoms`, whose inputs are atoms of a class (the same input in every section of that class), for the commands of Core (`Alvie_cli.Runner`); ALVIE/Sancus keeps its own types (`Input.t`, `Output_internal.t`), so that its model files keep their format.
+A codec translates between the learner's input and output types and Core's values: `Sul.Values` for a learner that works on values, as the toy backend of `tt_plugin` does; `Sul.Atoms`, whose inputs are atoms of a class (the same input in every section of that class), for the commands of Core (`Alvie_cli.Runner`); ALVIE/Sancus keeps its own types (`Input.t`, `Output_internal.t`), so that its model files keep their format: its codec (`Sancus.Native.Codec`) is that of the runner too.
 
 ## Native plugins and the commands of Core
 
 A native plugin is a module of signature `Alvie_backend.Native.S`: its plugin files (embedded in the program), its backend, and `make`, which builds a backend from the values of the manifest's parameters and a variant.
-`Alvie_cli.Runner.Make` turns it into the commands of Core: `learn` (L# with the PAC or random-walk oracle, inputs chosen by the generator from the spec), `compare` (noninterference with `Plugin_hooks`), `property`, `exec`, `conformance` (random tests of the spec, checked against the contract) and `fixtures`.
+`Alvie_cli.Runner.Make` turns it into the commands of Core, with the codec `Atoms_codec`; `Runner.Make_codec` takes another codec (`Runner.MODEL_CODEC`), which says what the learner's inputs and outputs are, its alphabet, and what model files keep. The commands are: `learn` (L# with the PAC or random-walk oracle, inputs chosen by the generator from the spec), `compare` (noninterference with `Plugin_hooks`), `property`, `exec`, `conformance` (random tests of the spec, checked against the contract) and `fixtures`.
 `alvie tiny` and `alvie sancus` are these commands for Tiny and Sancus, and `alvie plugin new` makes a plugin with its own `alvie-NAME`.
+Every plugin learns and compares through these functions, ALVIE/Sancus included: `learn.exe` and `fa.exe` are front ends that keep their options and output, and learn and compare with the runner and the codec of Sancus (`bin/sancus_runner.ml`), with the random inputs outside the spec (`--bad-probability`) and the exhaustive oracle that the runner offers as options.
 `Runner.Make(N).Model_native` replays a learned model as a native plugin, to test the learner.
 `Alvie_rpc.Rpc_backend.native ~dir` makes the module of an external plugin at run time, from its directory: `alvie external DIR` gives it the same commands.
 

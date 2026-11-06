@@ -47,9 +47,9 @@ let () =
          ("exec", Exec_cmd.command);
          ("pbt", Pbt_cmd.command);
          ("property", Property_cmd.command);
-         ("sancus", Alvie_cli.Runner.commands ~only:[ "conformance"; "fixtures"; "exec" ]
+         ("sancus", Alvie_cli.Runner.group ~only:[ "conformance"; "fixtures"; "exec" ]
                       ~summary:"The commands of ALVIE/Core on Sancus: conformance of the simulator, and the fixtures (learn and compare are the commands above)"
-                      (module Sancus.Native));
+                      (module Sancus_runner.R));
          ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
          ("external", external_command ());
          ("plugin", Alvie_cli.Plugin_cmd.command ~default:(lazy (Ok (Lazy.force Sancus.Generic_inputgen.plugin)))) ])
