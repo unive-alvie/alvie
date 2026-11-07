@@ -124,29 +124,47 @@ let make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~
   (match Sys_unix.file_exists tmpdir with | `No -> Core_unix.mkdir_p tmpdir | _ -> ());
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "Chosen temporary directory: %s" r_tmpdir);
-  (* Clone Sancus so a submodule source retains a valid Git directory. A local clone hard-links the objects, which
-     fails when the temporary directory is on another file system than the checkout (e.g., --tmpdir /tmp, or a
-     Docker bind mount): then the objects are copied instead. *)
-  Logs.debug (fun m -> m "Cloning: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
   let cloned_repo = r_tmpdir ^ "/sancus-core-gap" in
-  let clone mode = Sys_unix.command (Format.sprintf "git clone %s %s %s %s"
-      mode (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) = 0 in
-  if not (clone "--local") then (
-    Logs.debug (fun m -> m "The local clone failed, copying the objects instead");
-    ignore (Sys_unix.command (Format.sprintf "rm -rf %s" (Filename.quote cloned_repo)));
-    if not (clone "--no-hardlinks") then
-      failwith (Format.sprintf "Could not clone Sancus repository from %s into %s. Check that it is a git checkout (git submodule update --init sancus-core-gap) and that --tmpdir is writable; --debug shows the git output."
-        sancus_repo r_tmpdir));
-  (* Use the required commit *)
-  Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
-  if Sys_unix.command (Format.sprintf "cd %s; git checkout %s %s"
-      (Filename.quote cloned_repo) (Filename.quote commit) (dbg_str ())) <> 0 then
-    failwith (Format.sprintf "Could not check out Sancus commit %s from %s. Check the commit name; a shallow checkout misses older commits: run git -C %s fetch --unshallow (CI: actions/checkout with fetch-depth: 0)."
-      commit sancus_repo (Filename.quote sancus_repo));
-  (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
-  Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
-  let security = Int.max 20 (4 * String.length sancus_master_key) in
-  assert (Sys_unix.command (Format.sprintf "%s/../scripts/build_config.sh \"%s/sancus-core-gap/\" %d %s %s" workingdir r_tmpdir security sancus_master_key (dbg_str ())) = 0);
+  (match target with
+   | Verilator ->
+     (* Clone Sancus so a submodule source retains a valid Git directory. A local clone hard-links the objects, which
+        fails when the temporary directory is on another file system than the checkout (e.g., --tmpdir /tmp, or a
+        Docker bind mount): then the objects are copied instead. *)
+     Logs.debug (fun m -> m "Cloning: %s => %s/sancus-core-gap" sancus_repo r_tmpdir);
+     let clone mode = Sys_unix.command (Format.sprintf "git clone %s %s %s %s"
+         mode (Filename.quote sancus_repo) (Filename.quote cloned_repo) (dbg_str ())) = 0 in
+     if not (clone "--local") then (
+       Logs.debug (fun m -> m "The local clone failed, copying the objects instead");
+       ignore (Sys_unix.command (Format.sprintf "rm -rf %s" (Filename.quote cloned_repo)));
+       if not (clone "--no-hardlinks") then
+         failwith (Format.sprintf "Could not clone Sancus repository from %s into %s. Check that it is a git checkout (git submodule update --init sancus-core-gap) and that --tmpdir is writable; --debug shows the git output."
+           sancus_repo r_tmpdir));
+     (* The clone is needed until the end of the run (the simulator is compiled in it), and not after: the VCD dump
+        and the programs are outside it *)
+     Stdlib.at_exit (fun () -> ignore (Sys_unix.command (Format.sprintf "rm -rf %s" (Filename.quote cloned_repo))));
+     (* Use the required commit *)
+     Logs.debug (fun m -> m "Checking out the required commit: %s" commit);
+     if Sys_unix.command (Format.sprintf "cd %s; git checkout %s %s"
+         (Filename.quote cloned_repo) (Filename.quote commit) (dbg_str ())) <> 0 then
+       failwith (Format.sprintf "Could not check out Sancus commit %s from %s. Check the commit name; a shallow checkout misses older commits: run git -C %s fetch --unshallow (CI: actions/checkout with fetch-depth: 0)."
+         commit sancus_repo (Filename.quote sancus_repo));
+     (* Create the config file -- note that the minimum size for the key seems to be 20 bytes *)
+     Logs.debug (fun m -> m "Configuring Sancus with key: %s" sancus_master_key);
+     let security = Int.max 20 (4 * String.length sancus_master_key) in
+     assert (Sys_unix.command (Format.sprintf "%s/../scripts/build_config.sh \"%s/sancus-core-gap/\" %d %s %s" workingdir r_tmpdir security sancus_master_key (dbg_str ())) = 0)
+   | Other _ ->
+     (* Another target runs no simulator: building the programs (build_pmem) needs only the memory sizes and the
+        templates of the linker script and of the definitions of the commit, read from the repository without a
+        clone (the configuration of build_config.sh is for the simulated processor) *)
+     List.iter [ "core/rtl/verilog/openMSP430_defines.v"; "core/sim/rtl_sim/bin/template.x"; "core/sim/rtl_sim/bin/template_defs.asm" ]
+       ~f:(fun path ->
+         let dst = cloned_repo ^ "/" ^ path in
+         Core_unix.mkdir_p (Filename.dirname dst);
+         if Sys_unix.command (Format.sprintf "git -C %s show %s > %s %s" (Filename.quote sancus_repo)
+             (Filename.quote (commit ^ ":" ^ path)) (Filename.quote dst)
+             (match Logs.level () with Some Logs.Debug -> "" | _ -> "2>/dev/null")) <> 0 then
+           failwith (Format.sprintf "Could not read %s of Sancus commit %s from %s. Check the commit name, and that %s is a git checkout (git submodule update --init sancus-core-gap); a shallow checkout misses older commits: run git -C %s fetch --unshallow."
+             path commit sancus_repo sancus_repo (Filename.quote sancus_repo))));
   (* Load the submit.f file *)
   let submitfile_filled = r_tmpdir ^ "/submit.f" in
   let submit_template = In_channel.read_all submitfile in

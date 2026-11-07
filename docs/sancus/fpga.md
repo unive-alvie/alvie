@@ -13,10 +13,10 @@ A step takes 15 to 30 ms on the board, against about a second in the simulator.
 ## Requirements
 
 - An Arty S7-50 board, connected over USB.
-- An image of the `arty_s7_openmsp430_sancus` project (an openMSP430 with Sancus, instrumented to send a trace over the UART), and Vivado to program it.
+- A bitstream of an image (an openMSP430 with Sancus, instrumented to send a trace over the UART), and Vivado to program the board with it.
 - Linux: the serial port runs at 5 Mbaud, which is set with the `termios2` interface of Linux.
 - The MSP430 toolchain, as for the simulator (`msp430-as`, `msp430-ld`); Verilator is not needed.
-- The `sancus-core-gap` checkout, as for the simulator: the programs are built with the headers and the linker script of the image's commit.
+- The `sancus-core-gap` checkout, as for the simulator: the programs are built with the memory sizes and the linker script of the image's commit, which ALVIE reads from the checkout without cloning it.
 
 ## Images
 
@@ -33,11 +33,18 @@ The images `inst_number` and `inst_pc` record 10 cycles, or break by program cou
 
 ## Program the Board
 
-The project's scripts program the board, and check the SHA-256 of the bitstream first.
-From the `scripts` directory of the project, we run the script of the image:
+`alvie/scripts/program_fpga.tcl` programs the board with a bitstream.
+It checks the SHA-256 of the bitstream first, refuses a file that is not one of the images above, and prints the commit of the image.
+From `alvie/code`, we program the board with the image of `bf89c0b`:
 
 ```bash
-vivado -mode batch -source program_inst_number_50_ef753b6.tcl
+vivado -mode batch -nojournal -nolog -source ../scripts/program_fpga.tcl -tclargs openMSP430_fpga_inst_number_50.bit
+```
+
+The script ends with the commit to give to ALVIE:
+
+```text
+--- Programmed with image inst_number_50: run alvie sancus-fpga with --commit bf89c0b ---
 ```
 
 The board keeps the image until it loses power.

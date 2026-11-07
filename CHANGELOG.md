@@ -39,6 +39,10 @@ the documentation lists what users must do.
 
 ### Fixes
 
+- The simulator deletes its clone of Sancus (in `--tmpdir`) when the program
+  ends: each backend left one behind, and runs that make many backends filled
+  the disk (conformance: about 10 GB for 50 tests). The VCD dumps and the
+  programs stay in `--tmpdir`.
 - The simulator backend no longer fails with `Could not clone Sancus
   repository` when the temporary directory is on another file system than the
   `sancus-core-gap` checkout (for example `--tmpdir /tmp`, as in the direct
@@ -244,6 +248,11 @@ the documentation lists what users must do.
   programs use the headers of `--commit`, not of the current checkout.
   Copies of a backend, and several processes, can share a board: each query
   locks the serial port.
+- It needs no clone of Sancus: building the programs reads the memory sizes
+  and the linker script of `--commit` from the checkout (`git show`).
+- New script `alvie/scripts/program_fpga.tcl`: programs the board with a
+  bitstream, after checking that its SHA-256 is that of a known image, and
+  prints the commit of the image.
 - Fixtures: those of ALVIE/Sancus, each for the image of its commit.
 - New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
   (image `ef753b6`), with the simulator's expected observations except where
