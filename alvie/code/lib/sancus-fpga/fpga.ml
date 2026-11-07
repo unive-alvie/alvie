@@ -6,9 +6,9 @@
   A query sends the program memory and the interrupt vectors of pmem.elf with a breakpoint, an instruction number,
   over the serial port; the board runs the program from reset and sends back a trace of the 50 clock cycles from the
   start of that instruction (window). The breakpoint is the first instruction the step has not analysed yet
-  (last_inst_number + 1). If no trace comes, the program reset or stopped before that instruction: the query is
-  retried at the last instruction analysed, whose window may still hold the step's instructions; if that fails too,
-  the step diverged.
+  (last_inst_number + 1), and never one of the code that clears the memory (boot). If no trace comes within
+  read_timeout, the program reset or stopped before that instruction: the query is retried at the last instruction analysed, whose window may
+  still hold the step's instructions; if that fails too, the step diverged.
 
   The serial port is opened once per process and port, and shared by the copies of a backend (clone): each query
   holds an exclusive lock (flock) on it, so that queries of different copies, or of different processes, do not mix.
@@ -27,8 +27,10 @@ let baud_rate = 5_000_000
 let window = 50
 let entry_size = 16
 
-(* How long to wait for the next bytes of a trace *)
-let read_timeout = 2.0
+(* How long to wait for the next bytes of a trace. The board answers a query in 2 to 5 ms (measured on 1650 queries:
+   median 3.0 ms, longest 4.25 ms); when the program resets or stops before the breakpoint, it does not answer at
+   all, and every such query waits for the whole timeout (with 2 s, 95% of the time of learning attack A) *)
+let read_timeout = 0.05
 
 (* The FTDI driver waits up to its latency timer (16 ms by default) before handing over bytes: with more than 1 ms,
    each query waits for it *)
@@ -155,16 +157,18 @@ let query fd ~pmem ~vectors ~breakpoint =
   the window that ends there may still hold the step's instructions: the query is retried at the last instruction
   analysed.
 *)
-let run ~port ~elf ~last_inst_number =
+let run ~port ~elf ~first_instruction ~last_inst_number =
   let fd = connect ~port in
   let pmem, vectors = elf_sections elf in
   let q breakpoint = Prof.time "sul.fpga_query" (fun () -> query fd ~pmem ~vectors ~breakpoint) in
-  match q (last_inst_number + 1) with
+  let breakpoint = Int.max first_instruction (last_inst_number + 1) in
+  match q breakpoint with
   | Some trace -> (false, trace)
   | None ->
-    Logs.debug (fun m -> m "Fpga: no trace at breakpoint %d, retrying at %d" (last_inst_number + 1) last_inst_number);
+    let retry = Int.max first_instruction last_inst_number in
+    Logs.debug (fun m -> m "Fpga: no trace at breakpoint %d, retrying at %d" breakpoint retry);
     Prof.count "sul.fpga_retry";
-    (match q (Int.max 1 last_inst_number) with
+    (match q retry with
      | Some trace -> (false, trace)
      | None -> Prof.count "sul.fpga_diverged"; (true, []))
 
@@ -224,14 +228,28 @@ let analyse ~diverges ~addr_of_label ~last_inst_number (labels : Step_analysis.l
       instructions = List.map matched ~f:(fun e -> `Instruction (instruction e));
     }
 
+(*
+  The code every program runs first on the board: it clears the variables of the template (DMEM_240 to DMEM_26E:
+  data_s to data_e_2, unprot_mem, irq_cnt, tactl_val, time, reti_cnt). The board does not clear its memory between
+  queries, so without it a test would read what earlier tests wrote (e.g., data_s), where the simulator, which starts
+  each step from a new simulation, reads 0. The stack needs no clearing: a program writes a word of the stack before
+  it reads it. The code also runs after a reset inside a test, where the simulator keeps the memory: that changes
+  nothing that is observed, since a step with a reset observes only OReset, and the test then starts again with a
+  new program. One instruction per word, so that the first query of a test breaks right after it
+  (first_instruction).
+*)
+let boot = List.init 24 ~f:(fun i -> sprintf "clr &(DMEM_BASE+0x%02X)" (0x40 + (2 * i)))
+let first_instruction = List.length boot + 1
+
 (* The board on port as the target of the Sancus backend: a step builds its program and runs it on the board *)
 let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
   ignore (connect ~port : Core_unix.File_descr.t);
   Other {
     name = "fpga " ^ port;
+    boot;
     run = (fun (cfg : Sancus.Simulator.cfg_t) ->
       Sancus.Simulator.build_program cfg;
-      let diverges, trace = run ~port ~elf:cfg.pmem_elf ~last_inst_number:cfg.last_inst_number in
+      let diverges, trace = run ~port ~elf:cfg.pmem_elf ~first_instruction ~last_inst_number:cfg.last_inst_number in
       fun labels ->
         analyse ~diverges ~addr_of_label:(Sancus.Simulator.addr_of_label cfg) ~last_inst_number:cfg.last_inst_number
           labels trace);

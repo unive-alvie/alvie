@@ -248,6 +248,11 @@ the documentation lists what users must do.
   programs use the headers of `--commit`, not of the current checkout.
   Copies of a backend, and several processes, can share a board: each query
   locks the serial port.
+- On the board, every program first clears the data memory that programs use:
+  the board keeps it between queries, so a test read what earlier tests had
+  written (e.g. `data_s`), and the fixture `attack-a-bf89c0b` found a leak
+  that the simulator does not have. The first query of a test breaks after
+  this code. The simulator's programs do not change.
 - It needs no clone of Sancus: building the programs reads the memory sizes
   and the linker script of `--commit` from the checkout (`git show`).
 - New script `alvie/scripts/program_fpga.tcl`: programs the board with a

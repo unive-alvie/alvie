@@ -23,12 +23,13 @@ type label_t = string*string [@@deriving sexp,ord]
 (*
   Where the programs run: the simulator, or another target, given by how it runs a step. run cfg runs the program
   of the step in cfg (its source is cfg.filledfile; build_program builds it) and returns the function that finds
-  the instructions of given labels in the trace. The configuration is the parameter, so that the target can be
+  the instructions of given labels in the trace. boot is code that every program of the target runs first, after
+  each reset (the marker [@inst_boot] of the template; the simulator runs none). The configuration is the parameter, so that the target can be
   one of its fields.
 *)
 type 'cfg target =
   | Verilator
-  | Other of { name : string; run : 'cfg -> (label_t list -> Step_analysis.found) }
+  | Other of { name : string; boot : string list; run : 'cfg -> (label_t list -> Step_analysis.found) }
 
 
 let dbg_str () = match Logs.level () with | Some Logs.Debug -> "" | _ -> ">/dev/null 2>/dev/null"
@@ -229,7 +230,10 @@ let fill_template template_code (cfg : cfg_t) (step : Alvie_backend.Backend.step
   Logs.debug (fun p -> p "Enclave code: %s" ([%derive.show: string list] enclave_code));
   let attacker_labels, isr_code, prepare_code, cleanup_code =
     Attacker.compile ~ignore_interrupts:cfg.ignore_interrupts (C_ISR isr, C_Prepare prepare, C_Cleanup cleanup) in
-  let code = String.substr_replace_all template_code ~pattern:"; [@inst_isr]" ~with_:(String.concat ~sep:"\n\t" isr_code) in
+  let code = match cfg.target with
+    | Other { boot = _ :: _ as boot; _ } -> String.substr_replace_all template_code ~pattern:"; [@inst_boot]" ~with_:(String.concat ~sep:"\n\t" boot)
+    | Verilator | Other _ -> template_code in
+  let code = String.substr_replace_all code ~pattern:"; [@inst_isr]" ~with_:(String.concat ~sep:"\n\t" isr_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_pre]" ~with_:(String.concat ~sep:"\n\t" prepare_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_post]" ~with_:(String.concat ~sep:"\n\t" cleanup_code) in
   let code = String.substr_replace_all code ~pattern:"; [@inst_victim]" ~with_:(String.concat ~sep:"\n\t" enclave_code) in
@@ -431,8 +435,13 @@ let run_simulator (cfg : cfg_t) =
 (* Builds the program of the step (cfg.filledfile) into cfg.pmem_elf, for another target than the simulator *)
 let build_program (cfg : cfg_t) =
   invalidate_symtab ();
+  (* build_pmem does not fail when the assembler or the linker does: without the old ELF file, a failed build is
+     not taken for the program of the step *)
+  (try Core_unix.unlink cfg.pmem_elf with Core_unix.Unix_error _ -> ());
   let res = Prof.time "sul.build_pmem" (fun () -> build_pmem cfg) in
-  if res <> 0 then failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
+  if res <> 0 then failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res);
+  if not (Sys_unix.file_exists_exn cfg.pmem_elf) then
+    failwith (Format.sprintf "Could not assemble or link the program of the step (%s): --debug shows the assembler and linker output." cfg.filledfile)
 
 let analyse_dump (diverges : bool) (cfg : cfg_t) (labels : (string * string) list) (dump : Vcd.vcd_t) : Step_analysis.found =
   Prof.time "sul.analyse_dump" @@ fun () ->

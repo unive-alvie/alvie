@@ -135,13 +135,14 @@ The commands have the other options of ALVIE/Core: `--spec`, `--secret`, `--vari
 ## How a Step Runs
 
 For each step, ALVIE builds the program of the test, as for the simulator, and sends its program memory and interrupt vectors to the board with a breakpoint: the number of the first instruction of the step.
+On the board, every program starts by clearing the data memory that programs use (128 words from `DMEM_BASE`): the board does not clear it between queries, and the simulator starts each step with it cleared.
 The board runs the program from reset and sends back the 50 clock cycles from the breakpoint: the program counter, the instruction number, the interrupt and Sancus state, `r4`, `gie`, the counter of Timer A, and a word of unprotected memory.
 ALVIE finds the step's instructions in this trace and turns them into observations as it does for the simulator.
 
-If no trace comes within 2 seconds, the program reset or stopped before the breakpoint: ALVIE asks again for the window of the previous instruction.
+The board answers in 2 to 5 ms. If no trace comes within 50 ms, the program reset or stopped before the breakpoint: ALVIE asks again for the window of the previous instruction.
 If no trace comes again, the step diverged (`OMaybeDiverge`).
 
-A query sends the whole program and runs it from reset, so a step does not depend on the previous query, except for the data memory (see below).
+A query sends the whole program, runs it from reset and clears the data memory first, so a step does not depend on the previous query.
 Copies of a backend and several ALVIE processes can share a board: their queries take turns on the serial port.
 
 ## Differences from the Simulator
@@ -153,5 +154,4 @@ The board and the simulator agree on most observations, but not on all of them.
   A reset or a divergence after the end of the window is not seen: the board reports the last instruction in the window.
 - **State is read after the instruction.** `r4`, `gie` and the unprotected memory word are read at the first cycle of the next instruction, so a store is visible in its own observation; the simulator reads them before that cycle.
   The counter of Timer A is read in the last cycle of the instruction in both.
-- **`r4` can carry over between tests.** The board does not clear its data memory between queries, so `reg_val` can depend on the previous test.
 - **Timing.** At the end of the window, cycle counts and the counter of Timer A can differ from the simulator's by one.
