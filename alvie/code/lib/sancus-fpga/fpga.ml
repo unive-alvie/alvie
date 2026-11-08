@@ -257,8 +257,8 @@ let ended trace =
       decreasing trace)
 
 (*
-  The simulator stops a run after 10000 clock cycles (the timeout of its testbench, 500 us at 20 MHz), and reports a
-  step whose code did not run as diverged. The board sends 50 cycles from the breakpoint, and the step's code can
+  The simulator stops a run after 10000 clock cycles (the timeout of ALVIE's testbench, alvie/bench/verilog: 500 us at
+  20 MHz), and reports a step whose code did not run as diverged. The board sends 50 cycles from the breakpoint, and the step's code can
   start later (e.g., after a long ISR of the attacker): when the step's code is not in the trace and the program has
   not ended, the next window starts at the last instruction of the trace, which it replaces (that instruction may be
   cut by the end of the window). A trace of divergence_cycles cycles without the step's code and without the end of

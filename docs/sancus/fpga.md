@@ -143,7 +143,7 @@ When the step's code is not in the window and the program has not ended (no end-
 The board answers in 2 to 5 ms. If no trace comes within 50 ms, the program reset or stopped before the breakpoint: ALVIE asks again for the window of the previous instruction.
 If no trace comes again, the step diverged (`OMaybeDiverge`).
 
-The simulator stops a run after 10000 clock cycles (500 µs at 20 MHz), and reports a step whose code did not run as diverged.
+The simulator stops a run after 10000 clock cycles (500 µs at 20 MHz, the timeout of ALVIE's testbench), and reports a step whose code did not run as diverged.
 On the board, a step diverged when its windows reach 10000 cycles without the step's code and without the end of the program.
 
 A query sends the whole program, runs it from reset and clears the data memory first, so a step does not depend on the previous query.
@@ -154,9 +154,10 @@ Learning on Sancus needs these inputs to finish (see issue #63).
 
 ## Differences from the Simulator
 
-With the same settings, the board learns the models of the simulator, except for the number of cycles `k`:
+With the same settings, the board learns the models of the simulator, except for the number of cycles `k` of `create`.
+On the 72 experiments of `learn_all.sh` that the two images can run, the models are the same up to that `k`, and the witnesses are the same.
 
-- **The window bounds what the board sees.** An instruction longer than 50 cycles shows `k = 50`: `sancus_enable`, for example, takes 648 cycles in the simulator.
+- **The window bounds what the board sees.** An instruction longer than 50 cycles shows `k = 50`: `sancus_enable` (the instruction of `create`) takes 648 cycles in the simulator.
   `k` is not part of what the attacker observes (`view.yaml`), so the witnesses of a comparison do not depend on it.
   A reset right after an instruction cut by the end of the window is not seen.
-- **Divergence.** The simulator counts the 10000 cycles from the start of the program, the board from the step's breakpoint.
+- **The simulator's timeout.** The simulator counts its 10000 cycles from the start of the program, the board from the step's breakpoint; the tests of the experiments stay far below it unless they loop.
