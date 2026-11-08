@@ -1,4 +1,0 @@
-(library
- (name prof)
- (modules prof)
- (libraries unix))

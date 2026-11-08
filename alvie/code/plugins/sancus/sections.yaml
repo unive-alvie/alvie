@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/sections.schema.json
+# The sections of a Sancus spec. A test starts in prepare, enters the enclave (jin), may be interrupted into the
+# isr and resumed (reti), and ends in cleanup once the enclave has exited (see phases.yaml).
+format: 1
+sections:
+  enclave:
+    role: victim
+    atoms: enclave
+    doc: The code of the enclave; ? in it is the secret
+  isr:
+    role: attacker
+    atoms: attacker
+    doc: The interrupt service routine of the attacker, which runs when the timer interrupts the enclave
+  prepare:
+    role: attacker
+    atoms: attacker
+    initial: true
+    doc: What the attacker does before entering the enclave (e.g. programming the timer and creating the enclave)
+  cleanup:
+    role: attacker
+    atoms: attacker
+    doc: What the attacker does after the enclave has exited (e.g. re-entering it)
+secret:
+  hole: true

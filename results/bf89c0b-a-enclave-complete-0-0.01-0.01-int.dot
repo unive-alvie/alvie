@@ -1,3 +1,4 @@
+// alvie-model format 1; plugin sancus 2026.10; core 1
 digraph G {
   0 [shape=circle, ];
   11 [shape=circle, ];
@@ -18,8 +19,8 @@ digraph G {
   1043 [shape=circle, ];
   1168 [shape=circle, ];
   1196 [shape=circle, ];
-  2597 [shape=circle, ];
-  2627 [shape=circle, ];
+  2626 [shape=circle, ];
+  2657 [shape=circle, ];
   
   
   0 -> 11 [label="((IAttacker(CTimerEnable 4))(((OTime((k 15)(gie false)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()8))",
@@ -75,13 +76,13 @@ digraph G {
                ];
   1043 -> 1033 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 0)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  1168 -> 2597 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
+  1168 -> 2626 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  1196 -> 2627 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()39))",
+  1196 -> 2657 [label="((IEnclave(CInst(I_JMP(S_IMM enc_e))))(((OJmpOut((k 3)(gie true)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()39))",
                 ];
-  2597 -> 754 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()42))",
+  2626 -> 754 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 1)(timerA_counter 0)(mode UM))))()42))",
                ];
-  2627 -> 754 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()42))",
+  2657 -> 754 [label="((IAttacker(CInst I_NOP))(((OTime((k 1)(gie false)(umem_val 0)(reg_val 2)(timerA_counter 0)(mode UM))))()42))",
                ];
   
   }

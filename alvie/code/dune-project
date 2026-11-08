@@ -9,15 +9,60 @@
 (authors "Matteo Busi, Riccardo Focardi, Flaminia Luccio")
 (maintainers "Matteo Busi, Riccardo Focardi, Flaminia Luccio")
 
-(license LICENSE)
+(license MIT)
+
+(source (github unive-alvie/alvie))
+(homepage "https://unive-alvie.github.io/alvie/")
+(bug_reports "https://github.com/unive-alvie/alvie/issues")
+
+; ALVIE is split into three packages (see docs/development/code-architecture.md):
+; - alvie-core: the learner, the oracles, the model files, the comparison engine, the commands of Core, external
+;   plugins and Tiny, with no Sancus code;
+; - alvie-rtl-util: helpers for backends that simulate RTL (the VCD parser), not part of Core;
+; - alvie-sancus: the Sancus backend, its executables and the test suites.
+; alvie-core must not depend on the other two: CI builds it on its own (dune build -p alvie-core).
 
 (package
- (name alvie)
- (synopsis "Code accompanying the paper \"Bridging the Gap: Automated Analysis of Sancus
-\" to appear at IEEE CSF 2024")
+ (name alvie-core)
+ (synopsis "ALVIE/Core: learn models of a system with L# and compare them to find information leaks, for any platform with a plugin")
+ (description "The L# learner and its equivalence oracles, the input generator of specs, the comparison engine that finds witnesses with mCRL2, the plugin files, the commands of Core for any plugin, the protocol of external plugins, and Tiny, the reference platform. A plugin (such as alvie-sancus) connects it to a platform.")
+ (depends
+  (ocaml (>= "4.13"))
+  core
+  core_unix
+  logs
+  ocamlgraph
+  ppx_deriving
+  ppx_hash
+  ppx_jane
+  ppx_sexp_conv
+  shexp
+  yaml
+  yojson
+  (alcotest :with-test))
+ (tags
+  ("automata learning" "formal verification" "alvie")))
+
+(package
+ (name alvie-rtl-util)
+ (synopsis "Helpers for ALVIE backends that simulate RTL designs (VCD parser)")
  (description "")
  (depends
   (ocaml (>= "4.13"))
+  core
+  logs
+  ppx_deriving)
+ (tags
+  ("vcd" "rtl" "alvie")))
+
+(package
+ (name alvie-sancus)
+ (synopsis "ALVIE/Sancus: the Sancus backend of ALVIE, from the paper \"Bridging the Gap: Automated Analysis of Sancus\" (IEEE CSF 2024)")
+ (description "")
+ (depends
+  (ocaml (>= "4.13"))
+  (alvie-core (= :version))
+  (alvie-rtl-util (= :version))
   alcotest
   angstrom
   core
@@ -30,7 +75,10 @@
   ppx_jane
   ppx_sexp_conv
   qcheck
-  shexp)
+  qcheck-core
+  shexp
+  yaml
+  yojson)
  (tags
   ("automata learning" "formal verification" "sancus" "side-channels" "alvie")))
 

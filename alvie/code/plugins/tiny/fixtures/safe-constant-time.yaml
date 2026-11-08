@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: With the constant-time mitigation, bz and pad take two cycles whatever the secret, and nothing leaks
+spec: leak-interrupt.spec
+secrets: [0, 1]
+config: { mitigation: constant-time }
+expect: no-leak

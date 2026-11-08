@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/view.schema.json",
+  "title": "ALVIE plugin attacker view",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "match": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ],
+            "description": "The kinds of observations the rule applies to (all if absent)"
+          },
+          "when": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "The values of fields the rule requires"
+          },
+          "show": {
+            "anyOf": [
+              { "enum": [ "hidden", "tag", "distinct", "all" ] },
+              {
+                "type": "object",
+                "properties": {
+                  "fields": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "description": "The fields that the attacker sees"
+                  }
+                },
+                "required": [ "fields" ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "hidden, tag, distinct, all or { fields: [...] }",
+            "description": "What the attacker sees"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "The record field that the part shows (none: only its kind)"
+                },
+                "as": {
+                  "type": "string",
+                  "description": "The kind the part is an observation of"
+                },
+                "input": {
+                  "enum": [ "step", "interrupt" ],
+                  "description": "step (the input of the step, the default) or interrupt"
+                }
+              },
+              "required": [ "as" ],
+              "additionalProperties": false
+            },
+            "description": "The parts that the observation stands for, each seen by the other rules"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "description": "The rules, in order: the first that matches applies"
+    }
+  },
+  "required": [ "format", "rules" ],
+  "additionalProperties": false
+}

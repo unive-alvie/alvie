@@ -1,0 +1,7 @@
+; ALVIE/Core plugin files and spec language: values, the YAML files that declare a plugin (manifest, sections,
+; atoms, observations, phase rules, attacker view), their checks and JSON Schemas, and the generic spec parser.
+(library
+ (name alvie_plugin)
+ (public_name alvie-core.plugin)
+ (preprocess (pps ppx_jane))
+ (libraries core yaml yojson))
