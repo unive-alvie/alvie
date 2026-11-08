@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=../../schemas/phases.schema.json
+# How the observations of Tiny move a test between its sections.
+format: 1
+rules:
+  - { match: Done, do: [{ stop: finished }] }
+  - { match: Illegal, do: [{ stop: invalid }] }
+  - { match: [Ok, Run], do: [] }
+  - { match: Enter, do: [{ enter: enclave }] }
+  - { match: Exit, do: [{ enter: cleanup }] }
+  # An interrupt saves where the enclave is and starts the ISR; reti resumes it there
+  - { match: Irq, do: [{ interrupt: isr }] }
+  - { match: Resume, do: [resume] }

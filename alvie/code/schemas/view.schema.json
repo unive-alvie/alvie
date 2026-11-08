@@ -45,9 +45,32 @@
             ],
             "description": "hidden, tag, distinct, all or { fields: [...] }",
             "description": "What the attacker sees"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string",
+                  "description": "The record field that the part shows (none: only its kind)"
+                },
+                "as": {
+                  "type": "string",
+                  "description": "The kind the part is an observation of"
+                },
+                "input": {
+                  "enum": [ "step", "interrupt" ],
+                  "description": "step (the input of the step, the default) or interrupt"
+                }
+              },
+              "required": [ "as" ],
+              "additionalProperties": false
+            },
+            "description": "The parts that the observation stands for, each seen by the other rules"
           }
         },
-        "required": [ "show" ],
+        "required": [],
         "additionalProperties": false
       },
       "description": "The rules, in order: the first that matches applies"

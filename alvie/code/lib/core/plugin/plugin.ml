@@ -77,17 +77,35 @@ let check_cross ~(manifest : Manifest_file.t) ~(sections : Sections_file.t) ~(gr
       check_rule r;
       List.iter r.effect ~f:(function
           | Rules_file.Enter s | Switch s | Interrupt s -> check_section r.pos s
-          | Reset | Resume | Stop _ -> ()));
-  List.iter view ~f:(fun (r : Rules_file.show Rules_file.rule) ->
+          | Restart | Reset | Resume | Stop _ -> ()));
+  List.iter view ~f:(fun (r : Rules_file.effect Rules_file.rule) ->
       check_rule r;
       match r.effect with
-      | Rules_file.Fields fs ->
+      | Rules_file.Parts ps ->
+        let kinds = match r.kinds with None -> observations.kinds | Some ks -> List.filter_map ks ~f:(Observations_file.find_kind observations) in
+        List.iter ps ~f:(fun (p : Rules_file.part) ->
+            match Observations_file.find_kind observations p.as_kind with
+            | None -> err r.pos "unknown kind of observation %s" p.as_kind ?hint:(Diag.hint_did_you_mean p.as_kind kind_names)
+            | Some target ->
+              Option.iter p.field ~f:(fun f ->
+                  List.iter kinds ~f:(fun k ->
+                      if String.equal f "self" then (
+                        if not (List.equal [%equal: string * Observations_file.ftype] k.fields target.fields) then
+                          err r.pos "the kind %s does not have the fields of %s (field: self)" k.name p.as_kind)
+                      else
+                      match List.Assoc.find k.fields ~equal:String.equal f with
+                      | Some (Observations_file.F_record rt) ->
+                        (match List.Assoc.find observations.types ~equal:String.equal rt with
+                         | Some (Observations_file.Record fs) when List.equal [%equal: string * Observations_file.ftype] fs target.fields -> ()
+                         | _ -> err r.pos "the field %s of %s does not have the fields of %s" f k.name p.as_kind)
+                      | _ -> err r.pos "the kind %s has no record field %s" k.name f)))
+      | Rules_file.Show (Rules_file.Fields fs) ->
         let kinds = match r.kinds with None -> observations.kinds | Some ks -> List.filter_map ks ~f:(Observations_file.find_kind observations) in
         List.iter fs ~f:(fun p ->
             List.iter kinds ~f:(fun k ->
                 if Option.is_none (Observations_file.path_type observations k.fields p) then
                   err r.pos "the kind %s has no field %s to show" k.name (String.concat ~sep:"." p)))
-      | Hidden | Tag | Distinct | All -> ());
+      | Show (Hidden | Tag | Distinct | All) -> ());
   List.rev !errors
 
 (*
@@ -139,4 +157,5 @@ let file_schemas () : (string * Yojson.Safe.t) list =
     s "atoms" "ALVIE plugin atoms" (Shape.map_value Atoms_file.shape ~f:ignore);
     s "observations" "ALVIE plugin observations" (Shape.map_value Observations_file.shape ~f:ignore);
     s "phases" "ALVIE plugin phase rules" (Shape.map_value Rules_file.phases_shape ~f:ignore);
-    s "view" "ALVIE plugin attacker view" (Shape.map_value Rules_file.view_shape ~f:ignore) ]
+    s "view" "ALVIE plugin attacker view" (Shape.map_value Rules_file.view_shape ~f:ignore);
+    s "fixture" "ALVIE plugin fixture" (Shape.map_value Fixture_file.shape ~f:ignore) ]

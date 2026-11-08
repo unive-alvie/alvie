@@ -3,9 +3,9 @@
 (library
  (name sancus)
   (public_name alvie-sancus.sancus)
-  (modules input output_internal testdl enclave common inputgen attacker verilog atom_value sancus_plugin_files generic_inputgen)
+  (modules input output_internal testdl enclave common inputgen attacker step_analysis simulator verilog atom_value sancus_plugin_files generic_inputgen native)
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_deriving.fold ppx_sexp_conv ppx_hash ppx_let))
-  (libraries prof alvie_plugin alvie_inputgen core logs angstrom core_unix.sys_unix core_unix vcd shexp.process ocamlgraph)
+  (libraries prof alvie_plugin alvie_inputgen alvie_backend core logs angstrom core_unix.sys_unix core_unix vcd shexp.process ocamlgraph)
 )
 
 ; The plugin files of plugins/sancus, embedded in the executables (Generic_inputgen.plugin)

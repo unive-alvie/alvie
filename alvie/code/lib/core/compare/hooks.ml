@@ -5,8 +5,8 @@
   into witnesses; everything that depends on the meaning of the inputs and outputs (who chose an input, what an
   observer sees of an output, which code is the victim's) comes from these hooks.
 
-  TEMPORARY: these hooks are OCaml code that each backend writes. Milestone M5 replaces them with the declarative
-  attacker view of the plugin files (hidden outputs, projections, tags, distinct), and this module goes away.
+  Plugin_hooks derives these hooks from the files of a plugin (the attacker view, the phase rules and the sections),
+  so a backend writes none of them; this signature remains the interface of the engine.
 *)
 
 open Learninglib.Elttype
@@ -56,4 +56,10 @@ module type S = sig
 
   (* How an observation is printed in witness graphs and in the logs. *)
   val human_show : Input.t -> Output.t -> string
+
+  (*
+    The label of a transition for mCRL2: what the attacker sees of it (its input, and the view of its output).
+    Transitions with the same label are the same for the comparison.
+  *)
+  val comparison_label : Input.t -> Output.t -> string
 end

@@ -54,6 +54,21 @@ let i_lts_of_mealy (m : IIOMealy.t) : i_lts_t =
           change_or_add acc_tr ~key:(s, Obs.make i o) ~data:s')
   in { initial = m.s0; states; transition }
 
+(*
+  The label of a transition for mCRL2 (Hooks.comparison_label), as an action name: mCRL2 does not accept quotes or
+  parentheses in them. The witness search maps labels back to the transitions with that label.
+*)
+let label (o : Obs.t) =
+  String.map (H.comparison_label (Obs.input o) (Obs.output o)) ~f:(function '(' -> '[' | ')' -> ']' | '"' -> '\'' | ',' -> ';' | c -> c)
+
+(* The states after a sequence of labels, from the initial state *)
+let states_after_labels (m : i_lts_t) (labels : string list) : ILTS.LTSSSet.t =
+  let by_state = Map.fold m.transition ~init:Int.Map.empty ~f:(fun ~key:(s, o) ~data acc -> Map.add_multi acc ~key:s ~data:(label o, data)) in
+  List.fold labels ~init:(ILTS.LTSSSet.singleton m.initial) ~f:(fun states l ->
+      Set.fold states ~init:ILTS.LTSSSet.empty ~f:(fun acc s ->
+          List.fold (Option.value (Map.find by_state s) ~default:[]) ~init:acc ~f:(fun acc (l', targets) ->
+              if String.equal l l' then Set.union acc targets else acc)))
+
 (* Returns the string of the LTS in aldebaran format and a list of novel silent actions *)
 let i_lts_to_checkable_aldebaran ({ initial; states; transition } : i_lts_t) : string =
   let additional_tr = ref 0 in
@@ -63,13 +78,14 @@ let i_lts_to_checkable_aldebaran ({ initial; states; transition } : i_lts_t) : s
       ~init:""
       ~f:(fun ~key:(s, o) ~data:s'_set acc_s ->
           (Set.fold s'_set ~init:acc_s
-            ~f:(fun acc_s' s' -> acc_s' ^ sprintf "(%d, \"%s\", %d)\n" (state_to_int s) (Obs.show o) (state_to_int s')))
+            ~f:(fun acc_s' s' -> acc_s' ^ sprintf "(%d, \"%s\", %d)\n" (state_to_int s) (label o) (state_to_int s')))
       ) in
     let aut_header = sprintf "des (0, %d, %d)\n" (!additional_tr + Map.length transition) (1 + !last_used) in
     aut_header ^ aut_edges
 
 
-let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : Obs.t list option =
+(* A trace that m1 has and m2 does not, as labels *)
+let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : string list option =
   (* Generate file names for: m, m', the counterexample and their containing tmp folder *)
   let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
   Logs.debug (fun m -> m "[find_cex] Created temporary directory: %s" r_tmpdir);
@@ -78,8 +94,8 @@ let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : Obs.t list option =
     Out_channel.write_all (sprintf "%s/m1.aut" r_tmpdir) ~data:m1_ald;
     Out_channel.write_all (sprintf "%s/m2.aut" r_tmpdir) ~data:m2_ald;
   Logs.debug (fun m -> m "[find_cex] Written LTSs to disk");
-  let silent = List.dedup_and_sort (ILTS.get_silent_obs m1 @ ILTS.get_silent_obs m2) ~compare:Obs.compare in
-  let silent_str = String.drop_suffix (List.fold silent ~f:(fun acc o -> sprintf "%s,%s" (Obs.show o) acc) ~init:"") 1 in
+  let silent = List.dedup_and_sort (List.map (ILTS.get_silent_obs m1 @ ILTS.get_silent_obs m2) ~f:label) ~compare:String.compare in
+  let silent_str = String.concat ~sep:"," silent in
   (* And prepare the cmd lines *)
   let cmd_ltscompare = sprintf "ltscompare %s/m1.aut %s/m2.aut --strategy=b --counter-example --counter-example-file=%s/cex.trc --preorder=weak-trace-ac --tau=\"%s\" -q >/dev/null" r_tmpdir r_tmpdir r_tmpdir silent_str in
   (* Logs.debug (fun p -> p "Compare: %s" cmd_ltscompare); *)
@@ -90,7 +106,7 @@ let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : Obs.t list option =
     ignore (Sys_unix.command cmd_ltscompare);
     if cex_found () then
       (
-        let aut_cex = (eval (pipe (run "tracepp" cmd_tracepp_args) (fold_lines ~init:[] ~f:(fun acc curr -> return (acc @ [Obs.parse curr]))))) in
+        let aut_cex = (eval (pipe (run "tracepp" cmd_tracepp_args) (fold_lines ~init:[] ~f:(fun acc curr -> return (acc @ [String.strip curr]))))) in
           (match Logs.level () with | Some Debug -> () | _ -> ignore (Sys_unix.command (sprintf "rm -rf %s" r_tmpdir)));
           Some aut_cex
       )
@@ -101,16 +117,17 @@ let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : Obs.t list option =
       )
 
 (* Removes cex and all its suffixes from m, but *not* the prefix *)
-let remove_cex_heur (m : i_lts_t) (cex : Obs.t list) : i_lts_t =
+let remove_cex_heur (m : i_lts_t) (cex : string list) : i_lts_t =
   let cex_front, cex_last = List.drop_last_exn cex, List.last_exn cex in
-  let candidate_states = ILTS.get_states m cex_front in
-  (* Logs.debug (fun p -> p "[remove_cex_heur] cand: %s" (List.to_string ~f:Int.to_string (Set.to_list candidate_states))); *)
-  let upd_tr =
-    Set.fold candidate_states ~init:m.transition ~f:(fun acc_tr s ->
-      let acc = Map.remove acc_tr (s, cex_last) in
-        acc
-    ) in
-    { m with transition = upd_tr }
+  let candidate_states = states_after_labels m cex_front in
+  let upd_tr = Map.filter_keys m.transition ~f:(fun (s, o) -> not (Set.mem candidate_states s && String.equal (label o) cex_last)) in
+  { m with transition = upd_tr }
+
+(* A transition of m with each label of the trace (the same for the input that the label shows) *)
+let obs_of_labels (m1 : i_lts_t) (m2 : i_lts_t) (labels : string list) : Obs.t list =
+  let table = Hashtbl.create (module String) in
+  List.iter [ m1; m2 ] ~f:(fun m -> Map.iter_keys m.transition ~f:(fun (_, o) -> Hashtbl.add table ~key:(label o) ~data:o |> ignore));
+  List.filter_map labels ~f:(Hashtbl.find table)
 
 (* Given a counterexample cex integrates it into m *)
 let integrate_cex ~up_to_silent (m : i_lts_t) (cex : Obs.t list) : i_lts_t =
@@ -260,6 +277,9 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
   let finished = ref false in
   let m1r, m2r = ref m1, ref m2 in
   let to_remove_code = List.map to_remove ~f:(fun (r1, r2) -> (victim_code r1, victim_code r2)) in
+  List.iter to_remove_code ~f:(fun (r1, r2) ->
+      Logs.debug (fun m -> m "[find_all_cex] baseline victim code: %s | %s"
+                     (String.concat ~sep:"; " (List.map r1 ~f:H.Input.show)) (String.concat ~sep:"; " (List.map r2 ~f:H.Input.show))));
   while not !finished && (match limit with None -> true | Some limit -> !cex_count < limit) do
     Logs.debug (fun p -> p "===== FINDALL ITERATION START =====");
     (match find_cex_aut ~tmpdir !m1r !m2r with
@@ -268,8 +288,9 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
         finished := true
     | Some aut_cex ->
         Logs.debug (fun p -> p "[find_all_cex] %s ⊆ %s : false" m1_name m2_name);
-        let cand_m1 = all_acyclic_cexs ~attributes:m1_attributes !m1r aut_cex in
-        let cand_m2 = all_acyclic_cexs ~attributes:m2_attributes !m2r aut_cex in
+        let cex_obs = obs_of_labels !m1r !m2r aut_cex in
+        let cand_m1 = all_acyclic_cexs ~attributes:m1_attributes !m1r cex_obs in
+        let cand_m2 = all_acyclic_cexs ~attributes:m2_attributes !m2r cex_obs in
         List.iter cand_m1 ~f:(fun curr_m1 ->
           List.iter cand_m2 ~f:(fun curr_m2 ->
           let until_next_um t =
@@ -314,7 +335,13 @@ let find_all_cex ?limit ~to_remove ~tmpdir ~m1_name ~m2_name ~m1 ~m2 () : int * 
                   *)
                   let lc1, lc2 = List.last_exn curr_m1, List.last_exn curr_m2 in
                   let c1, c2 = victim_code curr_m1, victim_code curr_m2 in
-                  if not (List.exists to_remove_code ~f:(fun (r1, r2) -> same_code c1 r1 && same_code c2 r2)) && same_code (victim_code_up_to_secret curr_m1) (victim_code_up_to_secret curr_m2) && not (in_victim lc1) && not (in_victim lc2) then
+                  let baseline = List.exists to_remove_code ~f:(fun (r1, r2) -> same_code c1 r1 && same_code c2 r2) in
+                  let same_victim = same_code (victim_code_up_to_secret curr_m1) (victim_code_up_to_secret curr_m2) in
+                  Logs.debug (fun m -> m "[find_all_cex] candidate: in the baseline %b, same victim code %b, ends in the victim %b %b\n  victim code: %s\n  vs %s"
+                    baseline same_victim (in_victim lc1) (in_victim lc2)
+                    (String.concat ~sep:"; " (List.map (victim_code_up_to_secret curr_m1) ~f:H.Input.show))
+                    (String.concat ~sep:"; " (List.map (victim_code_up_to_secret curr_m2) ~f:H.Input.show)));
+                  if not baseline && same_victim && not (in_victim lc1) && not (in_victim lc2) then
                     (
                       cex_graph := update_cex_graph !cex_graph curr_m1 curr_m2;
                       all_witnesses := (curr_m1, curr_m2)::!all_witnesses;

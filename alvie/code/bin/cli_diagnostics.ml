@@ -1,41 +1,14 @@
 open Core
 
-exception User_error of string
+(* The errors and their report are those of every command (Alvie_cli.Errors); this module adds those of Sancus *)
+exception User_error = Alvie_cli.Errors.User_error
 
-let bug_report_url = "https://github.com/unive-alvie/alvie/issues/new?template=bug-report.yml"
-
-let fail format = Printf.ksprintf (fun message -> raise (User_error message)) format
-
-let require_file ~option path =
-  match Sys_unix.file_exists path with
-  | `Yes ->
-    if Sys_unix.is_file_exn path then path
-    else fail "%s must name a file, but %S is not a file." option path
-  | `No -> fail "%s names a file that does not exist: %S." option path
-  | `Unknown -> fail "Cannot inspect %s at %S." option path
-
-let require_directory ~option path =
-  match Sys_unix.file_exists path with
-  | `Yes ->
-    if Sys_unix.is_directory_exn path then path
-    else fail "%s must name a directory, but %S is not a directory." option path
-  | `No -> fail "%s names a directory that does not exist: %S." option path
-  | `Unknown -> fail "Cannot inspect %s at %S." option path
-
-let prepare_directory ~option path =
-  if String.is_empty path then fail "%s cannot be empty." option;
-  let path = String.rstrip path ~drop:(Char.equal '/') in
-  let path = if String.is_empty path then "/" else path in
-  match Sys_unix.file_exists path with
-  | `No -> Core_unix.mkdir_p path; path
-  | `Yes when Sys_unix.is_directory_exn path -> path
-  | `Yes -> fail "%s must name a directory, but %S is not a directory." option path
-  | `Unknown -> fail "Cannot inspect %s at %S." option path
-
-let read_file ~option path =
-  let path = require_file ~option path in
-  try In_channel.read_all path with
-  | Sys_error message -> fail "Could not read %s at %S: %s" option path message
+let bug_report_url = Alvie_cli.Errors.bug_report_url
+let fail = Alvie_cli.Errors.fail
+let require_file = Alvie_cli.Errors.require_file
+let require_directory = Alvie_cli.Errors.require_directory
+let prepare_directory = Alvie_cli.Errors.prepare_directory
+let read_file = Alvie_cli.Errors.read_file
 
 let parse_spec ~enclave_spec ~attacker_spec =
   match Sancus.Testdl.Parser.parse_spec (enclave_spec ^ " " ^ attacker_spec) with
@@ -91,10 +64,7 @@ let require_optional_pair ~first_option first ~second_option second =
   | Some _, None -> fail "%s requires %s." first_option second_option
   | None, Some _ -> fail "%s requires %s." second_option first_option
 
-let report ~heading ~message ~status =
-  eprintf "%s: %s\n" heading message;
-  eprintf "For help or a bug report, see %s\n" bug_report_url;
-  Stdlib.exit status
+let report = Alvie_cli.Errors.report
 
 let classify_failure message =
   if String.is_substring message ~substring:"Stimulus did not complete" then
@@ -106,23 +76,4 @@ let classify_failure message =
   else
     None
 
-let protect ~debug f =
-  if debug then Printexc.record_backtrace true;
-  try f () with
-  | User_error message ->
-    report ~heading:"ALVIE error" ~message ~status:2
-  | Sys_error message ->
-    report ~heading:"ALVIE error" ~message ~status:2
-  | Failure message ->
-    (match classify_failure message with
-     | Some (heading, message, status) -> report ~heading ~message ~status
-     | None ->
-       eprintf "ALVIE failed unexpectedly: %s\n" message;
-       if debug then Printexc.print_backtrace stderr;
-       eprintf "Re-run with --debug and report the command, specifications, and logs at %s\n" bug_report_url;
-       Stdlib.exit 1)
-  | exn ->
-    eprintf "ALVIE failed unexpectedly: %s\n" (Exn.to_string exn);
-    if debug then Printexc.print_backtrace stderr;
-    eprintf "Re-run with --debug and report the command, specifications, and logs at %s\n" bug_report_url;
-    Stdlib.exit 1
+let protect ~debug f = Alvie_cli.Errors.protect ~classify:classify_failure ~debug f

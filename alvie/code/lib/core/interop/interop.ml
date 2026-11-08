@@ -4,6 +4,52 @@ open Learninglib.Mealy
 open Learninglib.Showableint
 open Learninglib.Elttype
 
+(*
+  Model files are Graphviz .dot files whose first line says what made them:
+
+    // alvie-model format 1; plugin sancus 2026.10; core 1
+
+  Files without it were made before ALVIE/Core (format 0) and read the same. A file of a later format is refused,
+  with a message: it needs a newer ALVIE.
+*)
+let format_version = 1
+
+let header ~plugin ~plugin_version ~core =
+  sprintf "// alvie-model format %d; plugin %s %s; core %s" format_version plugin plugin_version core
+
+(* The format of a model file, from its first line *)
+let format_of_file file : int =
+  match In_channel.with_file file ~f:In_channel.input_line with
+  | Some line ->
+    (match String.chop_prefix line ~prefix:"// alvie-model format " with
+     | Some rest -> (match String.lsplit2 rest ~on:';' with Some (n, _) -> Int.of_string (String.strip n) | None -> Int.of_string (String.strip rest))
+     | None -> 0)
+  | None -> 0
+
+exception Unsupported_format of string
+
+let check_format file =
+  let f = format_of_file file in
+  if f > format_version then
+    raise (Unsupported_format (sprintf "%s is a model of format %d, made by a newer ALVIE: this one reads formats up to %d. Use a newer ALVIE." file f format_version))
+
+(* The plugin a model file names in its header, if it has one *)
+let plugin_of_file file : string option =
+  match In_channel.with_file file ~f:In_channel.input_line with
+  | Some line ->
+    (match String.substr_index line ~pattern:"; plugin " with
+     | Some i when String.is_prefix line ~prefix:"// alvie-model format " ->
+       List.hd (String.split (String.drop_prefix line (i + String.length "; plugin ")) ~on:' ')
+     | _ -> None)
+  | None -> None
+
+(* A model of another plugin is refused; a model without a header (format 0) is taken as one of plugin *)
+let check_plugin ~plugin file =
+  match plugin_of_file file with
+  | Some p when not (String.equal p plugin) ->
+    raise (Unsupported_format (sprintf "%s is a model of plugin %s, not of %s." file p plugin))
+  | _ -> ()
+
 module Interop (I : EltType) (O : EltType) = struct
 
   module IIOMealy = Mealy (ShowableInt) (I) (O)
@@ -54,11 +100,20 @@ module Interop (I : EltType) (O : EltType) = struct
   end)
 
   let t_of_dot_file (input_alphabet : IIOMealy.ISet.t) (fn : string) : IIOMealy.t =
+    check_format fn;
     let dot = Parse.parse fn in
       let states = IIOMealy.SSet.of_list (B.fold_vertex (fun v acc -> v::acc) dot []) in
       let transition = IIOMealy.TransitionMap.of_alist_exn (B.fold_edges_e (fun (s, (i, o), e) acc -> ((s, i), (o, e))::acc) dot []) in
         { states=states; s0=0; input_alphabet=input_alphabet; transition=transition; pred_map=IIOMealy.PredMap.empty }
 
+
+  (* Writes the model to file, with the header line *)
+  let write_model ~header file (g : B.t) =
+    Out_channel.with_file file ~binary:true ~f:(fun oc ->
+        Out_channel.output_string oc (header ^ "\n");
+        let fmt = Format.formatter_of_out_channel oc in
+        Dot.fprint_graph fmt g;
+        Format.pp_print_flush fmt ())
 
   let dot_of_t ({ states; s0; input_alphabet=_; transition; pred_map=_; } : IIOMealy.t) : B.t =
     let g = Set.fold (Set.add states s0) ~init:G.empty ~f:G.add_vertex in

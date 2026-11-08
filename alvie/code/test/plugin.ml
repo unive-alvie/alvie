@@ -38,11 +38,11 @@ let test_sancus_loads () =
   Alcotest.(check string) "name" "sancus" p.manifest.name;
   Alcotest.(check (list string)) "sections" [ "enclave"; "isr"; "prepare"; "cleanup" ] (Sections_file.names p.sections);
   Alcotest.(check string) "initial" "prepare" (Sections_file.initial p.sections).name;
-  Alcotest.(check int) "kinds" 11 (List.length p.observations.kinds)
+  Alcotest.(check int) "kinds" 12 (List.length p.observations.kinds)
 
 let test_schemas_up_to_date () =
   let dir = Filename.concat code_dir "schemas" in
-  List.iter (Plugin.file_schemas ()) ~f:(fun (name, schema) ->
+  List.iter (Plugin.file_schemas () @ [ ("protocol.schema.json", Alvie_backend.Protocol.json_schema ()) ]) ~f:(fun (name, schema) ->
       let expected = Yojson.Safe.pretty_to_string schema ^ "\n" in
       let path = Filename.concat dir name in
       let actual = try In_channel.read_all path with Sys_error _ -> "" in
@@ -174,7 +174,7 @@ let test_value_json_round_trip () =
     (QCheck.Test.make ~count:2000 ~name:"JSON" (QCheck.make ~print:Value.to_string (gen_type p.grammar 2 ~exclude:[] "attacker")) (fun v ->
          match Value.of_json (Value.to_json v) with Ok v' -> Value.equal v v' | Error e -> QCheck.Test.fail_reportf "%s" e))
 
-(* The example of docs/reference/plugin-files.md *)
+(* The example of docs/plugin-authors/plugin-files.md *)
 let test_value_json_example () =
   let p = Lazy.force sancus in
   let v = Result.ok_or_failwith (Result.map_error (Grammar.parse_value p.grammar ~file:"atom" ~ty:"enclave" "mov r5, r6") ~f:Diag.to_string) in
@@ -236,7 +236,7 @@ let test_atoms_errors = [
 (* A copy of the Sancus plugin with one file replaced, to check the errors across files *)
 let with_file name contents f =
   let dir = Filename_unix.temp_dir "tt_plugin" "" in
-  List.iter (Sys_unix.ls_dir plugin_dir) ~f:(fun file ->
+  List.iter (List.filter (Sys_unix.ls_dir plugin_dir) ~f:(fun f -> String.is_suffix f ~suffix:".yaml")) ~f:(fun file ->
       Out_channel.write_all (Filename.concat dir file) ~data:(In_channel.read_all (Filename.concat plugin_dir file)));
   Out_channel.write_all (Filename.concat dir name) ~data:contents;
   Exn.protect ~f:(fun () -> f dir) ~finally:(fun () -> ignore (Sys_unix.command (sprintf "rm -rf %s" (Filename.quote dir))))
@@ -419,13 +419,118 @@ let test_constraint_errors = [
    toy_error "constraint { subset(uses(main), {1, 12}) };\n" [ "toy spec:1:37: \"12\" is not a value of val: 12 is out of range: expected an integer from 0 to 9" ]);
 ]
 
+(* The backend contract (Alvie_backend), with a toy backend on the toy plugin: call x enters the victim, ret leaves
+   it, everything else is Ok. It records the steps it gets, and counts them in its bookkeeping. *)
+
+module Toy_backend = struct
+  type t = { mutable steps : int; mutable seen : Alvie_backend.Backend.step list }
+  type bookkeeping = int [@@deriving sexp]
+
+  let none = 0
+  let capabilities = [ Alvie_backend.Backend.Restore; Clone ]
+  let make () = { steps = 0; seen = [] }
+  let pre t = t.steps <- 0
+  let observe (s : Alvie_backend.Backend.step) =
+    match s.section, s.atom with
+    | "main", Value.Node ("call", _) -> [ Value.Node ("Enter", [ ("target", Value.Int 1) ]) ]
+    | "victim", Value.Node ("ret", []) -> [ Value.Node ("Leave", []) ]
+    | _ -> [ Value.Node ("Ok", []) ]
+  let step t s = t.steps <- t.steps + 1; t.seen <- s :: t.seen; (observe s, t.steps)
+  let restore t _ ~observations:_ bk = t.steps <- bk
+  let clone t = { steps = t.steps; seen = t.seen }
+  let post _ = ()
+end
+
+module Toy_codec = Alvie_backend.Sul.Values (Toy_backend)
+module Toy_sul = Alvie_backend.Sul.Make (Toy_backend) (Toy_codec)
+
+let toy_learning_spec = "main { (call x; nop)* };\nvictim { (put 1 | put 2); ret };\nirq { nop };\nbus { eps };\n"
+
+let test_backend_adapter () =
+  let gen = toy_spec toy_learning_spec in
+  let backend = Toy_backend.make () in
+  let sul = Toy_sul.make ~backend ~gen in
+  Toy_sul.pre sul;
+  let i section text = Some { G.section; atom = atom text } in
+  let obs o = List.map o.Toy_codec.Output.observations ~f:Value.to_string in
+  Alcotest.(check (list string)) "call enters" [ "Enter(target = 1)" ] (obs (Toy_sul.step sul (i "main" "call x")));
+  ignore (Toy_sul.step sul (i "victim" "put 2"));
+  ignore (Toy_sul.step sul (i "victim" "ret"));
+  (* Leave enters main again, which replays its program: call x *)
+  ignore (Toy_sul.step sul (i "main" "call x"));
+  (* The second run of the victim: Core gives the program of the first run, and the occurrence at position 0 *)
+  ignore (Toy_sul.step sul (i "victim" "put 2"));
+  let last = List.hd_exn backend.seen in
+  Alcotest.(check (list string)) "the program" [ "put 2"; "ret" ]
+    (List.map (List.Assoc.find_exn last.programs ~equal:String.equal "victim") ~f:(Grammar.print_atom (Lazy.force toy).grammar ~cls:"ops"));
+  Alcotest.(check int) "the position" 0 last.position;
+  Alcotest.(check string) "the occurrence" "victim_0" (Alvie_backend.Backend.occurrence_id last);
+  (* The prefix rule makes put 1 illegal here: the backend does not run it *)
+  let before = List.length backend.seen in
+  let pre_and_replay () = Toy_sul.pre sul; ignore (Toy_sul.step sul (i "main" "call x")) in
+  pre_and_replay ();
+  Alcotest.(check (list string)) "legal" [ "Ok" ] (obs (Toy_sul.step sul (i "victim" "put 1")));
+  Toy_sul.pre sul;
+  ignore (Toy_sul.step sul (i "main" "call x"));
+  ignore (Toy_sul.step sul (i "victim" "put 1"));
+  ignore (Toy_sul.step sul (i "victim" "ret"));
+  ignore (Toy_sul.step sul (i "main" "call x"));
+  let n = List.length backend.seen in
+  Alcotest.(check (list string)) "an input that breaks the prefix rule is illegal" [ "Illegal" ] (obs (Toy_sul.step sul (i "victim" "put 2")));
+  Alcotest.(check int) "and does not run" n (List.length backend.seen);
+  Alcotest.(check (list string)) "nor does anything after it" [ "Illegal" ] (obs (Toy_sul.step sul (i "victim" "ret")));
+  ignore before;
+  (* A dry step restores the bookkeeping instead of running *)
+  Toy_sul.pre sul;
+  let real = Toy_sul.step sul (i "main" "call x") in
+  Toy_sul.pre sul;
+  let n = List.length backend.seen in
+  let dry = Toy_sul.step ~dry_output:real sul (i "main" "call x") in
+  Alcotest.(check int) "dry: no run" n (List.length backend.seen);
+  Alcotest.(check int) "dry: the bookkeeping is restored" real.bookkeeping backend.steps;
+  Alcotest.(check bool) "dry: the same output" true (Toy_codec.Output.equal real dry)
+
+(* L# learns the toy, with no simulator and nothing of Sancus *)
+module Toy_lsharp = Learninglib.Lsharp.LSharp (Toy_codec.Input) (Toy_codec.Output) (Toy_sul) (Learninglib.Randomwalkoracle.RandomWalkOracle)
+module Toy_rw = Learninglib.Randomwalkoracle.RandomWalkOracle (Toy_codec.Input) (Toy_codec.Output) (Toy_sul)
+
+module Toy_item = struct
+  type t = In of Toy_codec.Input.t | Out of Value.t list [@@deriving hash, compare, sexp_of]
+end
+module Toy_cache = G.Cache (Toy_item)
+
+let learn_toy () =
+  let gen = toy_spec toy_learning_spec in
+  let cache = Toy_cache.create gen ~step:(fun gen st -> function
+      | Toy_item.In (Some i) -> G.input gen st i
+      | In None -> { st with status = Invalid }
+      | Out o -> G.observe gen st o) in
+  Stdlib.Random.init 0;
+  let next_input _ il ol =
+    let items = List.concat (List.map2_exn il (List.take ol (List.length il)) ~f:(fun i (o : Toy_codec.Output.t) -> [ Toy_item.In i; Out o.observations ])) in
+    match Toy_cache.options cache (Toy_cache.state_of cache items) with
+    | [] | `Stop :: _ -> None
+    | options -> (match List.random_element_exn options with `Next i -> Some i | `Stop -> None) in
+  let oracle = Toy_rw.make ~step_limit:200 ~next_input () in
+  let sul = Toy_sul.make ~backend:(Toy_backend.make ()) ~gen in
+  let alphabet =
+    List.concat_map [ ("main", [ "call x"; "nop" ]); ("victim", [ "put 1"; "put 2"; "ret" ]) ] ~f:(fun (section, atoms) ->
+        List.map atoms ~f:(fun a -> Some { G.section; atom = atom a })) in
+  Toy_lsharp.lsharp_run oracle sul alphabet
+
+let test_learn_toy () =
+  let m = learn_toy () in
+  let m' = learn_toy () in
+  Alcotest.(check bool) "learning is deterministic" true (Set.length m.states = Set.length m'.states && Map.length m.transition = Map.length m'.transition);
+  Alcotest.(check bool) "the model has the victim's two branches" true (Set.length m.states >= 3)
+
 let () =
   match Sys.get_argv () with
   | [| _; "schemas" |] ->
     (* Regenerates the JSON Schemas of the plugin files *)
     let dir = Filename.concat code_dir "schemas" in
     Core_unix.mkdir_p dir;
-    List.iter (Plugin.file_schemas ()) ~f:(fun (name, schema) ->
+    List.iter (Plugin.file_schemas () @ [ ("protocol.schema.json", Alvie_backend.Protocol.json_schema ()) ]) ~f:(fun (name, schema) ->
         Out_channel.write_all (Filename.concat dir name) ~data:(Yojson.Safe.pretty_to_string schema ^ "\n");
         printf "wrote %s\n" (Filename.concat dir name))
   | _ ->
@@ -457,6 +562,9 @@ let () =
           Alcotest.test_case "constraint: subset" `Quick test_constraint_subset;
           Alcotest.test_case "Sancus attributes" `Quick test_sancus_attributes ]);
       ("constraint errors", cases test_constraint_errors);
+      ("backend contract", [
+          Alcotest.test_case "adapter to the learner" `Quick test_backend_adapter;
+          Alcotest.test_case "L# learns a toy backend" `Quick test_learn_toy ]);
       ("atoms.yaml errors", cases test_atoms_errors);
       ("errors across files", cases test_cross_errors);
       ("spec errors", cases test_spec_errors);

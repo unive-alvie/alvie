@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: (image inst_number_50, bf89c0b) Attack A on bf89c0b, which mitigates it (0 witnesses in the catalogue)
+spec: [../../../../../spec-lib/fast/a.atdl, ../../../../../spec-lib/fast/enclave-complete.etdl]
+secrets: [0, 1]
+config: { commit: bf89c0b }
+baseline: no-interrupts
+expect: no-leak

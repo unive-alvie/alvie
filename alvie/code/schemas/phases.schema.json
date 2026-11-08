@@ -38,7 +38,7 @@
             "type": "array",
             "items": {
               "anyOf": [
-                { "enum": [ "reset", "resume" ] },
+                { "enum": [ "restart", "reset", "resume" ] },
                 {
                   "type": "object",
                   "properties": {
@@ -63,7 +63,7 @@
                   "additionalProperties": false
                 }
               ],
-              "description": "reset, resume, { enter: S }, { switch: S }, { interrupt: S } or { stop: finished | invalid }"
+              "description": "restart, reset, resume, { enter: S }, { switch: S }, { interrupt: S } or { stop: finished | invalid }"
             },
             "description": "The actions, in order"
           }
