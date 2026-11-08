@@ -38,6 +38,7 @@ module type MODEL_CODEC = sig
   val contains_illegal : output -> bool
   val atom_of_input : input -> (string * Value.t) option (* its class and atom *)
   val legacy_models : bool (* whether model files without a header line are read (format 0) *)
+  val default_bad_probability : float option (* the default of learn --bad-probability (None: no input outside the spec) *)
 end
 
 (* The codec of most plugins: inputs are atoms of a class (None: no input), outputs the observations *)
@@ -64,6 +65,7 @@ module Atoms_codec (N : Native.S) = struct
   let contains_illegal o = Output.equal o illegal
   let atom_of_input (i : Input.t) = Option.map i ~f:(fun { cls; atom } -> (cls, atom))
   let legacy_models = false
+  let default_bad_probability = None
 end
 
 module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.B.bookkeeping) = struct
@@ -290,14 +292,22 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
       (let%map_open.Command files = spec_flag and secret = secret_flag and variant = variant_flag ()
        and res = flag "--res" (required string) ~doc:"file where to write the model (.dot)"
        and seed = flag "--seed" (optional_with_default 0 int) ~doc:"n the seed of the random choices (default: 0; learning is deterministic for a seed)"
+       and bad_probability = flag "--bad-probability" (optional float)
+           ~doc:(sprintf "p the probability that the oracle offers an input of the whole alphabet, not one the spec allows, which tells apart states where the spec allows different inputs (default: %s)"
+                   (match Codec.default_bad_probability with Some p -> Float.to_string p | None -> "0, never"))
        and oracle = oracle_param and config = Config.param (manifest ()) and debug = debug_flag in
        fun () ->
          Errors.protect ~debug (fun () ->
              Errors.setup_logs ~debug;
              let oracle = oracle () in
+             let bad_probability = match bad_probability with
+               | Some p when Float.(p < 0.0 || p > 1.0) -> Errors.fail "--bad-probability must be between 0 and 1 (not %g)." p
+               | Some p when Float.(p = 0.0) -> None
+               | Some p -> Some p
+               | None -> Codec.default_bad_probability in
              let spec = load_spec ~files ~secret in
              ignore (Errors.prepare_directory ~option:"the directory of --res" (Filename.dirname res));
-             let l = learn ~config ~variant ~spec ~oracle ~seed () in
+             let l = learn ?bad_probability ~config ~variant ~spec ~oracle ~seed () in
              write_model res l.model;
              printf "Learned a model of %d states and %d transitions in %.1fs (%d queries, %d steps): %s\n"
                (Set.length l.model.states) (Map.length l.model.transition) l.seconds l.stats.queries l.stats.steps res))
@@ -360,7 +370,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     | Some cls -> Grammar.print_atom (plugin ()).grammar ~cls i.atom
     | None -> Value.to_string i.atom
 
-  (* Runs the atoms of the file (one per line, as a spec writes them; # starts a comment) from a fresh test *)
+  (* Runs the atoms of the file (one per line, as a spec writes them; a line that starts with # is a comment: # can
+     be part of an atom, as in the immediates of Sancus, mov #1, r4) from a fresh test *)
   let exec ~config ~variant ~(spec : Spec.t) ~inputs_file =
     let p = plugin () in
     let gen = G.make p spec in
@@ -369,7 +380,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     Sul.pre sul;
     let lines = String.split_lines (Errors.read_file ~option:"--inputs" inputs_file) in
     List.iteri lines ~f:(fun n line ->
-        let text = String.strip (match String.lsplit2 line ~on:'#' with Some (a, _) -> a | None -> line) in
+        let text = String.strip line in
+        let text = if String.is_prefix text ~prefix:"#" then "" else text in
         if not (String.is_empty text) then begin
           let st = Sul.generator_state sul in
           let section = G.current st in
@@ -402,7 +414,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
 
   let exec_command () =
     Command.basic ~summary:"Run a sequence of atoms on the backend and print what it observes"
-      ~readme:(fun () -> "The file has one atom per line, as a spec writes them; # starts a comment. Each atom runs in the current section, which the observations change as phases.yaml says; the spec must allow it.")
+      ~readme:(fun () -> "The file has one atom per line, as a spec writes them; a line that starts with # is a comment. Each atom runs in the current section, which the observations change as phases.yaml says; the spec must allow it.")
       (let%map_open.Command files = spec_flag and secret = secret_flag and variant = variant_flag ()
        and inputs_file = flag "--inputs" (required string) ~doc:"file the atoms to run"
        and config = Config.param (manifest ()) and debug = debug_flag in

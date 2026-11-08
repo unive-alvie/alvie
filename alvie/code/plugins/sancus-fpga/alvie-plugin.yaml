@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=../../schemas/alvie-plugin.schema.json
+# The manifest of ALVIE/Sancus-FPGA: Sancus on an openMSP430/Sancus board, under the attacker of ALVIE/Sancus. It
+# shares the files of plugins/sancus (the same specs, inputs and observations, so that its models compare with the
+# simulator's), and runs the programs on the board instead of the simulator (see docs/sancus/fpga.md).
+format: 1
+name: sancus-fpga
+version: "2026.10"
+core: "1"
+kind: native
+description: >-
+  Sancus enclaves on an openMSP430/Sancus board (an Arty S7 with an inst_number_50 image), over its serial port: the
+  attacker of ALVIE/Sancus prepares and enters the enclave, interrupts it with the timer, runs its own ISR, and
+  resumes or re-enters it.
+
+files:
+  sections: ../sancus/sections.yaml
+  atoms: ../sancus/atoms.yaml
+  observations: ../sancus/observations.yaml
+  phases: ../sancus/phases.yaml
+  view: ../sancus/view.yaml
+
+config:
+  sancus:
+    type: path
+    required: true
+    doc: The sancus-core-gap checkout (a git repository with the whole history), for the headers of the programs
+  commit:
+    type: string
+    required: true
+    doc: >-
+      The commit of sancus-core-gap of the image on the board (ef753b6 or bf89c0b): the programs are built for it,
+      and the board cannot tell which image it runs
+  fpga-port:
+    type: string
+    default: /dev/ttyUSB1
+    doc: The serial port of the board (the UART, usually the second port of its USB device)
+  sancus-master-key:
+    type: string
+    default: cafe
+    doc: The master key the image is built with, in hex
+  tmpdir:
+    type: path
+    required: true
+    doc: Where the generated programs are built
+  keep-repeated-reentries:
+    type: bool
+    default: "false"
+    doc: >-
+      Do not identify a segment of execution between two re-entries (reti) with an identical segment immediately
+      before it (without this, attackers that resume an enclave repeatedly, such as B3, give finite models)
+
+variants:
+  no-interrupts:
+    doc: >-
+      The attacker cannot interrupt the enclave (timer_enable starts no timer): the baseline whose differences
+      are not caused by interrupts
+
+capabilities: [restore, clone, parallel]
+fixtures: fixtures

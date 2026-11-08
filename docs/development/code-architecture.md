@@ -62,7 +62,7 @@ On the atoms of `spec-lib/`, interned values sort, hash and compare faster than 
 3. The input generator of ALVIE/Core (`Alvie_inputgen.Generator`, through `Generic_inputgen`) tracks which specification actions are legal after an observed input/output history and proposes the next input symbols.
    It follows the test through its sections with `plugins/sancus/phases.yaml`, applies the prefix rule, and checks the constraints of the spec.
 4. `Sancus.Verilog` implements the SUL (system under learning): the Sancus backend (`Sancus.Simulator`) behind the adapter of ALVIE/Core.
-   It generates a program from the programs of the sections that Core gives, runs the Sancus Verilog testbench, parses the VCD dump, and turns the trace into `Output_internal` observations.
+   It generates a program from the programs of the sections that Core gives, runs it on a target (the Sancus Verilog testbench, or the board of ALVIE/Sancus-FPGA), finds the input's instructions in the trace, and turns them into `Output_internal` observations.
    Compiled simulators are cached across runs, and only the top level of the testbench is traced.
 5. `Lsharp.LSharp` learns a Mealy machine using output queries and an equivalence oracle.
 6. `Interop` serializes the learned machine as a Graphviz `.dot` file.
@@ -83,7 +83,12 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/inputgen/deriv.ml` | Derivatives of spec bodies |
 | `lib/sancus/generic_inputgen.ml` | The Core generator on Sancus inputs and outputs, with the embedded plugin files |
 | `lib/sancus/inputgen.ml` | The former input generator, kept to compare with (`tt_inputgen_golden check --engine legacy`) |
-| `lib/sancus/sul/simulator.ml` | The Sancus backend: code generation, simulation, VCD-to-observation conversion |
+| `lib/sancus/sul/simulator.ml` | The Sancus backend: code generation, the targets, simulation, the instructions of a step in the VCD dump |
+| `lib/sancus/sul/step_analysis.ml` | From the instructions of a step to its observations, for every target |
+| `lib/sancus-fpga/fpga.ml` | ALVIE/Sancus-FPGA: the board as a target of the Sancus backend (the serial port, the queries, the instructions of a step in the board's trace) |
+| `lib/sancus-fpga/native.ml` | ALVIE/Sancus-FPGA as a native plugin (`alvie sancus-fpga ...`), with the codec of Sancus |
+| `lib/sancus-fpga/serial_stubs.c` | Opens the serial port of the board at 5 Mbaud (Linux `termios2`) |
+| `plugins/sancus-fpga/` | Its manifest and fixtures; it shares the other files of `plugins/sancus` |
 | `lib/sancus/sul/verilog.ml` | The Sancus SUL: the backend behind Core's adapter |
 | `lib/core/backend/` | The backend contract and its adapter to the learner |
 | `lib/sancus/output_internal.ml` | Observable output and timing payload types |
@@ -147,7 +152,10 @@ The Sancus backend is `lib/sancus/sul/simulator.ml`, and `Sancus.Verilog` is its
 It compiles the programs that Core gives into the testbench template: the input's occurrence is labelled, so that the analysis finds its instructions, and the other atoms run but are not analysed.
 Its bookkeeping is the code still to analyse and the number of the last instruction analysed.
 When an enclave is resumed with `reti`, the backend also identifies a segment of execution between two re-entries with an identical segment immediately before it, so that an enclave that can be resumed repeatedly still has a finite model (see `--keep-repeated-reentries`); it compares the places in the spec with the key that Core gives (`Generator.key`).
-A step generates the MSP430 program, runs the simulator, parses the VCD, and analyzes the trace at the instruction boundaries relevant to the input.
+A step generates the MSP430 program, runs it on the target, and analyzes the trace at the instruction boundaries relevant to the input.
+The target (`Simulator.target`) is only how a step runs and how its instructions are found in the trace: the simulator parses its VCD dump (`analyse_dump`); another plugin can give its own (`Other`), as ALVIE/Sancus-FPGA does (`Sancus_fpga.Fpga.target`: it sends the program to the board and reads back a window of 50 clock cycles).
+Every target gives the signals of each instruction to `Sancus.Step_analysis`, which turns them into observations; everything else is the same.
+ALVIE/Sancus-FPGA is a separate native plugin (`lib/sancus-fpga`, `plugins/sancus-fpga`) that reuses the library `sancus`: its manifest names the files of `plugins/sancus` (`files:`), and its runner uses the codec of Sancus, so its models have the inputs and outputs of the simulator's (their header names the plugin `sancus-fpga`).
 
 ## Outputs and observability
 

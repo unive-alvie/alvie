@@ -39,6 +39,25 @@ the documentation lists what users must do.
 
 ### Fixes
 
+- **The simulator stops a test after 500 µs (10000 cycles), not 100 µs
+  (2000 cycles).** ALVIE's testbench (`alvie/bench/verilog`) cut the longest
+  tests, and the analysis took the cut for a reset (`OReset`): in B1 on
+  `ef753b6`, tests with many interrupts ran longer than 100 µs. Found by
+  comparing with the FPGA board, which has no such limit. Results: the two
+  models of B1 with interrupts on `ef753b6` change, and **B1 on `ef753b6`
+  gives 25 witnesses instead of 31**; no other model or count changes
+  (regression). The value is that of the testbench of `sancus-core-gap`; only
+  a test that loops runs for longer in the simulator.
+- The cache of compiled simulators (`ALVIE_SIM_CACHE`) includes ALVIE's
+  testbench in its key: a change to it reused simulators compiled before.
+
+- `alvie <plugin> exec --inputs`: only a line that starts with `#` is a
+  comment. A `#` inside a line cut it, so the immediates of Sancus
+  (`mov #1, r4`) could not be given.
+- The simulator deletes its clone of Sancus (in `--tmpdir`) when the program
+  ends: each backend left one behind, and runs that make many backends filled
+  the disk (conformance: about 10 GB for 50 tests). The VCD dumps and the
+  programs stay in `--tmpdir`.
 - The simulator backend no longer fails with `Could not clone Sancus
   repository` when the temporary directory is on another file system than the
   `sancus-core-gap` checkout (for example `--tmpdir /tmp`, as in the direct
@@ -216,6 +235,66 @@ the documentation lists what users must do.
   are the same machine up to the numbering of their states, and otherwise the
   shortest inputs on which they answer differently (`--observations-only`
   ignores the bookkeeping of Sancus outputs).
+
+### ALVIE/Sancus-FPGA
+
+- New native plugin `sancus-fpga`: Sancus on an openMSP430/Sancus board (an
+  Arty S7 with an `inst_number_50` image), over its serial port. Its commands
+  are `alvie sancus-fpga learn|compare|property|exec|conformance|fixtures`,
+  with the options of `plugins/sancus-fpga/alvie-plugin.yaml`: `--commit`
+  (required: the commit of the image on the board), `--fpga-port` (default
+  `/dev/ttyUSB1`), `--sancus`, `--tmpdir`. A step takes 15 to 30 ms on the
+  board. New page: Running on an FPGA.
+- It shares the specs, inputs and observations of ALVIE/Sancus (its manifest
+  names the files of `plugins/sancus`), and its models have the inputs and
+  outputs of the simulator's: `alvie-model-compare` compares them.
+- It reuses the Sancus backend as a library, with the board as its target
+  (`Simulator.target`): the program of a step, its build, the bookkeeping,
+  re-entries and the observations of the instructions found
+  (`Sancus.Step_analysis`) are the simulator's. Only how a step runs and how
+  its instructions are found in the board's trace are its own
+  (`lib/sancus-fpga`). ALVIE/Sancus does not change (regression: no
+  differences).
+- This ports the FPGA backend of the branch `feat/alvie-fpga` and its later
+  fixes. Differences from the branch: the serial port is `--fpga-port` (not
+  the variable `FPGA_PORT`); ALVIE does not program the board (`FPGA_TCL` is
+  removed); `learn.exe --fpga`, the `--fpga` option of the wrapper scripts
+  and the serial daemon (`fpga_daemon.py`, `run_fpga.py`) are removed; the
+  programs use the headers of `--commit`, not of the current checkout.
+  Copies of a backend, and several processes, can share a board: each query
+  locks the serial port.
+- On the board, every program first clears the data memory that programs use:
+  the board keeps it between queries, so a test read what earlier tests had
+  written (e.g. `data_s`), and the fixture `attack-a-bf89c0b` found a leak
+  that the simulator does not have. The first query of a test breaks after
+  this code. The simulator's programs do not change.
+- The board's trace is read as the simulator reads its VCD dump, so that the
+  two learn the same models: `r4`, `gie` and Timer A in the last cycle of each
+  instruction, the memory word in the first cycle of the next (the branch read
+  all but Timer A at the next instruction: after `eint`, `gie` was true on the
+  board and false in the simulator); more windows when the step's code starts
+  after the first one (e.g. after a long ISR); a reset
+  when the window goes on after an instruction but the next one never comes
+  (the branch took it for the end of the window); a divergence when 10000
+  cycles go by without the step's code and without the end of the program
+  (the simulator stops a run after 10000 cycles). With the same settings,
+  the models of `learn_all.sh` are those of the simulator, up to the number of
+  cycles `k` of instructions longer than the window (e.g. `sancus_enable`: 50
+  instead of 648); `k` is not part of the attacker's view.
+- `alvie sancus-fpga learn` has `--bad-probability`, with the default of
+  `learn.exe` (0.2). The commands `learn` of other plugins have it too, with
+  the default 0 (no change).
+- It needs no clone of Sancus: building the programs reads the memory sizes
+  and the linker script of `--commit` from the checkout (`git show`).
+- New script `alvie/scripts/program_fpga.tcl`: programs the board with a
+  bitstream, after checking that its SHA-256 is that of a known image, and
+  prints the commit of the image.
+- Fixtures: those of ALVIE/Sancus, each for the image of its commit.
+- New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
+  (image `ef753b6`), with the simulator's expected observations, compared as
+  `tt_attack` compares them (the branch had board-only values for 7 of the 20
+  cases, and did not compare `reg_val`). It needs the board, so CI does not
+  run it.
 
 ### Input generation
 

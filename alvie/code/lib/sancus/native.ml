@@ -18,7 +18,9 @@ module B = Verilog.Backend
 
 let none = ([], 0)
 
-let make ~config ~variant =
+(* The backend for the configuration and the variant, on the simulator or on target (another plugin's, see
+   Simulator.target): config has the parameters of plugins/sancus/alvie-plugin.yaml *)
+let make_with ?target ~config ~variant () =
   let get k = match List.Assoc.find config ~equal:String.equal k with Some v -> v | None -> failwithf "Sancus: no value for %s" k () in
   let ignore_interrupts = match variant with
     | None -> false
@@ -40,7 +42,10 @@ let make ~config ~variant =
     ~filledfile:"generic.s43" ~dumpfile:"tb_openMSP430.vcd"
     ~ignore_interrupts
     ~collapse_reentries:(not (String.equal (get "keep-repeated-reentries") "true"))
+    ?target
     ()
+
+let make ~config ~variant = make_with ~config ~variant ()
 
 (*
   The codec of ALVIE/Sancus for the commands of Core (Alvie_cli.Runner.Make_codec): the learner works on the types
@@ -92,4 +97,8 @@ module Codec = struct
     | _ -> None
 
   let legacy_models = true
+
+  (* as learn.exe (--bad-probability 0.20): for Sancus, learning needs these inputs to finish (B3 on ef753b6: 3
+     minutes with them, more than 30 without) *)
+  let default_bad_probability = Some 0.20
 end
