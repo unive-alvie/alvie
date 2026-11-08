@@ -74,7 +74,7 @@ The [Tiny tutorial](/alvie/core/tiny-tutorial/) uses each of them.
 | `learn --spec F --res M.dot` | Learns a model of the backend under the spec (several `--spec` for a spec in several files) |
 | `compare --m1 A --m2 B --secrets s1,s2 --witnesses W.dot` | Noninterference: the witnesses that tell apart two models that differ only in the secret |
 | `property inclusion\|equivalence\|formula` | The other properties, as `alvie property` below |
-| `exec --spec F --inputs FILE` | Runs the atoms of `FILE` (one per line, as a spec writes them) and prints what each observes |
+| `exec --spec F --inputs FILE` | Runs the atoms of `FILE` (one per line, as a spec writes them; a line that starts with `#` is a comment) and prints what each observes |
 | `conformance --spec F` | Checks that the backend keeps the contract of Core, on random tests of the spec |
 | `fixtures [NAME ...]` | Learns and compares the plugin's fixtures, and checks their verdicts |
 

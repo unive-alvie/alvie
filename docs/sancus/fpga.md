@@ -135,23 +135,28 @@ The commands have the other options of ALVIE/Core: `--spec`, `--secret`, `--vari
 ## How a Step Runs
 
 For each step, ALVIE builds the program of the test, as for the simulator, and sends its program memory and interrupt vectors to the board with a breakpoint: the number of the first instruction of the step.
-On the board, every program starts by clearing the data memory that programs use (128 words from `DMEM_BASE`): the board does not clear it between queries, and the simulator starts each step with it cleared.
+On the board, every program starts by clearing the variables of the test template (`DMEM_240` to `DMEM_26E`): the board does not clear its data memory between queries, and the simulator starts each step with it cleared.
 The board runs the program from reset and sends back the 50 clock cycles from the breakpoint: the program counter, the instruction number, the interrupt and Sancus state, `r4`, `gie`, the counter of Timer A, and a word of unprotected memory.
-ALVIE finds the step's instructions in this trace and turns them into observations as it does for the simulator.
+ALVIE finds the step's instructions in this trace and reads them as the simulator reads its trace: `r4`, `gie` and Timer A in the last cycle of each instruction, the memory word in the first cycle of the next one (where the simulator already sees a store), and a reset when the window goes on after an instruction but the next instruction never comes (the instruction numbers start again from 0).
+When the step's code is not in the window and the program has not ended (no end-of-test sentinel, no reset), ALVIE asks for the next window, from the last instruction of the trace.
 
 The board answers in 2 to 5 ms. If no trace comes within 50 ms, the program reset or stopped before the breakpoint: ALVIE asks again for the window of the previous instruction.
 If no trace comes again, the step diverged (`OMaybeDiverge`).
 
+The simulator stops a run after 10000 clock cycles (500 µs at 20 MHz), and reports a step whose code did not run as diverged.
+On the board, a step diverged when its windows reach 10000 cycles without the step's code and without the end of the program.
+
 A query sends the whole program, runs it from reset and clears the data memory first, so a step does not depend on the previous query.
 Copies of a backend and several ALVIE processes can share a board: their queries take turns on the serial port.
 
+`alvie sancus-fpga learn` has the option `--bad-probability`, with the default of `learn.exe` (0.2): the oracle offers an input outside the spec with this probability.
+Learning on Sancus needs these inputs to finish (see issue #63).
+
 ## Differences from the Simulator
 
-The board and the simulator agree on most observations, but not on all of them.
-`tt_attack_fpga` lists the attack traces where they differ, and why.
+With the same settings, the board learns the models of the simulator, except for the number of cycles `k`:
 
 - **The window bounds what the board sees.** An instruction longer than 50 cycles shows `k = 50`: `sancus_enable`, for example, takes 648 cycles in the simulator.
-  A reset or a divergence after the end of the window is not seen: the board reports the last instruction in the window.
-- **State is read after the instruction.** `r4`, `gie` and the unprotected memory word are read at the first cycle of the next instruction, so a store is visible in its own observation; the simulator reads them before that cycle.
-  The counter of Timer A is read in the last cycle of the instruction in both.
-- **Timing.** At the end of the window, cycle counts and the counter of Timer A can differ from the simulator's by one.
+  `k` is not part of what the attacker observes (`view.yaml`), so the witnesses of a comparison do not depend on it.
+  A reset right after an instruction cut by the end of the window is not seen.
+- **Divergence.** The simulator counts the 10000 cycles from the start of the program, the board from the step's breakpoint.

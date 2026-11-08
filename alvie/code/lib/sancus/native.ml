@@ -97,4 +97,8 @@ module Codec = struct
     | _ -> None
 
   let legacy_models = true
+
+  (* as learn.exe (--bad-probability 0.20): for Sancus, learning needs these inputs to finish (B3 on ef753b6: 3
+     minutes with them, more than 30 without) *)
+  let default_bad_probability = Some 0.20
 end

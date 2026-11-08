@@ -39,6 +39,9 @@ the documentation lists what users must do.
 
 ### Fixes
 
+- `alvie <plugin> exec --inputs`: only a line that starts with `#` is a
+  comment. A `#` inside a line cut it, so the immediates of Sancus
+  (`mov #1, r4`) could not be given.
 - The simulator deletes its clone of Sancus (in `--tmpdir`) when the program
   ends: each backend left one behind, and runs that make many backends filled
   the disk (conformance: about 10 GB for 50 tests). The VCD dumps and the
@@ -253,6 +256,22 @@ the documentation lists what users must do.
   written (e.g. `data_s`), and the fixture `attack-a-bf89c0b` found a leak
   that the simulator does not have. The first query of a test breaks after
   this code. The simulator's programs do not change.
+- The board's trace is read as the simulator reads its VCD dump, so that the
+  two learn the same models: `r4`, `gie` and Timer A in the last cycle of each
+  instruction, the memory word in the first cycle of the next (the branch read
+  all but Timer A at the next instruction: after `eint`, `gie` was true on the
+  board and false in the simulator); more windows when the step's code starts
+  after the first one (e.g. after a long ISR); a reset
+  when the window goes on after an instruction but the next one never comes
+  (the branch took it for the end of the window); a divergence when 10000
+  cycles go by without the step's code and without the end of the program
+  (the simulator stops a run after 10000 cycles). With the same settings,
+  the models of `learn_all.sh` are those of the simulator, up to the number of
+  cycles `k` of instructions longer than the window (e.g. `sancus_enable`: 50
+  instead of 648); `k` is not part of the attacker's view.
+- `alvie sancus-fpga learn` has `--bad-probability`, with the default of
+  `learn.exe` (0.2). The commands `learn` of other plugins have it too, with
+  the default 0 (no change).
 - It needs no clone of Sancus: building the programs reads the memory sizes
   and the linker script of `--commit` from the checkout (`git show`).
 - New script `alvie/scripts/program_fpga.tcl`: programs the board with a
@@ -260,9 +279,10 @@ the documentation lists what users must do.
   prints the commit of the image.
 - Fixtures: those of ALVIE/Sancus, each for the image of its commit.
 - New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
-  (image `ef753b6`), with the simulator's expected observations except where
-  the hardware differs, each with its reason. It needs the board, so CI does
-  not run it.
+  (image `ef753b6`), with the simulator's expected observations, compared as
+  `tt_attack` compares them (the branch had board-only values for 7 of the 20
+  cases, and did not compare `reg_val`). It needs the board, so CI does not
+  run it.
 
 ### Input generation
 

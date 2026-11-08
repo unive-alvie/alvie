@@ -6,9 +6,8 @@
   inst_number_50_ef753b6 (the commit these expectations are for); the serial port is ALVIE_FPGA_PORT (default
   /dev/ttyUSB1). Run it from alvie/code: dune exec test/attack_fpga.exe.
 
-  The expected observations are the simulator's (Attacklib), except the cases below, each for a reason of the
-  hardware. reg_val is not compared: r4 carries over between queries on the board (the data memory is not cleared
-  between runs), so it depends on the previous test.
+  The expected observations are the simulator's (Attacklib), compared as tt_attack compares them: the board must
+  observe what the simulator observes.
 *)
 open Core
 open Sancus
@@ -63,10 +62,10 @@ let exec_fpga ~enclave_spec_fn ~attacker_spec_fn ~secret ~input_str ~ignore_inte
       ~ignore_interrupts ~target:(Sancus_fpga.Fpga.target ~port) () in
   List.fold input_sequence ~init:[] ~f:(fun acc i -> acc @ [ Verilog.step sul i ])
 
-(* As tt_attack's comparison (k is not compared, payloads in PM are equal), without reg_val *)
+(* As tt_attack's comparison: k is not compared (on the board, the window bounds it), and payloads in PM are equal *)
 let equal_public_payload_t p p' =
   (equal_mode_t p.mode PM && equal_mode_t p'.mode PM)
-  || Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode
+  || Bool.(=) p.gie p'.gie && p.umem_val = p'.umem_val && p.reg_val = p'.reg_val && p.timerA_counter = p'.timerA_counter && equal_mode_t p.mode p'.mode
 
 let equal_public_element_t e e' =
   match e, e' with
@@ -89,39 +88,6 @@ let exec ?(ignore_illegal = false) ?(n = 1) ?(encl_spec_name = "enclave-complete
     Alcotest.(check (list (list element_t_testable)))
       (sprintf "exec on the FPGA: ignore_interrupts: %b; attacker: %s; secret: %s" ignore_interrupts att_spec_name secret)
       expected_out (List.map res ~f:fst3))
-
-(* ── The cases where the board differs from the simulator ─────────────────── *)
-
-(* b3, b4: cycle counts and timerA differ at the boundary of the window *)
-let output_b3_encl_noint = [ [ OTime { k = 19; gie = false; umem_val = 0; reg_val = 1; timerA_counter = 4; mode = UM } ] ]
-let output_b3_encl_int = [ [ OJmpOut { k = 2; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = UM } ] ]
-let output_b4_encl_noint = [ [ OJmpOut { k = 3; gie = true; umem_val = 0; reg_val = 1; timerA_counter = 0; mode = UM } ] ]
-let output_b4_encl_int = [ [ OJmpOut { k = 2; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = UM } ] ]
-
-(* b7 with interrupts: dint is effective on ef753b6, so for secret 0 the interrupt comes during enc:jmp and the enclave
-   jumps out with gie cleared; for secret 1 the interrupt is taken inside the enclave and handled. That difference
-   between the secrets is the b7 vulnerability. *)
-let output_b7_encl0_int = [ [ OJmpOut { k = 3; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 5; mode = UM } ] ]
-let output_b7_encl1_int = [
-  [ OTime_Handle (
-      { k = 4; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = PM },
-      { k = 8; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 1; mode = UM }) ] ]
-
-(* b9: the reset happens after the window closes, so the board reports the last instruction it saw; with interrupts,
-   secret 1 takes and handles the interrupt where secret 0 does not *)
-let output_b9_encl_noint = [ [ OTime { k = 6; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 3; mode = PM } ] ]
-let output_b9_encl0_int = output_b9_encl_noint
-let output_b9_encl1_int = [
-  [ OTime_Handle (
-      { k = 3; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = PM },
-      { k = 8; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 2; mode = UM }) ] ]
-
-(* The new anomaly: the divergence happens after the window closes *)
-let output_a_encl_noint = [ [ OUnsupported ] ]
-let output_a_encl_int = [
-  [ OTime { k = 14; gie = false; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = UM };
-    OReti { k = 3; gie = true; umem_val = 0; reg_val = 0; timerA_counter = 0; mode = UM } ];
-  [ OUnsupported ] ]
 
 let () =
   let open Alcotest in
@@ -147,11 +113,11 @@ let () =
     ];
     "b3", [
       case "w/o interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_noint ~ignore_interrupts:true (both output_b3_encl_noint);
-      case "w interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_int ~ignore_interrupts:false (both output_b3_encl_int);
+      case "w interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_int ~ignore_interrupts:false [ ("0", output_b3_encl0_int_orig); ("1", output_b3_encl1_int_orig) ];
     ];
     "b4", [
       case "w/o interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_noint ~ignore_interrupts:true (both output_b4_encl_noint);
-      case "w interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_int ~ignore_interrupts:false (both output_b4_encl_int);
+      case "w interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_int ~ignore_interrupts:false [ ("0", output_b4_encl0_int_orig); ("1", output_b4_encl1_int_orig) ];
     ];
     "b6", [
       case "w/o interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_noint ~ignore_interrupts:true (both output_b6_encl_noint);
@@ -162,7 +128,7 @@ let () =
       case "w/o interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_noint ~ignore_interrupts:true
         (both output_b7_encl_noint);
       case "w interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_int ~ignore_interrupts:false
-        [ ("0", output_b7_encl0_int); ("1", output_b7_encl1_int) ];
+        [ ("0", output_b7_encl0_int_orig); ("1", output_b7_encl1_int_orig) ];
     ];
     "b8", [
       case "w/o interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_noint ~ignore_interrupts:true (both output_b8_encl_noint);
@@ -172,10 +138,11 @@ let () =
     "b9", [
       case "w/o interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_noint ~ignore_interrupts:true (both output_b9_encl_noint);
       case "w interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_int ~ignore_interrupts:false
-        [ ("0", output_b9_encl0_int); ("1", output_b9_encl1_int) ];
+        [ ("0", output_b9_encl0_int_orig); ("1", output_b9_encl1_int_orig) ];
     ];
     "new anomaly", [
       case "w/o interrupts, new anomaly + encl" ~att_spec_name:"a" ~input_str:input_a_encl_noint ~ignore_interrupts:true (both output_a_encl_noint);
-      case "w interrupts, new anomaly + encl" ~n:2 ~att_spec_name:"a" ~input_str:input_a_encl_int ~ignore_interrupts:false (both output_a_encl_int);
+      case "w interrupts, new anomaly + encl" ~n:2 ~att_spec_name:"a" ~input_str:input_a_encl_int ~ignore_interrupts:false
+        [ ("0", output_a_encl0_int); ("1", output_a_encl1_int) ];
     ];
   ]

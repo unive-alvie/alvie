@@ -173,14 +173,17 @@ let run ~port ~elf ~first_instruction ~last_inst_number =
      | None -> Prof.count "sul.fpga_diverged"; (true, []))
 
 (*
-  The instructions of the labelled code in the trace (Step_analysis.found). The FPGA reads them differently from the
-  simulator's VCD dump:
+  The instructions of the labelled code in the trace (Step_analysis.found), read as the simulator reads its VCD dump
+  (analyse_dump), so that the two give the same observations:
   - an instruction's cycles are those with its inst_number; k is their count, so the window bounds it (50);
-  - r4, gie and umem are read at the first cycle of the next instruction, after the instruction's writes commit
-    (a store is visible in its own observation); timerA, a free-running counter, at the last cycle of the
-    instruction;
-  - when the next instruction is not in the window, the mode does not change: the end of the window and a reset
-    cannot be told apart here (a reset makes the query fail, see run);
+  - each signal at the moment where the simulator's last value before the next instruction shows it, measured
+    against the simulator on the models of learn_all.sh: r4 and umem, which the instruction writes, at the first
+    cycle of the next instruction (in the simulator, the write of mov #42, &unprot_mem is visible before an
+    interrupt); gie and timerA at the last cycle of the instruction (in the simulator, gie is still false after
+    eint);
+  - when the window goes on after an instruction but the next instruction never comes, the CPU reset (its
+    instruction numbers start again from 0): a reset, as in the simulator, where the next instruction is missing;
+  - when the window ends with the instruction, the next one is not seen, and the mode does not change;
   - the trace stops at the crash sentinel of the end of a test (pc 0xFFFF, unreachable as an instruction).
 *)
 let analyse ~diverges ~addr_of_label ~last_inst_number (labels : Step_analysis.label list) (trace : entry list) : Step_analysis.found =
@@ -189,7 +192,8 @@ let analyse ~diverges ~addr_of_label ~last_inst_number (labels : Step_analysis.l
   let pc_to_label pcs = fst (List.find_exn labels_and_pcs ~f:(fun (_, pcs') -> Tuple2.equal ~eq1:Int.equal ~eq2:Int.equal pcs pcs')) in
   (* The cycles of an instruction are looked up in the whole window, the instructions to analyse only up to the
      sentinel *)
-  let cycles_of n = List.filter trace ~f:(fun e -> e.inst_number = n) in
+  let window = trace in
+  let cycles_of n = List.filter window ~f:(fun e -> e.inst_number = n) in
   let first_cycle_of n = List.hd (cycles_of n) in
   let trace = List.take_while trace ~f:(fun e -> e.pc <> 0xFFFF) in
   let annotated pc = List.exists annot_pcs ~f:(fun (s, e) -> pc >= s && pc < e) in
@@ -209,23 +213,26 @@ let analyse ~diverges ~addr_of_label ~last_inst_number (labels : Step_analysis.l
   if List.is_empty matched then Step_analysis.Nothing { diverges }
   else
     let mode e = if e.sm_executing = 0 then Output_internal.UM else Output_internal.PM in
-    let instruction e : Step_analysis.instruction =
+    (* The position of the last cycle of instruction n in the window *)
+    let last_position n = List.foldi window ~init:(-1) ~f:(fun i acc c -> if c.inst_number = n then i else acc) in
+    let instruction e =
       let cycles = cycles_of e.inst_number in
       let last_cycle = Option.value (List.last cycles) ~default:e in
       let next = first_cycle_of (e.inst_number + 1) in
-      let state = Option.value next ~default:last_cycle in
-      { mode_s = mode e;
+      if Option.is_none next && last_position e.inst_number < List.length window - 1 then `Reset
+      else `Instruction ({
+        mode_s = mode e;
         mode_e = Option.value_map next ~f:mode ~default:(mode e);
         e_states = List.remove_consecutive_duplicates (List.map cycles ~f:(fun c -> c.e_state)) ~equal:Int.equal;
-        gie = state.gie = 1;
-        r4 = state.r4;
-        umem = state.umem;
+        gie = last_cycle.gie = 1;
+        r4 = last_cycle.r4;
+        umem = (Option.value next ~default:last_cycle).umem;
         timerA = last_cycle.timerA;
-        k = Int.max 1 (List.length cycles) } in
+        k = Int.max 1 (List.length cycles) } : Step_analysis.instruction) in
     Instructions {
       last_inst_number = (List.last_exn matched).inst_number;
       left_labels;
-      instructions = List.map matched ~f:(fun e -> `Instruction (instruction e));
+      instructions = List.map matched ~f:instruction;
     }
 
 (*
@@ -242,6 +249,34 @@ let boot = List.init 24 ~f:(fun i -> sprintf "clr &(DMEM_BASE+0x%02X)" (0x40 + (
 let first_instruction = List.length boot + 1
 
 (* The board on port as the target of the Sancus backend: a step builds its program and runs it on the board *)
+(* Whether the program ended in the trace: the crash sentinel of the end of a test, or a reset (the instruction
+   numbers start again). After the sentinel, the board does not stop: it runs what follows in memory. *)
+let ended trace =
+  List.exists trace ~f:(fun e -> e.pc = 0xFFFF)
+  || (let rec decreasing = function a :: (b :: _ as rest) -> b.inst_number < a.inst_number || decreasing rest | _ -> false in
+      decreasing trace)
+
+(*
+  The simulator stops a run after 10000 clock cycles (the timeout of its testbench, 500 us at 20 MHz), and reports a
+  step whose code did not run as diverged. The board sends 50 cycles from the breakpoint, and the step's code can
+  start later (e.g., after a long ISR of the attacker): when the step's code is not in the trace and the program has
+  not ended, the next window starts at the last instruction of the trace, which it replaces (that instruction may be
+  cut by the end of the window). A trace of divergence_cycles cycles without the step's code and without the end of
+  the program is a divergence. (The simulator counts the cycles from the start of the program, the board from the
+  breakpoint.)
+*)
+let divergence_cycles = 10000
+
+let extend ~port ~elf trace =
+  match List.last trace with
+  | None -> None
+  | Some last ->
+    let fd = connect ~port in
+    let pmem, vectors = elf_sections elf in
+    Prof.count "sul.fpga_window";
+    Option.map (Prof.time "sul.fpga_query" (fun () -> query fd ~pmem ~vectors ~breakpoint:last.inst_number)) ~f:(fun window ->
+      List.filter trace ~f:(fun e -> e.inst_number < last.inst_number) @ window)
+
 let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
   ignore (connect ~port : Core_unix.File_descr.t);
   Other {
@@ -250,7 +285,17 @@ let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
     run = (fun (cfg : Sancus.Simulator.cfg_t) ->
       Sancus.Simulator.build_program cfg;
       let diverges, trace = run ~port ~elf:cfg.pmem_elf ~first_instruction ~last_inst_number:cfg.last_inst_number in
+      let trace = ref trace in
+      let analyse labels =
+        analyse ~diverges ~addr_of_label:(Sancus.Simulator.addr_of_label cfg) ~last_inst_number:cfg.last_inst_number labels !trace in
       fun labels ->
-        analyse ~diverges ~addr_of_label:(Sancus.Simulator.addr_of_label cfg) ~last_inst_number:cfg.last_inst_number
-          labels trace);
+        let rec find () =
+          match analyse labels with
+          | Nothing { diverges = false } when not (ended !trace) ->
+            if List.length !trace >= divergence_cycles then Step_analysis.Nothing { diverges = true }
+            else (match extend ~port ~elf:cfg.pmem_elf !trace with
+                | Some t when List.length t > List.length !trace -> trace := t; find ()
+                | _ -> analyse labels)
+          | found -> found in
+        find ());
   }
