@@ -3,13 +3,13 @@ title: Reading and Checking a Witness
 description: How to read a comparison result, understand a witness graph, and check that a witness is a real difference.
 sidebar:
   label: Checking a Witness
-  order: 2
+  order: 4
 isNew: true
 ---
 
 This guide shows how to read the result of a comparison and how to check a witness.
 It uses the Getting Started example, so run that example first.
-The [How ALVIE Works](/alvie/guides/concepts/) page explains the terms.
+The [How ALVIE Works](/alvie/core/concepts/) page explains the terms.
 
 The commands run from the repository root, unless a step says otherwise.
 In the Docker image, the repository root is the start directory.
@@ -111,7 +111,7 @@ An interrupt that the attacker handles shows as a separate step whose input is `
 | Part | Meaning |
 | --- | --- |
 | `ubr` | The input that ALVIE sent. |
-| `Time` | The kind of output. See the [Log and Output Reference](/alvie/reference/log-output-reference/). |
+| `Time` | The kind of output. See the [Log and Output Reference](/alvie/sancus/log-output-reference/). |
 | `k` | The number of clock cycles of this step. |
 | `gie` | The global interrupt enable bit. |
 | `umem_val` | The value of the observed unprotected memory cell. |
@@ -178,7 +178,7 @@ Next, decide whether the leak is a program flaw or an architecture problem.
 
 Then check whether the witness is expected.
 Some processor commits still have known problems.
-The [Attack Catalogue](/alvie/reference/attack-catalogue/) lists them.
+The [Attack Catalogue](/alvie/sancus/attack-catalogue/) lists them.
 For example, the last Sancus commit `bf89c0b` still reports violations because of the known issues V-B8 and V-B9.
 
 ## 7. Replay the witness
@@ -247,7 +247,7 @@ The two input files differ only in the secret, and the outputs of the last input
 This confirms the witness.
 Add `--debug` to see the full payload of each step.
 
-See the [Log and Output Reference](/alvie/reference/log-output-reference/) for the meaning of the symbols.
+See the [Log and Output Reference](/alvie/sancus/log-output-reference/) for the meaning of the symbols.
 
 ## 8. Run a known-answer check
 
@@ -273,7 +273,7 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 31 | 3 |
+| B1 | 25 | 3 |
 | B3 | 11 | 9 |
 | B6 | 8 | 9 |
 

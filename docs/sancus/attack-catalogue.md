@@ -2,7 +2,7 @@
 title: Attack Catalogue
 description: The known Sancus vulnerabilities that ALVIE reproduces, with their commits, specification files, and expected results.
 sidebar:
-  order: 3
+  order: 4
 isNew: true
 ---
 
@@ -71,7 +71,7 @@ Open the file to see exactly what the attacker can do.
 
 The wrapper scripts learn all models for one attack and compare them.
 The third argument is the output namespace.
-See [Reproducing the Simulation Experiments](/alvie/guides/walkthrough-repro/) for details.
+See [Reproducing the Simulation Experiments](/alvie/sancus/walkthrough-repro/) for details.
 
 For B1, B2, B3, B4, B6, and B7, give the fixing commit:
 
@@ -88,7 +88,7 @@ For B8 and B9, there is no fixing commit:
 ```
 
 Each run learns four models for each commit.
-See [How ALVIE Works](/alvie/guides/concepts/) for the reason.
+See [How ALVIE Works](/alvie/core/concepts/) for the reason.
 
 ## Expected results
 
@@ -100,7 +100,7 @@ New models learned with a different oracle or different limits can give a differ
 
 | Attack | `ef753b6` | Fixing commit | `bf89c0b` |
 | --- | --- | --- | --- |
-| B1 | 31 | 7 (`e8cf011`) | 3 |
+| B1 | 25 | 7 (`e8cf011`) | 3 |
 | B2 | 6 | 4 (`3170d5d`) | 3 |
 | B3 | 11 | 6 (`6475709`) | 9 |
 | B4 | 7 | 5 (`3636536`) | 3 |
@@ -114,8 +114,9 @@ New models learned with a different oracle or different limits can give a differ
 
 Five points help you to read this table:
 
-- **The counts of B1 and B3 on `ef753b6` changed with ALVIE/Core** (B1: 26 to 31; B3: 351 to 11).
+- **The counts of B1 and B3 on `ef753b6` changed with ALVIE/Core** (B1: 26 to 25; B3: 351 to 11).
   The comparison now looks only at what the attacker sees (`plugins/sancus/view.yaml`): mCRL2 no longer compares the cycle count `k`, which the attacker does not observe (B1 29 to 31).
+  The simulator now stops a test after 500 µs instead of 100 µs: the longest tests of B1, with many interrupts, ran longer than 100 µs and were cut, and the cut looked like a reset (B1 31 to 25).
   A re-entered enclave now runs the code it ran from that point the first time, and the simulator runs the code that the test ran.
   Before, a re-entered enclave could run other instructions at the same place, which no program can do, and after two or more interrupts the simulated code left out the instructions run in between.
   B3 is still found: the witness graph of `ef753b6` has jumps out of the enclave and `reti` edges that resume it in protected mode, and the graphs of the fixing commit and of `bf89c0b` have none.
@@ -139,9 +140,9 @@ Five points help you to read this table:
 
 To check one fix, compare the original commit with the fixing commit.
 The witnesses that disappear are the effect of the fix.
-The [Reading and Checking a Witness](/alvie/guides/interpreting-results/) guide shows how to read them.
+The [Reading and Checking a Witness](/alvie/core/interpreting-results/) guide shows how to read them.
 
 ## A worked example
 
-The [TestDL Tutorial: V-B1 Example](/alvie/guides/testdl-tutorial-vb1/) explains the B1 specification and its witness line by line.
+The [TestDL Tutorial: V-B1 Example](/alvie/sancus/testdl-tutorial-vb1/) explains the B1 specification and its witness line by line.
 It is the best first example of an attack.

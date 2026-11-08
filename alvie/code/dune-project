@@ -15,16 +15,17 @@
 (homepage "https://unive-alvie.github.io/alvie/")
 (bug_reports "https://github.com/unive-alvie/alvie/issues")
 
-; ALVIE is split into three packages (see docs/reference/code-architecture.md):
-; - alvie-core: the learner, the oracles, the model files and the comparison engine, with no backend;
+; ALVIE is split into three packages (see docs/development/code-architecture.md):
+; - alvie-core: the learner, the oracles, the model files, the comparison engine, the commands of Core, external
+;   plugins and Tiny, with no Sancus code;
 ; - alvie-rtl-util: helpers for backends that simulate RTL (the VCD parser), not part of Core;
 ; - alvie-sancus: the Sancus backend, its executables and the test suites.
 ; alvie-core must not depend on the other two: CI builds it on its own (dune build -p alvie-core).
 
 (package
  (name alvie-core)
- (synopsis "ALVIE/Core: active automata learning (L#) and model comparison, with no backend")
- (description "The L# learner and its equivalence oracles, the model file format, and the comparison engine that finds witnesses with mCRL2. A backend (such as alvie-sancus) provides the system under learning.")
+ (synopsis "ALVIE/Core: learn models of a system with L# and compare them to find information leaks, for any platform with a plugin")
+ (description "The L# learner and its equivalence oracles, the input generator of specs, the comparison engine that finds witnesses with mCRL2, the plugin files, the commands of Core for any plugin, the protocol of external plugins, and Tiny, the reference platform. A plugin (such as alvie-sancus) connects it to a platform.")
  (depends
   (ocaml (>= "4.13"))
   core
@@ -37,7 +38,8 @@
   ppx_sexp_conv
   shexp
   yaml
-  yojson)
+  yojson
+  (alcotest :with-test))
  (tags
   ("automata learning" "formal verification" "alvie")))
 

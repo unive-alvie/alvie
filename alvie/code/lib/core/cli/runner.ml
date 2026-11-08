@@ -9,32 +9,80 @@
     conformance  checks that the backend keeps the contract of Core (Conformance)
     fixtures     learns and compares the plugin's fixtures, and checks their expected verdicts (Fixtures)
 
-  Inputs are atoms of a class (Alvie_backend.Sul.Atoms): an attacker atom is the same input in every attacker
-  section. Models are .dot files of these inputs and of the observations (values of observations.yaml), with the
-  header line of Interop.
+  The codec (MODEL_CODEC) says what the learner's inputs and outputs are, and so the alphabet and the model files.
+  Make uses Atoms_codec: inputs are atoms of a class (an attacker atom is the same input in every attacker section),
+  and outputs the observations, values of observations.yaml. A plugin can bring its own (Make_codec): ALVIE/Sancus
+  keeps its types, so that its models keep their format and learn.exe learns them as it always did.
 *)
 open Core
 open Alvie_plugin
 module G = Alvie_inputgen.Generator
 module Native = Alvie_backend.Native
 
-module Make (N : Native.S) = struct
-  let plugin () = Lazy.force N.plugin
-  let manifest () = (plugin ()).manifest
+(* What the learner works on, and how it maps to Core: the codec of the adapter (Alvie_backend.Sul.CODEC), and *)
+module type MODEL_CODEC = sig
+  type bookkeeping
+  module Input : Learninglib.Elttype.EltType
+  module Output : Learninglib.Elttype.EltType
+  type input = Input.t
+  type output = Output.t
+  val input_to_core : section:string -> input -> G.input option
+  val output_of_core : Value.t list -> bookkeeping -> output
+  val output_to_core : output -> Value.t list * bookkeeping
+  val illegal : output
+  val input_of_core : G.input -> input (* an option of the generator, as an input of the learner *)
+  val no_input : input (* the input of the random walk where the spec offers none *)
+  val alphabet : Spec.t -> input list (* the inputs of the learner for a spec (secret expanded) *)
+  val observations : output -> Value.t list
+  val keep : input -> output -> bool (* whether a learned transition stays in the model file *)
+  val contains_illegal : output -> bool
+  val atom_of_input : input -> (string * Value.t) option (* its class and atom *)
+  val legacy_models : bool (* whether model files without a header line are read (format 0) *)
+  val default_bad_probability : float option (* the default of learn --bad-probability (None: no input outside the spec) *)
+end
 
-  module Codec = Alvie_backend.Sul.Atoms (struct let plugin = N.plugin end) (struct
+(* The codec of most plugins: inputs are atoms of a class (None: no input), outputs the observations *)
+module Atoms_codec (N : Native.S) = struct
+  include Alvie_backend.Sul.Atoms (struct let plugin = N.plugin end) (struct
       type bookkeeping = N.B.bookkeeping [@@deriving sexp]
       let none = N.none
     end)
 
+  let class_of section = Plugin.atoms_of (Lazy.force N.plugin) section
+  let input_of_core (i : G.input) : Input.t = Option.map (class_of i.section) ~f:(fun cls -> { Input.cls; atom = i.atom })
+  let no_input : Input.t = None
+
+  (* The atoms of the spec's sections, by class *)
+  let alphabet (spec : Spec.t) : Input.t list =
+    List.concat_map spec.sections ~f:(fun s ->
+        match class_of s.name with
+        | Some cls -> List.map (Spec.atoms s.body) ~f:(fun atom -> Some { Input.cls; atom })
+        | None -> [])
+    |> List.dedup_and_sort ~compare:Input.compare
+
+  let observations (o : Output.t) = o.observations
+  let keep (i : Input.t) o = Option.is_some i && not (Output.equal o illegal)
+  let contains_illegal o = Output.equal o illegal
+  let atom_of_input (i : Input.t) = Option.map i ~f:(fun { cls; atom } -> (cls, atom))
+  let legacy_models = false
+  let default_bad_probability = None
+end
+
+module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.B.bookkeeping) = struct
+  let plugin () = Lazy.force N.plugin
+  let manifest () = (plugin ()).manifest
+
+  module Codec = Codec
   module Sul = Alvie_backend.Sul.Make (N.B) (Codec)
   module I = Codec.Input
   module O = Codec.Output
   module IO = Interop.Interop (I) (O)
   module Rw = Learninglib.Randomwalkoracle.RandomWalkOracle (I) (O) (Sul)
   module Pac = Learninglib.Pacoracle.PACOracle (I) (O) (Sul)
+  module Exh = Learninglib.Exhaustiveoracle.ExhaustiveOracle (I) (O) (Sul)
   module L_rw = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Randomwalkoracle.RandomWalkOracle)
   module L_pac = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Pacoracle.PACOracle)
+  module L_exh = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
 
   let class_of section = Plugin.atoms_of (plugin ()) section
 
@@ -80,38 +128,31 @@ module Make (N : Native.S) = struct
        | Finished | Invalid -> st
        | Running ->
          let section = G.current st in
-         (match i with
-          | Some { cls; atom } when Option.equal String.equal (class_of section) (Some cls) -> G.input gen st { section; atom }
+         (match Codec.atom_of_input i with
+          | Some (cls, atom) when Option.equal String.equal (class_of section) (Some cls) -> G.input gen st { section; atom }
           | _ -> { st with status = Invalid }))
 
-  let input_of_core (i : G.input) : I.t = Option.map (class_of i.section) ~f:(fun cls -> { I.cls; atom = i.atom })
+  let input_of_core = Codec.input_of_core
 
   let options cache (il : I.t list) (ol : O.t list) =
     let rec items il ol acc = match il, ol with
-      | i :: il, o :: ol -> items il ol (Item.Out o.O.observations :: Item.In i :: acc)
+      | i :: il, o :: ol -> items il ol (Item.Out (Codec.observations o) :: Item.In i :: acc)
       | i :: il, [] -> items il [] (Item.In i :: acc)
       | [], _ -> List.rev acc in
     Cache.options cache (Cache.state_of cache (items il ol []))
 
-  (* The inputs of a spec: the atoms of its sections, by class *)
-  let alphabet (spec : Spec.t) : I.t list =
-    List.concat_map spec.sections ~f:(fun s ->
-        match class_of s.name with
-        | Some cls -> List.map (Spec.atoms s.body) ~f:(fun atom -> Some { I.cls; atom })
-        | None -> [])
-    |> List.dedup_and_sort ~compare:I.compare
+  let alphabet = Codec.alphabet
 
   (* Models *)
 
   let header () = let m = manifest () in Interop.header ~plugin:m.name ~plugin_version:m.version ~core:m.core
 
-  (* A learned model without what the spec does not allow: the transitions of illegal inputs (the learner asks for
-     every input in every state) and the states only they reach, as ALVIE/Sancus does *)
+  (* A learned model without what the spec does not allow: the transitions that the codec does not keep (the
+     illegal inputs: the learner asks for every input in every state), and the states that no transition kept has *)
   let legal_part (m : IO.IIOMealy.t) : IO.IIOMealy.t =
-    let transition = Map.filteri m.transition ~f:(fun ~key:(_, i) ~data:(o, _) ->
-        Option.is_some i && not (O.equal o Codec.illegal)) in
-    let used = Map.fold transition ~init:(Set.singleton (module Int) m.s0) ~f:(fun ~key:(s, _) ~data:(_, s') acc -> Set.add (Set.add acc s) s') in
-    { m with transition; states = Set.filter m.states ~f:(Set.mem used) }
+    let transition = Map.filteri m.transition ~f:(fun ~key:(_, i) ~data:(o, _) -> Codec.keep i o) in
+    let states = Set.filter m.states ~f:(fun s -> Map.existsi transition ~f:(fun ~key:(s', _) ~data:(_, s'') -> s' = s || s'' = s)) in
+    { m with transition; states }
 
   let write_model file (m : IO.IIOMealy.t) = IO.write_model ~header:(header ()) file (IO.dot_of_t m)
 
@@ -120,6 +161,7 @@ module Make (N : Native.S) = struct
     let file = Errors.require_file ~option:what file in
     (match Interop.plugin_of_file file with
      | Some _ -> (try Interop.check_plugin ~plugin:(manifest ()).name file with Interop.Unsupported_format m -> Errors.fail "%s: %s" what m)
+     | None when Codec.legacy_models -> () (* a model of an earlier version (format 0) *)
      | None -> Errors.fail "%s (%s) is not a model of ALVIE: its first line is not \"// alvie-model format ...\"." what file);
     try IO.t_of_dot_file IO.IIOMealy.ISet.empty file with
     | Interop.Unsupported_format _ as e -> raise e
@@ -137,8 +179,8 @@ module Make (N : Native.S) = struct
       List.filter_map (plugin ()).sections.sections ~f:(fun s -> match s.role with Attacker -> s.atoms | Victim -> None)
 
     let input_of (i : I.t) : H.Input.t =
-      match i with
-      | Some { cls; atom } -> Atom { cls; low = List.mem low_classes cls ~equal:String.equal; atom }
+      match Codec.atom_of_input i with
+      | Some (cls, atom) -> Atom { cls; low = List.mem low_classes cls ~equal:String.equal; atom }
       | None -> No_input
 
     (* Each observation of a step is split into its parts (view.yaml), one transition each *)
@@ -146,7 +188,7 @@ module Make (N : Native.S) = struct
       let states, transition, _ = Map.fold m.transition
           ~init:(m.states, C.IIOMealy.TransitionMap.empty, Set.max_elt_exn m.states)
           ~f:(fun ~key:(s, i) ~data:(o, s') (states, tr, last) ->
-              let parts = List.concat_map o.observations ~f:(Ltscompare.View.parts view) in
+              let parts = List.concat_map (Codec.observations o) ~f:(Ltscompare.View.parts view) in
               let n = List.length parts in
               List.foldi parts ~init:(states, tr, last) ~f:(fun idx (states, tr, last) (part, interrupt) ->
                   let start = if idx = 0 then s else last in
@@ -161,33 +203,60 @@ module Make (N : Native.S) = struct
 
   (* Learning *)
 
-  type oracle = Pac of { epsilon : float; delta : float; round_limit : int option } | Random_walk of { test_count : int; reset_probability : float }
+  type oracle =
+    | Pac of { epsilon : float; delta : float; round_limit : int option }
+    | Random_walk of { test_count : int; reset_probability : float }
+    | Exhaustive
 
-  type learned = { model : IO.IIOMealy.t; seconds : float; queries : int; steps : int }
+  (* The statistics of the learner: output queries, equivalence queries, resets, steps, dry steps, and the average and
+     variance of the length of the equivalence queries *)
+  type stats = { queries : int; equivalence_queries : int; resets : int; steps : int; dry_steps : int; avg_length : float; var_length : float }
 
-  let learn ~config ~variant ~(spec : Spec.t) ~oracle ~seed : learned =
+  type learned = { model : IO.IIOMealy.t; seconds : float; nanoseconds : Int63.t; stats : stats }
+
+  (*
+    Learns a model of the backend under the spec. With ~bad_probability p, the oracle offers an input of the whole
+    alphabet instead of one that the spec allows with probability p, which it draws before each input (as
+    ALVIE/Sancus always did). ~dry skips the learning (a model with one state). The random choices depend only on
+    ~seed: learning is deterministic.
+  *)
+  let learn ?bad_probability ?(dry = false) ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
     Random.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
     let sul = Sul.make ~backend:(make_backend ~config ~variant) ~gen in
     let alphabet = alphabet spec in
     if List.is_empty alphabet then Errors.fail "the spec has no atoms: there is nothing to learn.";
-    let pick il ol = match options cache il ol with
-      | [] -> `Stop
-      | os -> (match List.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (input_of_core i)) in
+    let pick il ol =
+      let bad = match bad_probability with
+        | Some p -> Float.(Random.float_range 0.0 1.0 <= p)
+        | None -> false in
+      if bad then `Next (List.random_element_exn alphabet)
+      else match options cache il ol with
+        | [] -> `Stop
+        | os -> (match List.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (input_of_core i)) in
+    let trivial () = IO.IIOMealy.make ~states:(IO.IIOMealy.SSet.singleton 0) ~s0:0 ~input_alphabet:IO.IIOMealy.ISet.empty ~transition:IO.IIOMealy.TransitionMap.empty in
     let start = Time_now.nanoseconds_since_unix_epoch () in
-    let model, (queries, _, _, steps, _, _, _) = match oracle with
+    let model, (queries, equivalence_queries, resets, steps, dry_steps, avg_length, var_length) = match oracle with
       | Pac { epsilon; delta; round_limit } ->
         let o = Pac.make ?round_limit ~epsilon ~delta ~next_input:(fun _ il ol -> pick il ol) () in
-        let m = L_pac.lsharp_run o sul alphabet in
+        let m = if dry then trivial () else L_pac.lsharp_run o sul alphabet in
         (m, Pac.get_stats o)
       | Random_walk { test_count; reset_probability } ->
         let o = Rw.make ~step_limit:test_count ~reset_prob:reset_probability
-            ~next_input:(fun _ il ol -> match pick il ol with `Stop -> None | `Next i -> i) () in
-        let m = L_rw.lsharp_run o sul alphabet in
-        (m, Rw.get_stats o) in
-    let seconds = Int63.(to_float (Time_now.nanoseconds_since_unix_epoch () - start)) /. 1e9 in
-    { model = legal_part model; seconds; queries; steps }
+            ~next_input:(fun _ il ol -> match pick il ol with `Stop -> Codec.no_input | `Next i -> i) () in
+        let m = if dry then trivial () else L_rw.lsharp_run o sul alphabet in
+        (m, Rw.get_stats o)
+      | Exhaustive ->
+        (* every input of the alphabet, until no input, an illegal output, or nothing left *)
+        let o = Exh.make ~next_options:(fun _ _ -> List.map alphabet ~f:(fun i -> `Next i))
+            ~stop_cond:(fun available is os ->
+                List.is_empty available || List.mem is Codec.no_input ~equal:I.equal || List.exists os ~f:Codec.contains_illegal) () in
+        let m = if dry then trivial () else L_exh.lsharp_run o sul alphabet in
+        (m, Exh.get_stats o) in
+    let nanoseconds = Int63.(Time_now.nanoseconds_since_unix_epoch () - start) in
+    { model = legal_part model; seconds = Int63.to_float nanoseconds /. 1e9; nanoseconds;
+      stats = { queries; equivalence_queries; resets; steps; dry_steps; avg_length; var_length } }
 
   (* Command-line pieces *)
 
@@ -201,7 +270,7 @@ module Make (N : Native.S) = struct
                      ~doc:(sprintf "name the variant of the system to run (%s)" (match vs with [] -> "this plugin has none" | _ -> String.concat ~sep:", " (List.map vs ~f:fst))))
 
   let oracle_param =
-    let%map_open.Command name = flag "--oracle" (optional_with_default `Pac (Arg_type.of_alist_exn [ ("pac", `Pac); ("randomwalk", `Rw) ])) ~doc:"pac|randomwalk the equivalence oracle (default: pac)"
+    let%map_open.Command name = flag "--oracle" (optional_with_default `Pac (Arg_type.of_alist_exn [ ("pac", `Pac); ("randomwalk", `Rw); ("exhaustive", `Exh) ])) ~doc:"pac|randomwalk|exhaustive the equivalence oracle (default: pac)"
     and epsilon = flag "--epsilon" (optional_with_default 0.01 float) ~doc:"e PAC: the error bound (default: 0.01)"
     and delta = flag "--delta" (optional_with_default 0.01 float) ~doc:"d PAC: the confidence bound (default: 0.01)"
     and round_limit = flag "--round-limit" (optional int) ~doc:"n PAC: at most n rounds of equivalence queries"
@@ -213,6 +282,7 @@ module Make (N : Native.S) = struct
       | `Pac -> check_prob "--epsilon" epsilon; check_prob "--delta" delta;
         Option.iter round_limit ~f:(fun n -> if n <= 0 then Errors.fail "--round-limit must be greater than zero.");
         Pac { epsilon; delta; round_limit }
+      | `Exh -> Exhaustive
       | `Rw -> if test_count <= 0 then Errors.fail "--test-count must be greater than zero.";
         check_prob "--reset-probability" reset_probability;
         Random_walk { test_count; reset_probability }
@@ -222,24 +292,34 @@ module Make (N : Native.S) = struct
       (let%map_open.Command files = spec_flag and secret = secret_flag and variant = variant_flag ()
        and res = flag "--res" (required string) ~doc:"file where to write the model (.dot)"
        and seed = flag "--seed" (optional_with_default 0 int) ~doc:"n the seed of the random choices (default: 0; learning is deterministic for a seed)"
+       and bad_probability = flag "--bad-probability" (optional float)
+           ~doc:(sprintf "p the probability that the oracle offers an input of the whole alphabet, not one the spec allows, which tells apart states where the spec allows different inputs (default: %s)"
+                   (match Codec.default_bad_probability with Some p -> Float.to_string p | None -> "0, never"))
        and oracle = oracle_param and config = Config.param (manifest ()) and debug = debug_flag in
        fun () ->
          Errors.protect ~debug (fun () ->
              Errors.setup_logs ~debug;
              let oracle = oracle () in
+             let bad_probability = match bad_probability with
+               | Some p when Float.(p < 0.0 || p > 1.0) -> Errors.fail "--bad-probability must be between 0 and 1 (not %g)." p
+               | Some p when Float.(p = 0.0) -> None
+               | Some p -> Some p
+               | None -> Codec.default_bad_probability in
              let spec = load_spec ~files ~secret in
              ignore (Errors.prepare_directory ~option:"the directory of --res" (Filename.dirname res));
-             let l = learn ~config ~variant ~spec ~oracle ~seed in
+             let l = learn ?bad_probability ~config ~variant ~spec ~oracle ~seed () in
              write_model res l.model;
              printf "Learned a model of %d states and %d transitions in %.1fs (%d queries, %d steps): %s\n"
-               (Set.length l.model.states) (Map.length l.model.transition) l.seconds l.queries l.steps res))
+               (Set.length l.model.states) (Map.length l.model.transition) l.seconds l.stats.queries l.stats.steps res))
 
   (* Noninterference *)
 
-  let noninterference ~secrets ~tmpdir ~limit ~m1 ~m2 ~baseline =
+  (* what: the options that name the models, for messages *)
+  let noninterference ?(what = ("--m1", "--m2", "--m1-baseline", "--m2-baseline")) ~secrets ~tmpdir ~limit ~m1 ~m2 ~baseline () =
+    let w1, w2, wb1, wb2 = what in
     let module M = Models (struct let secret_values = secrets end) in
-    let a = M.load ~what:"--m1" m1 and b = M.load ~what:"--m2" m2 in
-    let baseline = Option.map baseline ~f:(fun (b1, b2) -> (M.load ~what:"--m1-baseline" b1, M.load ~what:"--m2-baseline" b2)) in
+    let a = M.load ~what:w1 m1 and b = M.load ~what:w2 m2 in
+    let baseline = Option.map baseline ~f:(fun (b1, b2) -> (M.load ~what:wb1 b1, M.load ~what:wb2 b2)) in
     let name f = String.chop_suffix_if_exists (Filename.basename f) ~suffix:".dot" in
     let count, graph, _ = M.Properties.noninterference ?limit ?baseline ~tmpdir ~names:(name m1, name m2) a b in
     (count, fun file -> Out_channel.with_file file ~f:(fun oc -> M.C.ILTS.Dot.output_graph oc (M.C.ILTS.to_dot graph)))
@@ -272,7 +352,7 @@ module Make (N : Native.S) = struct
              Option.iter limit ~f:(fun n -> if n <= 0 then Errors.fail "--cex-limit must be greater than zero.");
              let tmpdir = Errors.prepare_directory ~option:"--tmpdir" tmpdir in
              ignore (Errors.prepare_directory ~option:"the directory of --witnesses" (Filename.dirname witnesses));
-             let count, write = noninterference ~secrets ~tmpdir ~limit ~m1 ~m2 ~baseline in
+             let count, write = noninterference ~secrets ~tmpdir ~limit ~m1 ~m2 ~baseline () in
              write witnesses;
              printf "%s: %d witness%s (see %s)\n" (if count = 0 then "noninterference holds" else "noninterference does not hold")
                count (if count = 1 then "" else "es") witnesses;
@@ -290,7 +370,8 @@ module Make (N : Native.S) = struct
     | Some cls -> Grammar.print_atom (plugin ()).grammar ~cls i.atom
     | None -> Value.to_string i.atom
 
-  (* Runs the atoms of the file (one per line, as a spec writes them; # starts a comment) from a fresh test *)
+  (* Runs the atoms of the file (one per line, as a spec writes them; a line that starts with # is a comment: # can
+     be part of an atom, as in the immediates of Sancus, mov #1, r4) from a fresh test *)
   let exec ~config ~variant ~(spec : Spec.t) ~inputs_file =
     let p = plugin () in
     let gen = G.make p spec in
@@ -299,7 +380,8 @@ module Make (N : Native.S) = struct
     Sul.pre sul;
     let lines = String.split_lines (Errors.read_file ~option:"--inputs" inputs_file) in
     List.iteri lines ~f:(fun n line ->
-        let text = String.strip (match String.lsplit2 line ~on:'#' with Some (a, _) -> a | None -> line) in
+        let text = String.strip line in
+        let text = if String.is_prefix text ~prefix:"#" then "" else text in
         if not (String.is_empty text) then begin
           let st = Sul.generator_state sul in
           let section = G.current st in
@@ -322,7 +404,7 @@ module Make (N : Native.S) = struct
                | os -> String.concat ~sep:", " (List.map os ~f:(function `Stop -> "(stop)" | `Next i -> print_atom i)));
           let o = Sul.step sul (input_of_core i) in
           let st' = Sul.generator_state sul in
-          printf "%-8s %-16s %s%s\n" section text (String.concat ~sep:"; " (List.map o.observations ~f:Value.to_string))
+          printf "%-8s %-16s %s%s\n" section text (String.concat ~sep:"; " (List.map (Codec.observations o) ~f:Value.to_string))
             (match st'.status with
              | Finished -> "  (finished)"
              | Invalid -> "  (invalid)"
@@ -332,7 +414,7 @@ module Make (N : Native.S) = struct
 
   let exec_command () =
     Command.basic ~summary:"Run a sequence of atoms on the backend and print what it observes"
-      ~readme:(fun () -> "The file has one atom per line, as a spec writes them; # starts a comment. Each atom runs in the current section, which the observations change as phases.yaml says; the spec must allow it.")
+      ~readme:(fun () -> "The file has one atom per line, as a spec writes them; a line that starts with # is a comment. Each atom runs in the current section, which the observations change as phases.yaml says; the spec must allow it.")
       (let%map_open.Command files = spec_flag and secret = secret_flag and variant = variant_flag ()
        and inputs_file = flag "--inputs" (required string) ~doc:"file the atoms to run"
        and config = Config.param (manifest ()) and debug = debug_flag in
@@ -373,13 +455,13 @@ module Make (N : Native.S) = struct
     let model ~secret ~variant =
       let path = Filename.concat out (sprintf "%s-%s%s.dot" name secret (match variant with Some v -> "-" ^ v | None -> "")) in
       let spec = load_spec ~files ~secret:(Some secret) in
-      write_model path (learn ~config ~variant ~spec ~oracle ~seed:0).model;
+      write_model path (learn ~config ~variant ~spec ~oracle ~seed:0 ()).model;
       path in
     let s1, s2 = fx.secrets in
     let m1 = model ~secret:s1 ~variant:None and m2 = model ~secret:s2 ~variant:None in
     let baseline = Option.map fx.baseline ~f:(fun v -> (model ~secret:s1 ~variant:(Some v), model ~secret:s2 ~variant:(Some v))) in
     let witnesses = Filename.concat out (name ^ "-witnesses.dot") in
-    let count, write = noninterference ~secrets:[ s1; s2 ] ~tmpdir ~limit:None ~m1 ~m2 ~baseline in
+    let count, write = noninterference ~secrets:[ s1; s2 ] ~tmpdir ~limit:None ~m1 ~m2 ~baseline () in
     write witnesses;
     let found = match count with 0 -> "no leak" | 1 -> "a leak (1 witness)" | n -> sprintf "a leak (%d witnesses)" n in
     let passed = match fx.expect with Leak -> count > 0 | No_leak -> count = 0 in
@@ -609,12 +691,12 @@ module Make (N : Native.S) = struct
       let clone t = { state = t.state }
 
       let step t (s : Backend.step) =
-        match t.state, class_of s.section with
-        | Some q, Some cls ->
-          (match Map.find M.model.transition (q, Some { I.cls; atom = s.atom }) with
-           | Some (o, q') -> t.state <- Some q'; (o.observations, o.bookkeeping)
+        match t.state with
+        | Some q ->
+          (match Map.find M.model.transition (q, input_of_core { G.section = s.section; atom = s.atom }) with
+           | Some (o, q') -> t.state <- Some q'; Codec.output_to_core o
            | None -> t.state <- None; (illegal, N.none))
-        | _ -> t.state <- None; (illegal, N.none)
+        | None -> (illegal, N.none)
 
       let restore t s ~observations:_ _ = ignore (step t s)
     end
@@ -624,13 +706,28 @@ module Make (N : Native.S) = struct
   end
 end
 
+(* The commands of most plugins, with Atoms_codec *)
+module Make (N : Native.S) = Make_codec (N) (Atoms_codec (N))
+
 (* The commands of the plugin, as a group: alvie <plugin> learn|compare|property|exec|conformance|fixtures, or the
    ones of only *)
-let commands ?only ?summary (module N : Native.S) =
-  let module R = Make (N) in
+module type COMMANDS = sig
+  val manifest : unit -> Manifest_file.t
+  val learn_command : unit -> Command.t
+  val compare_command : unit -> Command.t
+  val property_command : unit -> Command.t
+  val exec_command : unit -> Command.t
+  val conformance_command : unit -> Command.t
+  val fixtures_command : unit -> Command.t
+end
+
+(* The commands of a runner (Make or Make_codec), or the ones of only *)
+let group ?only ?summary (module R : COMMANDS) =
   let m = R.manifest () in
   let all = [ ("learn", R.learn_command); ("compare", R.compare_command); ("property", R.property_command);
               ("exec", R.exec_command); ("conformance", R.conformance_command); ("fixtures", R.fixtures_command) ] in
   let chosen = match only with None -> all | Some names -> List.filter all ~f:(fun (n, _) -> List.mem names n ~equal:String.equal) in
   Command.group ~summary:(Option.value summary ~default:(sprintf "Learn and compare models of %s (plugin %s %s)" m.name m.name m.version))
     (List.map chosen ~f:(fun (n, c) -> (n, c ())))
+
+let commands ?only ?summary (module N : Native.S) = group ?only ?summary (module Make (N))

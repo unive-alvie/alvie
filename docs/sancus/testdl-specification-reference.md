@@ -2,13 +2,13 @@
 title: TestDL Specification Reference
 description: Syntax, semantics, and constraints for existing TestDL specifications.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 This reference explains how to read, create, and modify ALVIE/Sancus specifications using the existing TestDL language.
-For a guided example, start with the [V-B1 TestDL tutorial](/alvie/guides/testdl-tutorial-vb1/).
-For the precise meaning of individual actions, use the [TestDL Action Reference](/alvie/reference/testdl-action-reference/).
-To add a language construct or a new observable behavior, use [Extending TestDL Actions](/alvie/guides/spec-extending-actions/) instead.
+For a guided example, start with the [V-B1 TestDL tutorial](/alvie/sancus/testdl-tutorial-vb1/).
+For the precise meaning of individual actions, use the [TestDL Action Reference](/alvie/sancus/testdl-action-reference/).
+To add a language construct or a new observable behavior, use [Extending TestDL Actions](/alvie/sancus/spec-extending-actions/) instead.
 
 A full ALVIE/Sancus run is built by combining:
 
@@ -139,7 +139,7 @@ When a section runs again, ALVIE/Sancus replays the actions of its longest earli
 For example, with `cleanup { (nop | reti); nop }`, if the first run of `cleanup` chose `reti`, a second run of `cleanup` must start with `reti` too.
 The same holds after a reset, which runs `prepare` again, and after a `reti` that re-enters the enclave where the timer last interrupted it: the enclave then runs the code it ran from that point the first time.
 
-The rules that move a test between sections are in `alvie/code/plugins/sancus/phases.yaml` (see the [Plugin Files Reference](../plugin-files/)).
+The rules that move a test between sections are in `alvie/code/plugins/sancus/phases.yaml` (see the [Plugin Files Reference](/alvie/plugin-authors/plugin-files/)).
 
 Illegal or unsupported observations invalidate the current generated path; reset, jump-in, jump-out, interrupt-handle, and `reti` observations update the active section as described above.
 This is how `.atdl` and `.etdl` files limit both the learner's alphabet and the order in which inputs can be queried.
@@ -240,7 +240,7 @@ constraint { disjoint(writes(isr), reads(enclave)) };
 This one lets the ISR write no register that the enclave reads.
 The attributes `reads` and `writes` are the registers in the source and destination operands of an instruction (for `&rN`, the register counts as written).
 `subset(writes(isr), {r12, r13})` limits the registers that the ISR writes to `r12` and `r13`.
-See [Constraints](../plugin-files/#constraints) for the rules.
+See [Constraints](/alvie/plugin-authors/plugin-files/#constraints) for the rules.
 
 ## Troubleshooting
 

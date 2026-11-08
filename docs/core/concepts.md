@@ -1,6 +1,6 @@
 ---
 title: How ALVIE Works
-description: The ideas behind an ALVIE experiment, explained without tool details.
+description: The ideas behind an ALVIE experiment, and the parts of ALVIE (Core and its plugins), explained without tool details.
 sidebar:
   order: 1
 isNew: true
@@ -23,7 +23,7 @@ ALVIE asks one question:
 
 ALVIE answers this question for a set of attackers and a set of victim programs.
 You describe both sets in two small specification files.
-The [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) defines the language, and the [Designing Your Own Specifications](/alvie/guides/writing-specifications/) guide shows how to write them.
+The [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) defines the language, and the [Designing Your Own Specifications](/alvie/sancus/writing-specifications/) guide shows how to write them.
 ALVIE does the rest.
 
 ## The five parts of an experiment
@@ -34,19 +34,19 @@ An ALVIE experiment has five parts.
    The attacker specification (`.atdl`) lists what the attacker can do.
    The enclave specification (`.etdl`) lists what the victim can do.
    They define a family of programs, not one program.
-   See the [TestDL Action Reference](/alvie/reference/testdl-action-reference/) for the meaning of each action.
+   See the [TestDL Action Reference](/alvie/sancus/testdl-action-reference/) for the meaning of each action.
 2. **System under learning (SUL).**
    The SUL is the system that ALVIE tests.
    In ALVIE/Sancus, the SUL is a simulation of the Sancus processor.
    ALVIE builds a program, runs it on the simulator, and reads the result.
-   The [Code Architecture](/alvie/reference/code-architecture/) reference describes this interface.
+   The [Code Architecture](/alvie/development/code-architecture/) reference describes this interface.
 3. **Learner.**
    The learner is the [L# algorithm](https://arxiv.org/abs/2107.05419).
    It sends inputs to the SUL and builds a model from the outputs.
 4. **Oracle.**
    The oracle decides when the model is good enough.
    It tries to find an input on which the model and the SUL disagree.
-   See [Choosing Learner Settings](/alvie/guides/learning-settings/).
+   See [Choosing Learner Settings](/alvie/core/learning-settings/).
 5. **Comparison.**
    The comparison step checks two learned models for a difference.
    It uses the [mCRL2](https://www.mcrl2.org/) model checker.
@@ -79,7 +79,7 @@ It shows only what the attacker can see.
 It does not show the internal state of the processor.
 
 The learner needs the SUL to be deterministic.
-The [Log and Output Reference](/alvie/reference/log-output-reference/) explains the symbols and the output fields of a model.
+The [Log and Output Reference](/alvie/sancus/log-output-reference/) explains the symbols and the output fields of a model.
 The same inputs must always give the same outputs.
 The Sancus simulator has this property.
 
@@ -99,13 +99,13 @@ The learner repeats this cycle:
 
 The specification guides the inputs.
 ALVIE sends an input only if the specification still allows it after the inputs already sent.
-The [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) explains this in detail.
+The [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) explains this in detail.
 
 No oracle can prove that the model is exact.
 The question is undecidable in general.
 ALVIE has three oracles.
 They give different amounts of confidence for different costs.
-The [Choosing Learner Settings](/alvie/guides/learning-settings/) guide explains how to choose.
+The [Choosing Learner Settings](/alvie/core/learning-settings/) guide explains how to choose.
 
 ## Why one experiment needs four models
 
@@ -170,7 +170,7 @@ Three facts limit every result:
   A learned model can be incomplete.
   The oracle can miss a rare behavior.
   With the PAC oracle, the paper gives a bound on this error.
-  See [Choosing Learner Settings](/alvie/guides/learning-settings/#pac).
+  See [Choosing Learner Settings](/alvie/core/learning-settings/#pac).
   The bound depends on the ε and δ values, and it is weaker when four models are involved.
 - **Observation scope.**
   ALVIE sees only the outputs that the SUL reports.
@@ -178,20 +178,25 @@ Three facts limit every result:
 
 A witness is evidence for you to examine.
 ALVIE does not propose a fix.
-The [Reading and Checking a Witness](/alvie/guides/interpreting-results/) guide shows how to examine one.
+The [Reading and Checking a Witness](/alvie/core/interpreting-results/) guide shows how to examine one.
 
-## Where ALVIE/Sancus fits
+## ALVIE/Core and its plugins
 
-ALVIE is the general framework.
-ALVIE/Sancus is the part that targets Sancus and the openMSP430 core.
-The learner, the oracles, and the comparison are generic.
-The specification languages, the code generation, and the simulator interface are specific to Sancus.
+ALVIE has two parts.
 
-The [Code Architecture](/alvie/reference/code-architecture/) reference describes the modules.
+- **ALVIE/Core** does what every experiment needs: it reads specs, generates the tests they allow, learns models with L# and its oracles, and compares the models with mCRL2. It knows nothing of a particular processor.
+- **A plugin** connects Core to one platform. Its files say what a spec is made of (the sections of a test, the atoms of each, and the secret), what the platform observes, how observations move a test between sections, and what the attacker sees. Its backend runs the tests on the platform.
+
+**ALVIE/Sancus** is the plugin for Sancus on the openMSP430: its backend is the simulator, and its spec language is TestDL.
+**Tiny** is the reference platform of Core: a small processor with two planted leaks, whose models learn in a fraction of a second. The [Tiny tutorial](/alvie/core/tiny-tutorial/) runs a whole experiment on it.
+A new platform needs a new plugin: native, with a backend in OCaml, or external, with a backend in any language that speaks the [protocol of Core](/alvie/plugin-authors/protocol/).
+The [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/) shows how to make one and check it, and the [Code Architecture](/alvie/development/code-architecture/) reference describes the modules.
 
 ## Next steps
 
-- Run the first example: [Getting Started](/alvie/getting-started/).
-- Examine a real vulnerability: [TestDL Tutorial: V-B1 Example](/alvie/guides/testdl-tutorial-vb1/).
-- Learn the known attacks: [Attack Catalogue](/alvie/reference/attack-catalogue/).
-- Read a witness: [Reading and Checking a Witness](/alvie/guides/interpreting-results/).
+- Run the first example on Sancus: [Getting Started](/alvie/getting-started/).
+- Run a whole experiment in seconds, without a simulator: [Tutorial: Find a Leak on Tiny](/alvie/core/tiny-tutorial/).
+- Examine a real vulnerability: [TestDL Tutorial: V-B1 Example](/alvie/sancus/testdl-tutorial-vb1/).
+- Learn the known attacks: [Attack Catalogue](/alvie/sancus/attack-catalogue/).
+- Read a witness: [Reading and Checking a Witness](/alvie/core/interpreting-results/).
+- Support a new platform: [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/).
