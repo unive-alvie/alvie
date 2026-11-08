@@ -27,6 +27,7 @@ All executables are built with `dune build` from inside `alvie/code/` and run fr
 | `alvie external DIR ...` | | The commands of ALVIE/Core on the external plugin in `DIR` (see the [protocol](/alvie/plugin-authors/protocol/)) |
 | `alvie tiny ...` | | The commands of ALVIE/Core on Tiny, the reference platform (see [below](#the-commands-of-a-plugin)) |
 | `alvie sancus conformance`, `fixtures`, `exec` | | The same commands on Sancus: the conformance of the simulator, and the fixtures of `plugins/sancus` |
+| `alvie sancus-fpga ...` | | The commands of ALVIE/Core on Sancus-FPGA: Sancus on an openMSP430/Sancus board (see [Running on an FPGA](/alvie/sancus/fpga/)) |
 
 ```bash
 _build/default/bin/alvie.exe learn --att-spec ... --encl-spec ... --res model.dot --tmpdir /tmp/alvie --sancus ../../sancus-core-gap --oracle pac
@@ -73,7 +74,7 @@ The [Tiny tutorial](/alvie/core/tiny-tutorial/) uses each of them.
 | `learn --spec F --res M.dot` | Learns a model of the backend under the spec (several `--spec` for a spec in several files) |
 | `compare --m1 A --m2 B --secrets s1,s2 --witnesses W.dot` | Noninterference: the witnesses that tell apart two models that differ only in the secret |
 | `property inclusion\|equivalence\|formula` | The other properties, as `alvie property` below |
-| `exec --spec F --inputs FILE` | Runs the atoms of `FILE` (one per line, as a spec writes them) and prints what each observes |
+| `exec --spec F --inputs FILE` | Runs the atoms of `FILE` (one per line, as a spec writes them; a line that starts with `#` is a comment) and prints what each observes |
 | `conformance --spec F` | Checks that the backend keeps the contract of Core, on random tests of the spec |
 | `fixtures [NAME ...]` | Learns and compares the plugin's fixtures, and checks their verdicts |
 
@@ -98,6 +99,10 @@ A mistake in the command or its files exits with 2; errors that the command-line
 
 On Sancus, `alvie learn` and `alvie compare` stay the commands of experiments, with the Sancus model files; `alvie sancus` has the commands that check the plugin.
 The simulator takes a few minutes for each model of a fixture.
+
+`alvie sancus-fpga` has all the commands, on the board.
+Its options are those of `plugins/sancus-fpga/alvie-plugin.yaml`: `--sancus`, `--commit` (required: the commit of the image on the board), `--fpga-port` (default `/dev/ttyUSB1`), `--sancus-master-key`, `--tmpdir` and `--keep-repeated-reentries`.
+It uses the specs, inputs and observations of ALVIE/Sancus, and its models have the inputs and outputs of the models of `learn.exe`: `alvie sancus-fpga compare` finds their witnesses (`fa.exe` refuses them, as models of another plugin), and `alvie-model-compare` compares them with the simulator's.
 
 ## Model files
 

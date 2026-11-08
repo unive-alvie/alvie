@@ -1,42 +1,12 @@
+(*
+  alvie learn (learn.exe): learns a model of Sancus under an attacker and an enclave spec, with the commands of
+  ALVIE/Core (Alvie_cli.Runner) and the codec of Sancus (Sancus.Native.Codec), so that the models and their files
+  are those learn.exe always gave. This module keeps the options of learn.exe, their checks and --report.
+*)
 open Core
-open Learninglib.Lsharp
 open Sancus
-open Interop
 
-open Attacker
-open Enclave
-
-module IOInteropInternal = Interop (Sancus.Input) (Sancus.Output_internal)
-
-module IIBLSharpRW = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Randomwalkoracle.RandomWalkOracle)
-module IIBLSharpPAC = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Pacoracle.PACOracle)
-module IIBLSharpExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
-module IIBLSharpIncrExh = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Incrementalexhoracle.IncrementalExhOracle)
-(* module IIBLSharpHybrid = LSharp (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) (Learninglib.Hybridoracle.HybridOracle) *)
-
-module RWOracle = Learninglib.Randomwalkoracle.RandomWalkOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module PACOracle = Learninglib.Pacoracle.PACOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module ExhaustiveOracle = Learninglib.Exhaustiveoracle.ExhaustiveOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-module IncrementalOracle = Learninglib.Incrementalexhoracle.IncrementalExhOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog)
-(* module HybridOracle = Learninglib.Hybridoracle.HybridOracle (Sancus.Input) (Sancus.Output_internal) (Sancus.Verilog) *)
-
-let filter_model (m : IOInteropInternal.IIOMealy.t) =
-  let _filtered_transition = Map.filteri
-    m.transition
-    ~f:(fun ~key ~data ->
-          match key, data with
-          | (_, Input.INoInput), _ | _, (([Output_internal.OIllegal], _, _), _) -> false
-          | _ -> true
-    ) in
-  let _filtered_states = Set.filter
-    m.states
-    ~f:(fun s ->
-      (* Returns true if the state appears in at least one transition *)
-      Map.existsi
-      _filtered_transition
-      ~f:(fun ~key:(s', _) ~data:(_, s'') -> s' = s || s'' = s)
-    ) in
-  { m with transition = _filtered_transition; states = _filtered_states }
+module R = Sancus_runner.R
 
 let command =
   Command.basic
@@ -134,381 +104,48 @@ let command =
     in
     fun () ->
       let tmpdir = Alvie_cli.Config.get_exn config "tmpdir"
-      and sancus_core_gap_dir = Alvie_cli.Config.get_exn config "sancus"
-      and sancus_master_key = Alvie_cli.Config.get_exn config "sancus-master-key"
-      and commit = Alvie_cli.Config.get_exn config "commit"
-      and keep_repeated_reentries = Alvie_cli.Config.flag_set config "keep-repeated-reentries" in
+      and sancus_core_gap_dir = Alvie_cli.Config.get_exn config "sancus" in
       Cli_diagnostics.protect ~debug:dbg (fun () ->
-        (* Random.self_init (); *)
-        Random.init 0;
         (* Learning keeps a large heap alive while allocating many short-lived values: a larger minor
            heap and a less eager major GC make runs ~13% faster (same results). OCAMLRUNPARAM wins. *)
         if Option.is_none (Sys.getenv "OCAMLRUNPARAM") then
           Gc.set { (Gc.get ()) with minor_heap_size = 8 * 1024 * 1024; space_overhead = 200 };
         Logs.set_reporter (Logs_fmt.reporter ());
-
         if dbg then Logs.set_level (Some Logs.Debug)
         else if info then Logs.set_level (Some Logs.Info)
         else Logs.set_level (Some Logs.App);
-
-        let cwd = Sys_unix.getcwd () in
-        (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
-        (* Create tmpdir if not present *)
-        (* If the last char of tmpdir is /, remove it. It causes problems to the Verilog compiler :( *)
+        (* The simulator does not want a trailing / in the temporary directory *)
         let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
-        (* Create resultdir if not present *)
-        let resdir = Filename.dirname resfile in
-        (* Logs.debug (fun m -> m "Result directory: %s" resdir); *)
-        ignore (Cli_diagnostics.prepare_directory ~option:"parent directory of --res" resdir);
+        let config = List.Assoc.add config ~equal:String.equal "tmpdir" tmpdir in
+        ignore (Cli_diagnostics.prepare_directory ~option:"parent directory of --res" (Filename.dirname resfile));
         Cli_diagnostics.validate_learning_options ~oracle:oracle_name ~epsilon ~delta ~step_limit
           ~reset_probability:reset_prob ~bad_probability:bad_prob ~round_limit;
-        (* Basic sanity checks on the repo *)
         ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
-        (* (1) load the spec *)
-        let enclave_spec_str = Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
-        let attacker_spec_str = Cli_diagnostics.read_file ~option:"--att-spec" attacker_spec_fn in
-        Logs.debug (fun m -> m "Enclave spec: %s" enclave_spec_str);
-        Logs.debug (fun m -> m "Attacker spec: %s" attacker_spec_str);
-        let core_spec, spec_w_secret = Cli_diagnostics.parse_spec_files ~enclave_spec_file:enclave_spec_fn ~attacker_spec_file:attacker_spec_fn in
-        let (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) = spec_w_secret in
-        (* Secret must be expanded *)
+        (* The spec, with the grammar of plugins/sancus; its secret expanded *)
+        ignore (Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn);
+        ignore (Cli_diagnostics.read_file ~option:"--att-spec" attacker_spec_fn);
+        let core_spec, (Enclave enclave, _, _, _) = Cli_diagnostics.parse_spec_files ~enclave_spec_file:enclave_spec_fn ~attacker_spec_file:attacker_spec_fn in
         Cli_diagnostics.require_secret_if_needed enclave secret;
-        let enclave = match secret with | None -> enclave | Some secret -> Enclave.expand_secret secret enclave in
-        (* The first argument of IG.generate_next, a remnant of the interface of Inputgen *)
-        let spec_dfa = () in
-        (* The spec of the input generator of ALVIE/Core and of the simulator, with the secret expanded *)
-        let core_spec = match secret with
+        let spec = match secret with
           | None -> core_spec
           | Some value ->
             (match Alvie_plugin.Spec.expand_secret (Lazy.force Generic_inputgen.plugin) core_spec ~value with
              | Ok s -> s
              | Error d -> Cli_diagnostics.fail "Could not expand the secret %S: %s." value (Alvie_plugin.Diag.to_string d)) in
-        let generator = Generic_inputgen.make_of_spec core_spec in
-        (* The oracles ask the input generator through IG; the spec_dfa argument is the one of Inputgen's interface *)
-        let module IG = struct
-          let generate_next ?choose _ il ol = Generic_inputgen.generate_next ?choose generator il ol
-        end in
-        (* (2) initialize the interface with the processor's implementation *)
-        let sul =
-          Sancus.Verilog.make
-            ~workingdir:cwd
-            ~tmpdir:tmpdir
-            ~basename:"generic"
-            ~verilog_compile: (cwd ^ "/../scripts/verilog_compile")
-            ~get_symbolpos: (cwd ^ "/../scripts/get_symbolpos.sh")
-            ~pmem_elf:"pmem.elf"
-            ~pmem_script:(cwd ^ "/../scripts/build_pmem")
-            ~simulate_script:(cwd ^ "/../scripts/simulate")
-            ~submitfile:(cwd ^ "/../src/submit.f")
-            ~sancus_repo:sancus_core_gap_dir
-            ~sancus_master_key:sancus_master_key
-            ~commit:commit
-            ~templatefile:(cwd ^ "/../src/generic_template.s43")
-            ~filledfile:"generic.s43"
-            ~dumpfile:"tb_openMSP430.vcd"
-            ~spec:core_spec
-            ~ignore_interrupts:ignore_interrupts
-            ~collapse_reentries:(not keep_repeated_reentries)
-            () in
-        (* (3) prepare the oracle *)
-        let attacker_atoms =
-          List.fold [isr; prepare; cleanup] ~init:[] ~f:(fun acc b -> acc @ (Set.to_list (Attacker.get_atoms b))) in
-        let enclave_atoms = Set.to_list (Enclave.get_atoms enclave) in
-        let alphabet_attacker = List.map attacker_atoms ~f:(fun ca -> Input.IAttacker ca) in
-        let alphabet_enclave = List.map enclave_atoms ~f:(fun i -> Input.IEnclave i) in
-        let complete_input_alphabet = Input.INoInput :: alphabet_attacker @ alphabet_enclave in
-        let
-          (outputquery_cnt, equivquery_cnt, sul_reset_cnt, sul_step_cnt, sul_step_dry_cnt, avg_len, sigmasq_len), time, learned =
-          if String.equal oracle_name "randomwalk" then
-            let oracle = (RWOracle.make
-                ~step_limit:step_limit
-                ~reset_prob:reset_prob
-                ~next_input:(fun _ il ol ->
-                  (* Generates a good input with probablility 1 - bad_prob, a random one with probability bad_prob *)
-                  if Float.(<=) (Random.float_range 0.0 1.0) bad_prob then
-                    List.random_element_exn complete_input_alphabet
-                  else
-                    match IG.generate_next spec_dfa il ol with
-                    | `Stop -> Input.INoInput
-                    | `Next i -> i
-                  )
-              (* ~next_input:(fun _ _ _ -> List.random_element_exn complete_input_alphabet) *)
-              (* ~matchable:(fun i il ol -> snd (Inputgen.matchable spec_dfa i il ol))  *)
-              ()) in
-              (* (4) learn *)
-              let start = Time_now.nanoseconds_since_unix_epoch () in
-              let learned =
-                if dry then
-                  IOInteropInternal.IIOMealy.make
-                    ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                    ~s0:0
-                    ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                    ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-                else
-                  IIBLSharpRW.lsharp_run oracle sul complete_input_alphabet in
-              let open Int63 in
-              RWOracle.get_stats oracle,
-              Time_now.nanoseconds_since_unix_epoch () - start,
-              learned
-          (* else if String.equal oracle_name "pac_unbound" then
-            let oracle = PACOracle.make
-                ~epsilon:epsilon
-                ~delta:delta
-                ~next_input:(fun _ il ol ->
-                  IG.generate_next
-                    ~choose:(fun il ol options ->
-                        let ol_includes o = List.exists ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o) in
-                        if (
-                          ol_includes Output_internal.OIllegal ||
-                          ol_includes Output_internal.OUnsupported) then
-                            failwith (sprintf "Shouldn't happen:\n%s\n%s" (List.to_string ~f:Input.show il) (List.to_string ~f:Output_internal.show ol))
-                        else
-                          let options' = (match List.last ol with | Some o when List.mem ~equal:Output_internal.equal_element_t (fst3 o) Output_internal.OReset -> `Stop::options | _ -> options) in
-                        (match List.random_element options' with
-                        | None -> `Stop
-                        | Some i -> i)
-                    )
-                    spec_dfa il ol)
-                () in
-            (* (4) learn *)
-            let start = Time_now.nanoseconds_since_unix_epoch () in
-            let learned =
-              if dry then
-                IOInteropInternal.IIOMealy.make
-                  ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                  ~s0:0
-                  ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                  ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-              else
-                IIBLSharpPAC.lsharp_run oracle sul complete_input_alphabet in
-            let open Int63 in
-            PACOracle.get_stats oracle,
-            Time_now.nanoseconds_since_unix_epoch () - start,
-            learned
-          else if String.equal oracle_name "pac_invexp" then
-            let oracle = PACOracle.make
-                ~epsilon:epsilon
-                ~delta:delta
-                ~next_input:(fun _ il ol ->
-                  IG.generate_next
-                    ~choose:(fun _ ol options ->
-                      let ol_includes o = List.exists ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o) in
-                      let ol_cnt o = Float.of_int (List.count ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o)) in
-                      let is_last_reset ol = (match List.last ol with | Some o when List.mem ~equal:Output_internal.equal_element_t (fst3 o) Output_internal.OReset -> true | _ -> false) in
-                      if (ol_includes Output_internal.OIllegal ||
-                        (* ol_includes Output_internal.OMaybeDiverge || *)
-                        ol_includes Output_internal.OUnsupported) then
-                          failwith (sprintf "Shouldn't happen:\n%s\n%s" (List.to_string ~f:Input.show il) (List.to_string ~f:Output_internal.show ol))
-                      else
-                        (let open Float in
-                          (* If trace is not complete or we picked "next" with decreasing prob, we go next *)
-                          (if (not (is_last_reset ol)) || Random.float_range 0.0 1.0 <=
-                              (1.0 /. (2.0 ** (ol_cnt Output_internal.OReset))) then
-                                (match List.random_element options with
-                                | None -> `Stop
-                                | Some i -> i)
-                          else
-                              `Stop)
-                        )
-                  )
-                    spec_dfa il ol)
-                () in
-            (* (4) learn *)
-            let start = Time_now.nanoseconds_since_unix_epoch () in
-            let learned =
-              if dry then
-                IOInteropInternal.IIOMealy.make
-                  ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                  ~s0:0
-                  ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                  ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-              else
-                IIBLSharpPAC.lsharp_run oracle sul complete_input_alphabet in
-            let open Int63 in
-            PACOracle.get_stats oracle,
-            Time_now.nanoseconds_since_unix_epoch () - start,
-            learned *)
-          else if String.equal oracle_name "pac" then
-            let oracle = PACOracle.make
-                ?round_limit
-                ~epsilon:epsilon
-                ~delta:delta
-                ~next_input:(fun _ il ol ->
-                  (* Generates a good input with probablility 1 - bad_prob, a random one with probability bad_prob *)
-                  if Float.(<=) (Random.float_range 0.0 1.0) bad_prob then
-                    `Next (List.random_element_exn complete_input_alphabet)
-                  else
-                    IG.generate_next spec_dfa il ol
-                )
-                (* ~next_input:(fun _ il ol ->
-                  if List.mem (List.concat (List.map ~f:fst3 ol)) OIllegal ~equal:Output_internal.equal_element_t then
-                    `Stop
-                  else
-                    List.random_element_exn (List.map ~f:(fun i -> `Next i) complete_input_alphabet)
-                  (* Inputgen.generate_next
-                    ~choose:(fun _ ol options ->
-                        let ol_includes o = List.count ol ~f:(fun oi -> List.mem (fst3 oi) ~equal:Poly.equal o) >= pac_bound in
-                        let is_last_reset ol = (match List.last ol with | Some o when List.mem ~equal:Output_internal.equal_element_t (fst3 o) Output_internal.OReset -> true | _ -> false) in
-                        if (ol_includes Output_internal.OReset && is_last_reset ol) then
-                            `Stop
-                        else
-                        (match List.random_element options with
-                          | None -> `Stop
-                          | Some i -> i)
-                    )
-                    spec_dfa il ol *)
-                  ) *)
-                () in
-            (* (4) learn *)
-            let start = Time_now.nanoseconds_since_unix_epoch () in
-            let learned =
-              if dry then
-                IOInteropInternal.IIOMealy.make
-                  ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                  ~s0:0
-                  ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                  ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-              else
-                IIBLSharpPAC.lsharp_run oracle sul complete_input_alphabet in
-            let open Int63 in
-            PACOracle.get_stats oracle,
-            Time_now.nanoseconds_since_unix_epoch () - start,
-            learned
-          else if String.equal oracle_name "exhaustive" then
-            (* Exhaustive tries them all! *)
-            let oracle = ExhaustiveOracle.make
-            ~next_options:(
-              fun _ _ ->
-                List.map ~f:(fun i -> `Next i) complete_input_alphabet
-                (* These are the legal options
-                let spec_dfa', options = Inputgen.get_options spec_dfa is os in
-                (* These are the "illegal" ones *)
-                let illegal =
-                  List.map ~f:(fun i -> `Next i) (match spec_dfa'.mode with
-                  | `Finished | `Invalid -> []
-                  | `Enclave -> alphabet_attacker
-                  | _ -> alphabet_enclave) in
-                (*
-                  We also try the illegal options when looking for a counterexample,
-                  so that we avoid "wrong" state merging
-                *)
-                illegal@options *)
-            )
-            ~stop_cond:(fun available is os ->
-              List.is_empty available ||
-              List.mem is (INoInput) ~equal:Input.equal ||
-              (* List.mem is (IAttacker CRstNZ) ~equal:Input.equal ||
-              List.mem is (IAttacker CRst) ~equal:Input.equal || *)
-              List.mem (List.concat (List.map os ~f:fst3)) (Output_internal.OIllegal) ~equal:Output_internal.equal_element_t
-            )
-            () in
-            (* (4) learn *)
-            let start = Time_now.nanoseconds_since_unix_epoch () in
-            let learned =
-              if dry then
-                IOInteropInternal.IIOMealy.make
-                  ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                  ~s0:0
-                  ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                  ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-              else
-                IIBLSharpExh.lsharp_run oracle sul complete_input_alphabet in
-            let open Int63 in
-            ExhaustiveOracle.get_stats oracle,
-            Time_now.nanoseconds_since_unix_epoch () - start,
-            learned
-       (*    else if String.equal oracle_name "incremental" then
-            let oracle = IncrementalOracle.make
-            ~next_options:(fun is os -> snd (IG.get_options spec_dfa is os))
-            ~stop_cond:(fun available is _ -> List.is_empty available ||
-            List.mem is (INoInput) ~equal:Input.equal ||
-            List.mem is (IAttacker CRstNZ) ~equal:Input.equal ||
-            List.mem is (IAttacker CRst) ~equal:Input.equal)
-            () in
-            (* (4) learn *)
-            let start = Time_now.nanoseconds_since_unix_epoch () in
-            let learned =
-              if dry then
-                IOInteropInternal.IIOMealy.make
-                  ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                  ~s0:0
-                  ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                  ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-              else
-                IIBLSharpIncrExh.lsharp_run oracle sul complete_input_alphabet in
-            let open Int63 in
-            IncrementalOracle.get_stats oracle,
-            Time_now.nanoseconds_since_unix_epoch () - start,
-            learned *)
-          (* else if String.equal oracle_name "hybrid" then
-            let oracle = HybridOracle.make
-            ~step_limit:step_limit
-            ~reset_prob:reset_prob
-            ~next_input:(fun _ il ol ->
-              match IG.generate_next spec_dfa il ol with
-              | `Stop -> Input.INoInput
-              | `Next i -> i
-            )
-            () in
-            (* (4) learn *)
-            let start = Time_now.nanoseconds_since_unix_epoch () in
-            let learned =
-              if dry then
-                IOInteropInternal.IIOMealy.make
-                  ~states:(IOInteropInternal.IIOMealy.SSet.singleton 0)
-                  ~s0:0
-                  ~input_alphabet:IOInteropInternal.IIOMealy.ISet.empty
-                  ~transition:IOInteropInternal.IIOMealy.TransitionMap.empty
-              else
-                IIBLSharpHybrid.lsharp_run oracle sul complete_input_alphabet in
-            let open Int63 in
-            HybridOracle.get_stats oracle,
-            Time_now.nanoseconds_since_unix_epoch () - start,
-            learned *)
-          else assert false
-        in
-        (* and, finally, (5) to produce the output *)
+        let oracle : R.oracle = match oracle_name with
+          | "randomwalk" -> Random_walk { test_count = step_limit; reset_probability = reset_prob }
+          | "pac" -> Pac { epsilon; delta; round_limit }
+          | _ -> Exhaustive (* validate_learning_options accepts no other *) in
+        (* The random walk and the PAC oracle offer an input outside the spec with probability --bad-probability *)
+        let bad_probability = match oracle with Exhaustive -> None | Pac _ | Random_walk _ -> Some bad_prob in
+        let variant = if ignore_interrupts then Some "no-interrupts" else None in
+        let l = R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:0 () in
         if report then
           eprintf "%s, %d, %f, %f, %d, %f, %d, %d, %d, %d, %d, %f, %f, %Ld\n"
-            oracle_name
-            pac_bound
-            epsilon
-            delta
-            step_limit
-            reset_prob
-            sul_reset_cnt
-            sul_step_cnt
-            sul_step_dry_cnt
-            outputquery_cnt
-            equivquery_cnt
-            avg_len
-            sigmasq_len
-            (Int63.to_int64 (Int63.(/) time (Int63.of_int 1000000)));
-          (* Logs.app (fun m -> m
-              (
-              "\n===  STATS FOR [%s] ===\
-              \n+-----------------------+--------+\
-              \n| # Resets              | %6d |\
-              \n| # SUL steps (non-dry) | %6d |\
-              \n| # SUL steps (dry)     | %6d |\
-              \n| # output_query calls  | %6d |\
-              \n| # equiv_query calls   | %6d |\
-              \n| Avg. path len         | %6f |\
-              \n+-----------------------+--------+\n")
-                (List.last_exn (String.split resfile ~on:'/'))
-                sul_reset_cnt
-                sul_step_cnt
-                sul_step_dry_cnt
-                outputquery_cnt
-                equivquery_cnt
-                avgpath_len
-            ) else (printf "\n"); *)
-        let final_model = filter_model learned in
-        let graph = IOInteropInternal.dot_of_t final_model in
-        let basename = sprintf "%s" resfile in
-        let dot_dest = basename in
-        let manifest = (Lazy.force Generic_inputgen.plugin).manifest in
-        IOInteropInternal.write_model ~header:(header ~plugin:manifest.name ~plugin_version:manifest.version ~core:manifest.core) dot_dest graph;
-          Logs.debug (fun m -> m "\n=== Graph written to %s\n" basename)
-      )
+            oracle_name pac_bound epsilon delta step_limit reset_prob
+            l.stats.resets l.stats.steps l.stats.dry_steps l.stats.queries l.stats.equivalence_queries
+            l.stats.avg_length l.stats.var_length
+            (Int63.to_int64 (Int63.(/) l.nanoseconds (Int63.of_int 1000000)));
+        R.write_model resfile l.model;
+        Logs.debug (fun m -> m "\n=== Graph written to %s\n" resfile))
     )

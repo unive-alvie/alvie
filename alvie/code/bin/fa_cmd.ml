@@ -1,13 +1,10 @@
 (*
-  fa.exe: compares the four models of an experiment (secret 0 and 1, with and without interrupts) with the
-  comparison engine of ALVIE/Core (Ltscompare), and with what the attacker sees as plugins/sancus declares it: the
-  hooks of the engine are derived from the plugin files (Ltscompare.Plugin_hooks).
+  fa.exe: compares the four models of an experiment (secret 0 and 1, with and without interrupts): noninterference
+  of the models with interrupts, with those without interrupts as the baseline. It is the compare command of
+  ALVIE/Core (Alvie_cli.Runner) on Sancus, whose models it reads with the codec of Sancus; this module keeps the
+  options and the output of fa.exe.
 *)
-open Sancus
-open Interop
 open Core
-
-module IOInterop = Interop (Sancus.Input) (Sancus.Output_internal)
 
 (* The model name used in the logs: the file name without the directory and the .dot extension *)
 let filename s = String.chop_suffix_if_exists (Filename.basename s) ~suffix:".dot"
@@ -20,55 +17,12 @@ let secret_of_name file =
   | _delta :: _eps :: secret :: _ -> Some secret
   | _ -> None
 
-(* The models of the comparison, with the hooks derived from the plugin files for the given values of the secret *)
-module Models (P : Ltscompare.Plugin_hooks.PARAMS) = struct
-  module H = Ltscompare.Plugin_hooks.Make (P)
-  module Properties = Ltscompare.Properties.Make (H)
-  module C = Properties.C
-
-  let view = Ltscompare.View.make P.plugin
-
-  (* A model as a Mealy machine of the comparison: each observation of a step is split into its parts, one
-     transition each, with the input of the step (or the interrupt, for the parts that are one) *)
-  let load_mealy file : C.IIOMealy.t =
-    check_plugin ~plugin:(Lazy.force Generic_inputgen.plugin).manifest.name file;
-    let m = IOInterop.t_of_dot_file IOInterop.IIOMealy.ISet.empty file in
-    let input_of (i : Input.t) : H.Input.t =
-      match i, Generic_inputgen.atom_of_input i with
-      | Input.IAttacker _, Some atom -> Atom { cls = "attacker"; low = true; atom }
-      | Input.IEnclave _, Some atom -> Atom { cls = "enclave"; low = false; atom }
-      | _ -> No_input in
-    let states, transition, _ = Map.fold m.transition
-        ~init:(m.states, C.IIOMealy.TransitionMap.empty, Set.max_elt_exn m.states)
-        ~f:(fun ~key:(s, i) ~data:((ol, _, _), s') (states, tr, last) ->
-            let parts = List.concat_map ol ~f:(fun o -> Ltscompare.View.parts view (Generic_inputgen.observation o)) in
-            let n = List.length parts in
-            List.foldi parts ~init:(states, tr, last) ~f:(fun idx (states, tr, last) (part, interrupt) ->
-                let start = if idx = 0 then s else last in
-                let stop = if idx = n - 1 then s' else last + 1 in
-                let states = if stop > last then Set.add states stop else states in
-                let input = if interrupt then H.Input.Interrupt else input_of i in
-                (states, Map.add_exn tr ~key:(start, input) ~data:(part, stop), Int.max last stop))) in
-    { s0 = 0; states; transition; pred_map = C.IIOMealy.PredMap.empty; input_alphabet = C.IIOMealy.ISet.empty }
-
-  let load file = C.i_lts_of_mealy (load_mealy file)
-end
-
-let compare ~plugin ~secret_values ~tmpdir ~cex_file ~limit ~m1_int_file ~m2_int_file ~m1_nint_file ~m2_nint_file =
-  let module M = Models (struct let plugin = plugin let secret_values = secret_values end) in
-  let open M in
-  let load = M.load in
-  let m1_int, m2_int = load m1_int_file, load m2_int_file in
-  let nint_witnesses = match m1_nint_file, m2_nint_file with
-    | Some m1, Some m2 ->
-      (* The witnesses already there without interrupts *)
-      trd3 (C.find_all_cex_sym ~to_remove:[] ?limit ~tmpdir ~m1_name:(filename m1) ~m2_name:(filename m2)
-              ~m1:(load m1) ~m2:(load m2) ())
-    | _ -> [] in
-  let count, graph, _ =
-    C.find_all_cex_sym ?limit ~to_remove:nint_witnesses ~tmpdir ~m1_name:(filename m1_int_file) ~m2_name:(filename m2_int_file)
-      ~m1:m1_int ~m2:m2_int () in
-  C.ILTS.Dot.output_graph (Stdlib.open_out_bin (sprintf "%s_int.dot" cex_file)) (C.ILTS.to_dot graph);
+let compare ~secret_values ~tmpdir ~cex_file ~limit ~m1_int_file ~m2_int_file ~m1_nint_file ~m2_nint_file =
+  let baseline = match m1_nint_file, m2_nint_file with Some a, Some b -> Some (a, b) | _ -> None in
+  let count, write =
+    Sancus_runner.R.noninterference ~what:("--m1-int", "--m2-int", "--m1-nint", "--m2-nint") ~secrets:secret_values ~tmpdir ~limit
+      ~m1:m1_int_file ~m2:m2_int_file ~baseline () in
+  write (sprintf "%s_int.dot" cex_file);
   Logs.info (fun m -> m "\n\n=== Results: found %d FA violations. See %s_int.dot for details." count cex_file)
 
 let command =
@@ -106,4 +60,4 @@ let command =
             (match secret_of_name m1_int_file, secret_of_name m2_int_file with
              | Some a, Some b -> [ a; b ]
              | _ -> Cli_diagnostics.fail "Cannot tell the secrets of the models from their names: give them with --secrets s1,s2.") in
-        compare ~plugin:(Lazy.force Generic_inputgen.plugin) ~secret_values ~tmpdir ~cex_file ~limit ~m1_int_file ~m2_int_file ~m1_nint_file ~m2_nint_file))
+        compare ~secret_values ~tmpdir ~cex_file ~limit ~m1_int_file ~m2_int_file ~m1_nint_file ~m2_nint_file))

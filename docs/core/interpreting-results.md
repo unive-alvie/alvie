@@ -273,7 +273,7 @@ The expected counts for the checked-in models are:
 
 | Attack | Original commit `ef753b6` | Last commit `bf89c0b` |
 | --- | --- | --- |
-| B1 | 31 | 3 |
+| B1 | 25 | 3 |
 | B3 | 11 | 9 |
 | B6 | 8 | 9 |
 

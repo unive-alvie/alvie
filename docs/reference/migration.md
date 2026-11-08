@@ -65,7 +65,7 @@ Each change has its cause in the CHANGELOG, and the checked-in models, witness g
 | --- | --- |
 | Most witness counts (for example B3 on `ef753b6`: 3619 in 2026.10) | The comparison looked for witnesses in one direction only, and counted some witnesses more than once. |
 | B3 on `ef753b6`: 11 witnesses | The enclave re-entered by `reti` ran other code than it had run at that point, both in the input generator and in the simulator. |
-| B1 on `ef753b6`: 31 witnesses | The simulated enclave code lost instructions after two or more interrupts; and mCRL2 now compares what the attacker sees, without the cycle count `k`. |
+| B1 on `ef753b6`: 25 witnesses | The simulated enclave code lost instructions after two or more interrupts; mCRL2 now compares what the attacker sees, without the cycle count `k`; and the simulator no longer cuts the longest tests at 100 µs, where the cut looked like a reset. |
 | 8 models; others only renumbered | The same causes. |
 | The labels of witness graphs: `ubr/Time(k = 2, ...)`, `(hidden)` | Witness graphs show what the attacker sees of each output. |
 
@@ -90,4 +90,5 @@ The documentation of each release stays at its own address: `/alvie/2026.10/` fo
 - The comparison engine is generic: its hooks come from the plugin files (`Ltscompare.Plugin_hooks`), and `lib/sancus-compare` is gone.
 - The input generator is that of Core (`lib/core/inputgen`), driven by the plugin files; `learn.exe --inputgen legacy` is gone, and the former generator remains only to compare with, in `tt_inputgen_golden check --engine legacy`.
 - The simulator is a backend of the contract of Core (`Alvie_backend.Backend.S`).
+- `learn.exe` and `fa.exe` learn and compare with the commands of Core (`Alvie_cli.Runner`), with the codec of Sancus: there is one learning path for every plugin.
 - [Code Architecture](/alvie/development/code-architecture/) describes the modules, and the [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/) how to add a platform.

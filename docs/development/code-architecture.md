@@ -62,7 +62,7 @@ On the atoms of `spec-lib/`, interned values sort, hash and compare faster than 
 3. The input generator of ALVIE/Core (`Alvie_inputgen.Generator`, through `Generic_inputgen`) tracks which specification actions are legal after an observed input/output history and proposes the next input symbols.
    It follows the test through its sections with `plugins/sancus/phases.yaml`, applies the prefix rule, and checks the constraints of the spec.
 4. `Sancus.Verilog` implements the SUL (system under learning): the Sancus backend (`Sancus.Simulator`) behind the adapter of ALVIE/Core.
-   It generates a program from the programs of the sections that Core gives, runs the Sancus Verilog testbench, parses the VCD dump, and turns the trace into `Output_internal` observations.
+   It generates a program from the programs of the sections that Core gives, runs it on a target (the Sancus Verilog testbench, or the board of ALVIE/Sancus-FPGA), finds the input's instructions in the trace, and turns them into `Output_internal` observations.
    Compiled simulators are cached across runs, and only the top level of the testbench is traced.
 5. `Lsharp.LSharp` learns a Mealy machine using output queries and an equivalence oracle.
 6. `Interop` serializes the learned machine as a Graphviz `.dot` file.
@@ -83,7 +83,12 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/inputgen/deriv.ml` | Derivatives of spec bodies |
 | `lib/sancus/generic_inputgen.ml` | The Core generator on Sancus inputs and outputs, with the embedded plugin files |
 | `lib/sancus/inputgen.ml` | The former input generator, kept to compare with (`tt_inputgen_golden check --engine legacy`) |
-| `lib/sancus/sul/simulator.ml` | The Sancus backend: code generation, simulation, VCD-to-observation conversion |
+| `lib/sancus/sul/simulator.ml` | The Sancus backend: code generation, the targets, simulation, the instructions of a step in the VCD dump |
+| `lib/sancus/sul/step_analysis.ml` | From the instructions of a step to its observations, for every target |
+| `lib/sancus-fpga/fpga.ml` | ALVIE/Sancus-FPGA: the board as a target of the Sancus backend (the serial port, the queries, the instructions of a step in the board's trace) |
+| `lib/sancus-fpga/native.ml` | ALVIE/Sancus-FPGA as a native plugin (`alvie sancus-fpga ...`), with the codec of Sancus |
+| `lib/sancus-fpga/serial_stubs.c` | Opens the serial port of the board at 5 Mbaud (Linux `termios2`) |
+| `plugins/sancus-fpga/` | Its manifest and fixtures; it shares the other files of `plugins/sancus` |
 | `lib/sancus/sul/verilog.ml` | The Sancus SUL: the backend behind Core's adapter |
 | `lib/core/backend/` | The backend contract and its adapter to the learner |
 | `lib/sancus/output_internal.ml` | Observable output and timing payload types |
@@ -99,8 +104,9 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/compare/plugin_hooks.ml` | The hooks of the engine, derived from the plugin files |
 | `lib/core/compare/properties.ml` | The catalogue of properties |
 | `bin/alvie.ml` | The `alvie` command: the subcommands below and `plugin` |
-| `bin/learn_cmd.ml` | `alvie learn` (`learn.exe`): experiment orchestration and model writing |
-| `bin/fa_cmd.ml` | `alvie compare` (`fa.exe`): four-model flow-analysis comparison |
+| `bin/learn_cmd.ml` | `alvie learn` (`learn.exe`): its options, their checks and `--report`; the learning is the runner's (`Sancus_runner`) |
+| `bin/fa_cmd.ml` | `alvie compare` (`fa.exe`): its options and output; the comparison is the runner's |
+| `bin/sancus_runner.ml` | The commands of Core on Sancus, with the codec of Sancus (`Sancus.Native.Codec`) |
 | `lib/core/cli/config.ml` | Options generated from a manifest (`Alvie_cli.Config`) |
 | `lib/core/cli/runner.ml` | The commands of Core for any native plugin: learn, compare, property, exec, conformance, fixtures |
 | `lib/core/cli/errors.ml` | How every command reports its errors, and its exit statuses |
@@ -131,13 +137,14 @@ Core stores it and gives it back, but never compares it: two steps are equal whe
 `lib/core/backend/sul.ml` adapts a backend to the SUL of the learner (`lib/core/lsharp/sul.mli`), so that L# and the oracles do not change.
 The adapter follows the test with the input generator: it checks that each input is legal, computes the programs for the backend, turns dry steps into `restore`, and feeds the observations to the phase rules.
 An input that the spec does not allow, and any input after the test has stopped, gets the illegal output without running the backend.
-A codec translates between the learner's input and output types and Core's values: `Sul.Values` for a learner that works on values, as the toy backend of `tt_plugin` does; `Sul.Atoms`, whose inputs are atoms of a class (the same input in every section of that class), for the commands of Core (`Alvie_cli.Runner`); ALVIE/Sancus keeps its own types (`Input.t`, `Output_internal.t`), so that its model files keep their format.
+A codec translates between the learner's input and output types and Core's values: `Sul.Values` for a learner that works on values, as the toy backend of `tt_plugin` does; `Sul.Atoms`, whose inputs are atoms of a class (the same input in every section of that class), for the commands of Core (`Alvie_cli.Runner`); ALVIE/Sancus keeps its own types (`Input.t`, `Output_internal.t`), so that its model files keep their format: its codec (`Sancus.Native.Codec`) is that of the runner too.
 
 ## Native plugins and the commands of Core
 
 A native plugin is a module of signature `Alvie_backend.Native.S`: its plugin files (embedded in the program), its backend, and `make`, which builds a backend from the values of the manifest's parameters and a variant.
-`Alvie_cli.Runner.Make` turns it into the commands of Core: `learn` (L# with the PAC or random-walk oracle, inputs chosen by the generator from the spec), `compare` (noninterference with `Plugin_hooks`), `property`, `exec`, `conformance` (random tests of the spec, checked against the contract) and `fixtures`.
+`Alvie_cli.Runner.Make` turns it into the commands of Core, with the codec `Atoms_codec`; `Runner.Make_codec` takes another codec (`Runner.MODEL_CODEC`), which says what the learner's inputs and outputs are, its alphabet, and what model files keep. The commands are: `learn` (L# with the PAC or random-walk oracle, inputs chosen by the generator from the spec), `compare` (noninterference with `Plugin_hooks`), `property`, `exec`, `conformance` (random tests of the spec, checked against the contract) and `fixtures`.
 `alvie tiny` and `alvie sancus` are these commands for Tiny and Sancus, and `alvie plugin new` makes a plugin with its own `alvie-NAME`.
+Every plugin learns and compares through these functions, ALVIE/Sancus included: `learn.exe` and `fa.exe` are front ends that keep their options and output, and learn and compare with the runner and the codec of Sancus (`bin/sancus_runner.ml`), with the random inputs outside the spec (`--bad-probability`) and the exhaustive oracle that the runner offers as options.
 `Runner.Make(N).Model_native` replays a learned model as a native plugin, to test the learner.
 `Alvie_rpc.Rpc_backend.native ~dir` makes the module of an external plugin at run time, from its directory: `alvie external DIR` gives it the same commands.
 
@@ -145,7 +152,10 @@ The Sancus backend is `lib/sancus/sul/simulator.ml`, and `Sancus.Verilog` is its
 It compiles the programs that Core gives into the testbench template: the input's occurrence is labelled, so that the analysis finds its instructions, and the other atoms run but are not analysed.
 Its bookkeeping is the code still to analyse and the number of the last instruction analysed.
 When an enclave is resumed with `reti`, the backend also identifies a segment of execution between two re-entries with an identical segment immediately before it, so that an enclave that can be resumed repeatedly still has a finite model (see `--keep-repeated-reentries`); it compares the places in the spec with the key that Core gives (`Generator.key`).
-A step generates the MSP430 program, runs the simulator, parses the VCD, and analyzes the trace at the instruction boundaries relevant to the input.
+A step generates the MSP430 program, runs it on the target, and analyzes the trace at the instruction boundaries relevant to the input.
+The target (`Simulator.target`) is only how a step runs and how its instructions are found in the trace: the simulator parses its VCD dump (`analyse_dump`); another plugin can give its own (`Other`), as ALVIE/Sancus-FPGA does (`Sancus_fpga.Fpga.target`: it sends the program to the board and reads back a window of 50 clock cycles).
+Every target gives the signals of each instruction to `Sancus.Step_analysis`, which turns them into observations; everything else is the same.
+ALVIE/Sancus-FPGA is a separate native plugin (`lib/sancus-fpga`, `plugins/sancus-fpga`) that reuses the library `sancus`: its manifest names the files of `plugins/sancus` (`files:`), and its runner uses the codec of Sancus, so its models have the inputs and outputs of the simulator's (their header names the plugin `sancus-fpga`).
 
 ## Outputs and observability
 
