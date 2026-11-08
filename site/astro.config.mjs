@@ -24,8 +24,10 @@ const moved = Object.fromEntries(Object.entries({
     '/guides/testing-alvie/': '/development/testing-alvie/',
     '/reference/code-architecture/': '/development/code-architecture/',
 })
-  // the documentation of an earlier version (scripts/build-versions.sh) still has its pages there: no redirect then
-  .filter(([from]) => !existsSync(`./src/content/docs${from.replace(/\/$/, '')}.md`))
+  // the documentation of an earlier version (scripts/build-versions.sh) still has its pages there, or does not have
+  // the new ones: no redirect then
+  .filter(([from, to]) => !existsSync(`./src/content/docs${from.replace(/\/$/, '')}.md`)
+    && existsSync(`./src/content/docs${to.replace(/\/$/, '')}.md`))
   .map(([from, to]) => [from, base + to]));
 
 // The documentation by reader (after 2026.10); the documentation of an earlier version keeps its own layout
