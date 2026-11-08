@@ -24,3 +24,4 @@ kinds:
   Time: payload
   JmpOut_Handle: { fields: { time: payload, handle: payload }, doc: The enclave jumped out and an interrupt was handled }
   Time_Handle: { fields: { time: payload, handle: payload }, doc: The input ran and an interrupt was handled }
+  Handle: payload    # an interrupt was handled: a part of JmpOut_Handle and Time_Handle (view.yaml); never returned alone

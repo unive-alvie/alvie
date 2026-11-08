@@ -38,11 +38,11 @@ let test_sancus_loads () =
   Alcotest.(check string) "name" "sancus" p.manifest.name;
   Alcotest.(check (list string)) "sections" [ "enclave"; "isr"; "prepare"; "cleanup" ] (Sections_file.names p.sections);
   Alcotest.(check string) "initial" "prepare" (Sections_file.initial p.sections).name;
-  Alcotest.(check int) "kinds" 11 (List.length p.observations.kinds)
+  Alcotest.(check int) "kinds" 12 (List.length p.observations.kinds)
 
 let test_schemas_up_to_date () =
   let dir = Filename.concat code_dir "schemas" in
-  List.iter (Plugin.file_schemas ()) ~f:(fun (name, schema) ->
+  List.iter (Plugin.file_schemas () @ [ ("protocol.schema.json", Alvie_backend.Protocol.json_schema ()) ]) ~f:(fun (name, schema) ->
       let expected = Yojson.Safe.pretty_to_string schema ^ "\n" in
       let path = Filename.concat dir name in
       let actual = try In_channel.read_all path with Sys_error _ -> "" in
@@ -174,7 +174,7 @@ let test_value_json_round_trip () =
     (QCheck.Test.make ~count:2000 ~name:"JSON" (QCheck.make ~print:Value.to_string (gen_type p.grammar 2 ~exclude:[] "attacker")) (fun v ->
          match Value.of_json (Value.to_json v) with Ok v' -> Value.equal v v' | Error e -> QCheck.Test.fail_reportf "%s" e))
 
-(* The example of docs/reference/plugin-files.md *)
+(* The example of docs/plugin-authors/plugin-files.md *)
 let test_value_json_example () =
   let p = Lazy.force sancus in
   let v = Result.ok_or_failwith (Result.map_error (Grammar.parse_value p.grammar ~file:"atom" ~ty:"enclave" "mov r5, r6") ~f:Diag.to_string) in
@@ -236,7 +236,7 @@ let test_atoms_errors = [
 (* A copy of the Sancus plugin with one file replaced, to check the errors across files *)
 let with_file name contents f =
   let dir = Filename_unix.temp_dir "tt_plugin" "" in
-  List.iter (Sys_unix.ls_dir plugin_dir) ~f:(fun file ->
+  List.iter (List.filter (Sys_unix.ls_dir plugin_dir) ~f:(fun f -> String.is_suffix f ~suffix:".yaml")) ~f:(fun file ->
       Out_channel.write_all (Filename.concat dir file) ~data:(In_channel.read_all (Filename.concat plugin_dir file)));
   Out_channel.write_all (Filename.concat dir name) ~data:contents;
   Exn.protect ~f:(fun () -> f dir) ~finally:(fun () -> ignore (Sys_unix.command (sprintf "rm -rf %s" (Filename.quote dir))))
@@ -530,7 +530,7 @@ let () =
     (* Regenerates the JSON Schemas of the plugin files *)
     let dir = Filename.concat code_dir "schemas" in
     Core_unix.mkdir_p dir;
-    List.iter (Plugin.file_schemas ()) ~f:(fun (name, schema) ->
+    List.iter (Plugin.file_schemas () @ [ ("protocol.schema.json", Alvie_backend.Protocol.json_schema ()) ]) ~f:(fun (name, schema) ->
         Out_channel.write_all (Filename.concat dir name) ~data:(Yojson.Safe.pretty_to_string schema ^ "\n");
         printf "wrote %s\n" (Filename.concat dir name))
   | _ ->

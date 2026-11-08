@@ -12,6 +12,7 @@
     primary ::= atom | "(" body ")"
 
   The atoms are parsed with the plugin's grammar (Grammar); whitespace separates nothing and is allowed anywhere.
+  A comment runs from // to the end of the line.
   A spec may be split across files (e.g. the victim and the attacker); every section that is not opaque must have
   exactly one body.
 
@@ -116,7 +117,20 @@ exception Parse_error of Diag.t
 
 let reserved = [ ("threads", "several threads of control"); ("step", "the granularity of a step") ]
 
+(* Comments run from // to the end of the line; they become spaces, so that positions do not change *)
+let blank_comments text =
+  let b = Bytes.of_string text in
+  let n = Bytes.length b in
+  let i = ref 0 in
+  while !i < n - 1 do
+    if Char.equal (Bytes.get b !i) '/' && Char.equal (Bytes.get b (!i + 1)) '/' then
+      while !i < n && not (Char.equal (Bytes.get b !i) '\n') do Bytes.set b !i ' '; incr i done
+    else incr i
+  done;
+  Bytes.to_string b
+
 let parse_text (p : Plugin.t) ~file text : (section list * constraint_ list, Diag.t list) Result.t =
+  let text = blank_comments text in
   let g = p.grammar in
   let inp = Grammar.Input.make ~file text in
   let memo = Grammar.make_memo () in

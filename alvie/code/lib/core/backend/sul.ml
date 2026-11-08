@@ -113,3 +113,37 @@ module Values (B : sig type bookkeeping [@@deriving sexp] val none : bookkeeping
   let output_to_core (o : output) = (o.observations, o.bookkeeping)
   let illegal = Output.default
 end
+
+(*
+  The codec of a learner whose inputs are atoms of a class, as a spec writes them: an attacker atom is the same
+  input whichever attacker section it runs in (the section is the current one), so models have one input per atom.
+  An atom of a class that the current section does not run is illegal. Outputs are those of Values.
+*)
+module Atoms (P : sig val plugin : Plugin.t Lazy.t end) (B : sig type bookkeeping [@@deriving sexp] val none : bookkeeping end) = struct
+  module Input = struct
+    type atom = { cls : string; atom : Value.t } [@@deriving sexp, equal, compare, hash]
+    type t = atom option [@@deriving sexp, equal, compare, hash]
+
+    let show = function
+      | Some { cls; atom } -> Grammar.print_atom (Lazy.force P.plugin).grammar ~cls atom
+      | None -> "-"
+    let pp fmt i = Format.pp_print_string fmt (show i)
+    let default = None
+    include Comparator.Make (struct type nonrec t = t let compare = compare let sexp_of_t = sexp_of_t end)
+  end
+
+  module V = Values (B)
+  module Output = V.Output
+
+  type bookkeeping = B.bookkeeping
+  type input = Input.t
+  type output = Output.t
+
+  let input_to_core ~section (i : input) : G.input option =
+    match i with
+    | Some { cls; atom } when Option.equal String.equal (Plugin.atoms_of (Lazy.force P.plugin) section) (Some cls) -> Some { G.section; atom }
+    | _ -> None
+  let output_of_core = V.output_of_core
+  let output_to_core = V.output_to_core
+  let illegal = V.illegal
+end
