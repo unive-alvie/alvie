@@ -152,14 +152,12 @@ let query fd ~pmem ~vectors ~breakpoint =
     if read_all 0 then Some (entries_of_raw (Bytes.to_string raw)) else None)
 
 (*
-  Runs pmem.elf up to the first instruction not analysed yet and returns its trace, and whether the step diverged.
+  Runs the program (pmem, vectors) up to the first instruction not analysed yet and returns its trace, and whether the step diverged.
   When the program reset or stopped before that instruction (e.g., the reset of the cleanup at the end of a test),
   the window that ends there may still hold the step's instructions: the query is retried at the last instruction
   analysed.
 *)
-let run ~port ~elf ~first_instruction ~last_inst_number =
-  let fd = connect ~port in
-  let pmem, vectors = elf_sections elf in
+let run fd ~pmem ~vectors ~first_instruction ~last_inst_number =
   let q breakpoint = Prof.time "sul.fpga_query" (fun () -> query fd ~pmem ~vectors ~breakpoint) in
   let breakpoint = Int.max first_instruction (last_inst_number + 1) in
   match q breakpoint with
@@ -267,12 +265,10 @@ let ended trace =
 *)
 let divergence_cycles = 10000
 
-let extend ~port ~elf trace =
+let extend fd ~pmem ~vectors trace =
   match List.last trace with
   | None -> None
   | Some last ->
-    let fd = connect ~port in
-    let pmem, vectors = elf_sections elf in
     Prof.count "sul.fpga_window";
     Option.map (Prof.time "sul.fpga_query" (fun () -> query fd ~pmem ~vectors ~breakpoint:last.inst_number)) ~f:(fun window ->
       List.filter trace ~f:(fun e -> e.inst_number < last.inst_number) @ window)
@@ -284,7 +280,9 @@ let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
     boot;
     run = (fun (cfg : Sancus.Simulator.cfg_t) ->
       Sancus.Simulator.build_program cfg;
-      let diverges, trace = run ~port ~elf:cfg.pmem_elf ~first_instruction ~last_inst_number:cfg.last_inst_number in
+      (* the program of the step, read once for all its queries *)
+      let fd = connect ~port and pmem, vectors = elf_sections cfg.pmem_elf in
+      let diverges, trace = run fd ~pmem ~vectors ~first_instruction ~last_inst_number:cfg.last_inst_number in
       let trace = ref trace in
       let analyse labels =
         analyse ~diverges ~addr_of_label:(Sancus.Simulator.addr_of_label cfg) ~last_inst_number:cfg.last_inst_number labels !trace in
@@ -293,7 +291,7 @@ let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
           match analyse labels with
           | Nothing { diverges = false } when not (ended !trace) ->
             if List.length !trace >= divergence_cycles then Step_analysis.Nothing { diverges = true }
-            else (match extend ~port ~elf:cfg.pmem_elf !trace with
+            else (match extend fd ~pmem ~vectors !trace with
                 | Some t when List.length t > List.length !trace -> trace := t; find ()
                 | _ -> analyse labels)
           | found -> found in
