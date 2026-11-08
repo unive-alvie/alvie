@@ -37,13 +37,15 @@ type alt = {
   syntax : template list; (* at least one; the first is canonical *)
   args : (string * arg_type) list;
   secret : template option; (* the expansion of a secret hole, with the argument "value" *)
+  attrs : (string * string list) list; (* attribute -> the arguments it collects its values from *)
   doc : string option;
   pos : Diag.pos;
 }
 
 type ty = { name : string; alts : alt list; single : bool; is_class : bool; tpos : Diag.pos }
 
-type t = { types : ty list }
+(* attributes: name -> the type of their values (e.g. reads -> reg) *)
+type t = { types : ty list; attributes : (string * string) list }
 
 let find_type g name = List.find g.types ~f:(fun t -> String.equal t.name name)
 let classes g = List.filter g.types ~f:(fun t -> t.is_class)
@@ -113,6 +115,75 @@ and check_ty g (t : ty) (v : Value.t) =
          Error (sprintf "%s has the fields %s, not %s" tag (String.concat ~sep:", " (List.map a.args ~f:fst)) (String.concat ~sep:", " (List.map fields ~f:fst)))
        else Result.all_unit (List.map2_exn fields a.args ~f:(fun (_, v) (_, ty) -> check g ty v)))
   | v -> Error (sprintf "%s is not a value of %s" (Value.to_string v) t.name)
+
+(*
+  The declaration order of values: variants in the order atoms.yaml declares them, then their fields in order;
+  integers by value, symbols as strings, lists element by element (a prefix first). It is the order of the
+  constructors of an OCaml type that declares the same variants, so a plugin can keep the order its backend used.
+  Core lists the input options of the learner in this order.
+*)
+let rec compare_arg g (ty : arg_type) (a : Value.t) (b : Value.t) : int =
+  match ty, a, b with
+  | Int _, Int x, Int y -> Int.compare x y
+  | Symbol, Sym x, Sym y -> String.compare x y
+  | List { elem; _ }, List xs, List ys -> List.compare (compare_arg g (Ref elem)) xs ys
+  | Ref name, a, b ->
+    (match find_type g name with
+     | Some t -> compare_ty g t a b
+     | None -> Value.compare a b)
+  | _ -> Value.compare a b
+
+and compare_ty g (t : ty) (a : Value.t) (b : Value.t) =
+  let index v =
+    List.findi t.alts ~f:(fun _ (alt : alt) ->
+        match v with
+        | Value.Hole _ -> Option.is_some alt.secret
+        | Node (tag, _) -> String.equal alt.tag tag
+        | _ -> false) in
+  match index a, index b with
+  | Some (i, alt), Some (j, _) ->
+    if i <> j then Int.compare i j
+    else
+      (match a, b with
+       | Node (_, fa), Node (_, fb) ->
+         List.fold_until alt.args ~init:0 ~finish:(fun c -> c) ~f:(fun _ (name, ty) ->
+             let get fs = List.Assoc.find_exn fs ~equal:String.equal name in
+             match compare_arg g ty (get fa) (get fb) with 0 -> Continue 0 | c -> Stop c)
+       | _ -> 0)
+  | _ -> Value.compare a b
+
+let compare_atom g ~cls a b = match find_type g cls with Some t -> compare_ty g t a b | None -> Value.compare a b
+
+(*
+  Attributes of atoms, for constraints: the values of the attribute's type (e.g. the registers an instruction
+  reads) in an atom. An atom has the attribute only if its declaration lists it, with the arguments to collect the
+  values from; inside them, a variant that lists the attribute collects from the arguments it lists, and a variant
+  that does not, from all its arguments. Nested atoms (lists of atoms in ifz) contribute their own attributes.
+*)
+let rec attribute g ~(ty : arg_type) ~name (v : Value.t) : Value.t list =
+  let of_type = List.Assoc.find g.attributes ~equal:String.equal name in
+  match ty, v with
+  | Ref t, _ when Option.equal String.equal (Some t) of_type -> [ v ]
+  | List { elem; _ }, List vs -> List.concat_map vs ~f:(attribute g ~ty:(Ref elem) ~name)
+  | Ref t, Node (tag, fields) ->
+    (match find_type g t with
+     | None -> []
+     | Some tdef ->
+       (match List.find tdef.alts ~f:(fun a -> String.equal a.tag tag) with
+        | None -> []
+        | Some a ->
+          let from_args args = List.concat_map args ~f:(fun (arg, aty) ->
+              match List.Assoc.find fields ~equal:String.equal arg with
+              | Some fv -> attribute g ~ty:aty ~name fv
+              | None -> []) in
+          let listed args = from_args (List.filter_map args ~f:(fun arg -> Option.map (List.Assoc.find a.args ~equal:String.equal arg) ~f:(fun t -> (arg, t)))) in
+          (match List.Assoc.find a.attrs ~equal:String.equal name, tdef.is_class with
+           | Some args, _ -> listed args
+           | None, true -> [] (* an atom without the attribute *)
+           | None, false -> from_args a.args)))
+  | _ -> []
+
+let attribute_of_atom g ~cls ~name v = List.dedup_and_sort (attribute g ~ty:(Ref cls) ~name v) ~compare:Value.compare
 
 (* Printing, with the first template of each alternative *)
 

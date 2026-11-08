@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=../../schemas/alvie-plugin.schema.json
+# The manifest of Tiny, the reference platform of ALVIE/Core: a processor with one enclave, a timer that interrupts
+# it, and two planted timing leaks. Its backend is lib/core/tiny/tiny.ml, in pure OCaml. Core's tests and the
+# tutorial use it; it is also the smallest complete example of a plugin.
+format: 1
+name: tiny
+version: "2026.10"
+core: "1"
+kind: native
+description: >-
+  Tiny, the reference platform of ALVIE/Core: the attacker prepares the timer and calls the enclave, which runs
+  instructions of one or two cycles; the timer interrupts it, the attacker's ISR runs, and reti resumes it. bz
+  leaks the secret through the time the enclave takes; bz followed by pad takes the same time either way, but
+  leaks it through the interrupt latency.
+config:
+  mitigation:
+    type: enum
+    values: [none, constant-time]
+    default: none
+    doc: constant-time makes bz and pad take two cycles whatever the register, which removes both leaks
+variants:
+  no-interrupts:
+    doc: The timer never interrupts the enclave (the baseline whose differences are not caused by interrupts)
+capabilities: [restore, clone]
+fixtures: fixtures
