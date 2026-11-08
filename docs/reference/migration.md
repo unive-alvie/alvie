@@ -65,7 +65,7 @@ Each change has its cause in the CHANGELOG, and the checked-in models, witness g
 | --- | --- |
 | Most witness counts (for example B3 on `ef753b6`: 3619 in 2026.10) | The comparison looked for witnesses in one direction only, and counted some witnesses more than once. |
 | B3 on `ef753b6`: 11 witnesses | The enclave re-entered by `reti` ran other code than it had run at that point, both in the input generator and in the simulator. |
-| B1 on `ef753b6`: 31 witnesses | The simulated enclave code lost instructions after two or more interrupts; and mCRL2 now compares what the attacker sees, without the cycle count `k`. |
+| B1 on `ef753b6`: 25 witnesses | The simulated enclave code lost instructions after two or more interrupts; mCRL2 now compares what the attacker sees, without the cycle count `k`; and the simulator no longer cuts the longest tests at 100 µs, where the cut looked like a reset. |
 | 8 models; others only renumbered | The same causes. |
 | The labels of witness graphs: `ubr/Time(k = 2, ...)`, `(hidden)` | Witness graphs show what the attacker sees of each output. |
 

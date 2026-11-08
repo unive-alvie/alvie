@@ -39,6 +39,18 @@ the documentation lists what users must do.
 
 ### Fixes
 
+- **The simulator stops a test after 500 µs (10000 cycles), not 100 µs
+  (2000 cycles).** ALVIE's testbench (`alvie/bench/verilog`) cut the longest
+  tests, and the analysis took the cut for a reset (`OReset`): in B1 on
+  `ef753b6`, tests with many interrupts ran longer than 100 µs. Found by
+  comparing with the FPGA board, which has no such limit. Results: the two
+  models of B1 with interrupts on `ef753b6` change, and **B1 on `ef753b6`
+  gives 25 witnesses instead of 31**; no other model or count changes
+  (regression). The value is that of the testbench of `sancus-core-gap`; only
+  a test that loops runs for longer in the simulator.
+- The cache of compiled simulators (`ALVIE_SIM_CACHE`) includes ALVIE's
+  testbench in its key: a change to it reused simulators compiled before.
+
 - `alvie <plugin> exec --inputs`: only a line that starts with `#` is a
   comment. A `#` inside a line cut it, so the immediates of Sancus
   (`mov #1, r4`) could not be given.

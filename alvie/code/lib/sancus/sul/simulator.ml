@@ -79,8 +79,8 @@ let clone s = ref { !s with last_inst_number = !s.last_inst_number}
   Compiling the simulator takes most of the setup time of a SUL, and experiments compile the same
   processor over and over. Compiled simulators are kept in a cache directory (ALVIE_SIM_CACHE, by
   default <tmpdir>/simv-cache; ALVIE_SIM_CACHE=0 disables it), indexed by a digest of everything the
-  compilation depends on: the processor sources as configured in r_tmpdir, the stimulus, the
-  compilation script, the Verilator version and the tracing option. A lock makes concurrent runs
+  compilation depends on: the processor sources as configured in r_tmpdir, ALVIE's testbench
+  (alvie/bench), the stimulus, the compilation script, the Verilator version and the tracing option. A lock makes concurrent runs
   needing the same simulator compile it once.
 *)
 let with_simulator_cache ~tmpdir ~workingdir ~r_tmpdir ~basename ~verilog_compile ~submitfile compile =
@@ -99,7 +99,9 @@ let with_simulator_cache ~tmpdir ~workingdir ~r_tmpdir ~basename ~verilog_compil
       [ verilator_version; Option.value (Sys.getenv "ALVIE_FULL_TRACE") ~default:"";
         In_channel.read_all (workingdir ^ "/../src/" ^ basename ^ ".v");
         In_channel.read_all verilog_compile; In_channel.read_all submitfile ]
-      @ List.concat_map sources ~f:(fun f -> [ String.chop_prefix_exn f ~prefix:core; In_channel.read_all f ]))) in
+      @ List.concat_map sources ~f:(fun f -> [ String.chop_prefix_exn f ~prefix:core; In_channel.read_all f ])
+      (* ALVIE's testbench, which submit.f compiles before the one of sancus-core-gap *)
+      @ List.concat_map (files (workingdir ^ "/../bench")) ~f:(fun f -> [ f; In_channel.read_all f ]))) in
     let cached = cache_dir ^ "/" ^ Md5.to_hex digest ^ ".simv" in
     let simv_dir = r_tmpdir ^ "/sancus-core-gap/obj_dir" in
     Core_unix.mkdir_p cache_dir;
