@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../../schemas/atoms.schema.json
+# The atoms of Tiny specs: the attacker's instructions and the enclave's. The enclave has four registers, r0 to r3,
+# which hold small integers; they start at 0 when the enclave is called.
+format: 1
+types:
+  reg:
+    syntax: "r{i}"
+    args: { i: { int: [0, 3] } }
+    doc: A register of the enclave
+  val:
+    variants:
+      lit:    { syntax: "{num}", args: { num: { int: [0, 3] } } }
+      secret: { syntax: "?", secret: { expand: "{value}" }, doc: The secret; it becomes a number }
+attributes:
+  writes: { of: reg }
+  reads: { of: reg }
+atoms:
+  attacker:
+    nop:   { syntax: nop, doc: Does nothing }
+    timer: { syntax: "timer {cycles}", args: { cycles: { int: [1, 4] } }, doc: "Arms the timer: it interrupts the enclave once it has run this many more cycles" }
+    call:  { syntax: call, doc: Calls the enclave (from its start; its registers start at 0) }
+    reti:  { syntax: reti, doc: Resumes the enclave where the timer interrupted it (once); otherwise does nothing }
+    halt:  { syntax: halt, doc: Ends the test }
+  enclave:
+    nop: { syntax: nop, doc: One cycle }
+    mov: { syntax: "mov {r}, {v}", args: { r: reg, v: val }, attributes: { writes: [r] }, doc: "Sets the register to the value: one cycle" }
+    bz:  { syntax: "bz {r}", args: { r: reg }, attributes: { reads: [r] }, doc: "A branch on zero: two cycles if the register is 0, one otherwise" }
+    pad: { syntax: "pad {r}", args: { r: reg }, attributes: { reads: [r] }, doc: "Pads a branch on zero: one cycle if the register is 0, two otherwise" }
+    ret: { syntax: ret, doc: "Returns to the attacker: one cycle, and the timer stops" }

@@ -122,7 +122,7 @@ check_witnesses() {
     fi
   fi
   echo "Compared $n witness graphs"
-  # The counts are those of the attack catalogue (docs/reference/attack-catalogue.md)
+  # The counts are those of the attack catalogue (docs/sancus/attack-catalogue.md)
   while read -r att commit expected_count; do
     case "$att" in ''|'#'*) continue ;; esac
     log="logs/$sub/compare-$commit-$att.log"

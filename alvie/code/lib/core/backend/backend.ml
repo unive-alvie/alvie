@@ -50,3 +50,7 @@ module type S = sig
   val clone : t -> t
   val post : t -> unit
 end
+
+(* A backend that cannot go on (e.g. an external plugin that crashed or did not answer): the message says why, and
+   the commands report it as an error of the backend *)
+exception Failed of string

@@ -2,17 +2,17 @@
  (name alvie_cli_diagnostics)
  (wrapped false)
  (modules cli_diagnostics)
- (libraries sancus alvie_plugin core core_unix)
+ (libraries sancus alvie_plugin alvie_cli interop core core_unix)
 )
 
 (executables
- (names pbt learn fa exec)
- (public_names mm_pbt mm_learn mm_fa mm_exec)
+ (names pbt learn fa exec alvie)
+ (public_names mm_pbt mm_learn mm_fa mm_exec alvie)
  (package alvie-sancus)
  (modes byte exe)
- (modules pbt fa learn exec)
+ (modules pbt fa learn exec alvie pbt_cmd fa_cmd learn_cmd exec_cmd property_cmd sancus_runner)
  (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
- (libraries alvie_cli_diagnostics sancus learninglib interop core core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscompare alvie_plugin qcheck)
+ (libraries alvie_cli_diagnostics sancus sancus_fpga alvie_tiny alvie_rpc learninglib interop core core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscompare alvie_plugin alvie_cli qcheck)
 )
 
 (env

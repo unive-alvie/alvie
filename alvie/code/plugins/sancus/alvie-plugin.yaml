@@ -41,3 +41,4 @@ variants:
       are not caused by interrupts
 
 capabilities: [restore, clone, parallel]
+fixtures: fixtures
