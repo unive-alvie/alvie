@@ -128,7 +128,8 @@ expect_status 2 '--m1-nint requires --m2-nint' \
   --m1-nint "$TMP_DIR/model-nint.dot"
 
 printf 'not a DOT model\n' >"$TMP_DIR/invalid.dot"
-expect_status 1 'Raised at\|Raised by\|Called from' \
+# A file that is not a model: a mistake in the command, said as such
+expect_status 2 'cannot read --m1-int (.*invalid.dot): .*parse error' \
   _build/default/bin/fa.exe \
   --debug \
   --tmpdir "$TMP_DIR/fa-debug" \
