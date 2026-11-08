@@ -1,0 +1,14 @@
+; Tiny, the reference platform of ALVIE/Core: a backend in pure OCaml for plugins/tiny (see tiny.ml)
+(library
+ (name alvie_tiny)
+ (public_name alvie-core.tiny)
+ (preprocess (pps ppx_jane))
+ (libraries core alvie_plugin alvie_backend))
+
+; The plugin files of plugins/tiny, embedded in the executables (Tiny.plugin)
+(rule
+ (targets tiny_plugin_files.ml)
+ (deps (glob_files %{project_root}/plugins/tiny/*.yaml))
+ (action
+  (with-stdout-to %{targets}
+   (system "printf '(* Generated from plugins/tiny by lib/core/tiny/dune *)\nlet files = [\n'; for f in %{deps}; do printf '  (\"%s\", {alvie_yaml|' \"$(basename $f)\"; cat $f; printf '|alvie_yaml});\n'; done; printf ']\n'"))))

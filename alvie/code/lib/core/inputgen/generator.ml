@@ -243,7 +243,8 @@ let input t st (i : input) : state =
           let run = i.atom :: s.run and run_length = s.run_length + 1 in
           let program, program_length =
             if run_length > s.program_length then (List.rev run, run_length) else (s.program, s.program_length) in
-          { deriv = Deriv.derive s.deriv i.atom; run; run_length; program; program_length } in
+          (* Simplified, so that a star does not make it grow with every repetition (it would double) *)
+          { deriv = simplify (Deriv.derive s.deriv i.atom); run; run_length; program; program_length } in
       let st = set_section st name s in
       if List.is_empty t.watched then st else { st with monitor = add_atom t st.monitor ~section:name i.atom }
 

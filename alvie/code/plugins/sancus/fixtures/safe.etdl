@@ -1,0 +1,6 @@
+// The enclave of the Getting Started example without the branch: it compares the secret, and does nothing with the
+// result.
+enclave {
+    cmp ?, r4;
+    nop
+};
