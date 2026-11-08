@@ -264,14 +264,20 @@ let test_observation_tree_access_and_apartness () =
     Alcotest.(check (list string)) "apartness witness"
       [Input.show reti] (List.map witness ~f:Input.show)
 
+(* What the attacker sees (plugins/sancus/view.yaml): timing in protected mode is silent, an interrupt handled is
+   the instruction's timing then the handling, whose input is the interrupt *)
 let test_observation_round_trip () =
-  let open Ltscomparator in
-  let observation = Obs.Obs.make
-    (Obs.InputExt.of_input (Input.IAttacker (Attacker.CTimerEnable 2)))
-    (Obs.OutputExt.of_output (OTime (payload PM))) in
-  Alcotest.(check bool) "serialized observation parses back" true
-    (Obs.Obs.equal observation (Obs.Obs.parse (Obs.Obs.show observation)));
-  Alcotest.(check bool) "privileged timing is silent" true (Obs.Obs.is_silent observation)
+  let view = Ltscompare.View.make (Lazy.force Generic_inputgen.plugin) in
+  let pm = Generic_inputgen.observation (OTime (payload PM)) in
+  Alcotest.(check bool) "privileged timing is silent" true (Ltscompare.View.is_hidden view pm);
+  Alcotest.(check bool) "unprotected timing is not" false (Ltscompare.View.is_hidden view (Generic_inputgen.observation (OTime (payload UM))));
+  let parts = Ltscompare.View.parts view (Generic_inputgen.observation (OTime_Handle (payload PM, payload UM))) in
+  Alcotest.(check (list string)) "an interrupt handled is two parts" [ "Time"; "Handle" ]
+    (List.map parts ~f:(fun (p, _) -> Option.value_exn (Alvie_plugin.Value.tag p)));
+  Alcotest.(check (list bool)) "the second one is the interrupt" [ false; true ] (List.map parts ~f:snd);
+  Alcotest.(check bool) "the cycle count does not matter" true
+    (Ltscompare.View.public_equal view (Generic_inputgen.observation (OTime (payload UM)))
+       (Generic_inputgen.observation (OTime { (payload UM) with k = 7 })))
 
 let test_input_sexp_round_trip () =
   let input = Input.IAttacker (Attacker.CCreateEncl ("enc_s", "enc_e", "data_s", "data_e")) in

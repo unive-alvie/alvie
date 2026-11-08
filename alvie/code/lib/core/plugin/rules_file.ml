@@ -1,0 +1,150 @@
+(*
+  phases.yaml and view.yaml: rules over observations, with structured matching.
+
+  A rule matches an observation by its kind (match: a kind or a list of kinds; all kinds if absent), by the current
+  section (in: a section or a list; phase rules only) and by the values of fields (when: { field: value, ... }, all
+  of them; a field of a record field is written with a dot, e.g. time.mode). The first rule that matches applies.
+
+  phases.yaml says how observations move the system between sections:
+
+    format: 1
+    rules:
+      - { match: Diverge, do: [{ stop: finished }] }
+      - { match: Reset, in: enclave, do: [reset, { enter: cleanup }] }
+      - { match: Reti, when: { mode: PM }, do: [resume] }
+
+  Actions: restart (the test starts afresh: the platform rebooted, and the programs of the sections can be new), reset
+  (every section starts again, with the same programs), { enter: S } (S starts again and becomes current), { switch: S } (S
+  becomes current where it was), { interrupt: S } (the current section is saved and S is entered), resume (the last
+  saved section becomes current where it was), { stop: finished } or { stop: invalid }. do: [] changes nothing.
+
+  view.yaml says what the attacker sees of each observation:
+
+    format: 1
+    rules:
+      - { when: { mode: PM }, show: hidden }
+      - { match: [JmpIn, Reti], show: { fields: [gie, mode] } }
+      - { match: Reset, show: tag }
+      - { match: Diverge, show: distinct }
+
+  show: hidden (the attacker sees nothing: the observation is silent), tag (only its kind), { fields: [...] } (its
+  kind and these fields), distinct (never equal to another observation, so always reported), all (everything).
+  The match: key is named so because YAML 1.1 reads an unquoted on: as a boolean.
+*)
+
+open Core
+open Shape
+
+type cond = { path : string list; value : string; kpos : Diag.pos; cpos : Diag.pos }
+
+type stop = Finished | Invalid [@@deriving sexp, equal]
+
+type action =
+  | Restart
+  | Reset
+  | Enter of string
+  | Switch of string
+  | Interrupt of string
+  | Resume
+  | Stop of stop
+[@@deriving sexp, equal]
+
+type show = Hidden | Tag | Fields of string list list | Distinct | All [@@deriving sexp, equal]
+
+(*
+  A part of an observation, for observations that stand for several events (e.g. an instruction that ran and an
+  interrupt that was handled): a record field of the observation (field: <name>), its own fields (field: self), or
+  nothing but a kind (no field), shown as an observation of the kind as, with the input of the step or, with
+  input: interrupt, the built-in interrupt input. Parts are seen by the show rules; they are not split again.
+*)
+type part = { field : string option; as_kind : string; interrupt : bool } [@@deriving sexp, equal]
+
+type effect = Show of show | Parts of part list [@@deriving sexp, equal]
+
+type 'a rule = { kinds : string list option; sections : string list option; when_ : cond list; effect : 'a; pos : Diag.pos }
+
+let when_shape =
+  Shape.map_value (Shape.map (Shape.with_pos (Shape.string ())))
+    ~f:(List.map ~f:(fun (key, kpos, (value, cpos)) -> { path = String.split key ~on:'.'; value; kpos; cpos }))
+
+let action_shape : action Shape.t =
+  let scalar = Shape.enum [ ("restart", Restart); ("reset", Reset); ("resume", Resume) ] in
+  let structured =
+    let open Obj in
+    Shape.map_result
+      (obj ~what:"an action"
+         (let+ enter = opt "enter" (Shape.string ()) ~doc:"The section starts again and becomes current"
+          and+ switch = opt "switch" (Shape.string ()) ~doc:"The section becomes current where it was"
+          and+ interrupt = opt "interrupt" (Shape.string ()) ~doc:"The current section is saved, and this one is entered"
+          and+ stop = opt "stop" (enum [ ("finished", Finished); ("invalid", Invalid) ]) ~doc:"The test stops" in
+          (enter, switch, interrupt, stop)))
+      ~f:(fun n -> function
+          | Some s, None, None, None -> Ok (Enter s)
+          | None, Some s, None, None -> Ok (Switch s)
+          | None, None, Some s, None -> Ok (Interrupt s)
+          | None, None, None, Some s -> Ok (Stop s)
+          | _ -> fail n "an action has exactly one of enter, switch, interrupt and stop") in
+  by_kind ~what:"an action" ~scalar ~map:structured () ~doc:"restart, reset, resume, { enter: S }, { switch: S }, { interrupt: S } or { stop: finished | invalid }"
+
+let show_shape : show Shape.t =
+  let scalar = Shape.enum [ ("hidden", Hidden); ("tag", Tag); ("distinct", Distinct); ("all", All) ] in
+  let fields =
+    let open Obj in
+    obj ~what:"{ fields: [...] }"
+      (let+ fs = req "fields" (Shape.list (Shape.string ())) ~doc:"The fields that the attacker sees" in
+       Fields (List.map fs ~f:(String.split ~on:'.'))) in
+  by_kind ~what:"what the attacker sees" ~scalar ~map:fields () ~doc:"hidden, tag, distinct, all or { fields: [...] }"
+
+let part_shape : part Shape.t =
+  let open Obj in
+  obj ~what:"a part"
+    (let+ field = opt "field" (Shape.string ()) ~doc:"The record field that the part shows (none: only its kind)"
+     and+ as_kind = req "as" (Shape.string ()) ~doc:"The kind the part is an observation of"
+     and+ interrupt = dflt "input" false (Shape.enum [ ("step", false); ("interrupt", true) ]) ~doc:"step (the input of the step, the default) or interrupt" in
+     { field; as_kind; interrupt })
+
+let rule_shape ~with_sections ~effect_name ~effect_doc (effect : 'a Shape.t) : 'a rule Shape.t =
+  let open Obj in
+  Shape.with_pos
+    (obj ~what:"a rule"
+       (let+ kinds = opt "match" (one_or_list (Shape.string ())) ~doc:"The kinds of observations the rule applies to (all if absent)"
+        and+ sections = (if with_sections then opt "in" (one_or_list (Shape.string ())) ~doc:"The current sections the rule applies in (all if absent)" else pure None)
+        and+ when_ = dflt "when" [] when_shape ~doc:"The values of fields the rule requires"
+        and+ effect = req effect_name effect ~doc:effect_doc in
+        (kinds, sections, when_, effect)))
+  |> Shape.map_value ~f:(fun ((kinds, sections, when_, effect), pos) -> { kinds; sections; when_; effect; pos })
+
+let file_shape ~what rule =
+  let open Obj in
+  obj ~what
+    (let+ _ = req "format" (Shape.int ~min:1 ~max:1 ()) ~doc:"The version of the format of this file: 1"
+     and+ rules = req "rules" (Shape.list rule) ~doc:"The rules, in order: the first that matches applies" in
+     rules)
+
+let phases_shape = file_shape ~what:"a phases file" (rule_shape ~with_sections:true ~effect_name:"do" ~effect_doc:"The actions, in order" (Shape.list action_shape))
+(* A view rule has show: or parts: *)
+let view_rule_shape =
+  let open Obj in
+  Shape.with_pos
+    (Shape.map_result
+       (obj ~what:"a rule"
+          (let+ kinds = opt "match" (one_or_list (Shape.string ())) ~doc:"The kinds of observations the rule applies to (all if absent)"
+           and+ when_ = dflt "when" [] when_shape ~doc:"The values of fields the rule requires"
+           and+ show = opt "show" show_shape ~doc:"What the attacker sees"
+           and+ parts = opt "parts" (Shape.list part_shape) ~doc:"The parts that the observation stands for, each seen by the other rules" in
+           (kinds, when_, show, parts)))
+       ~f:(fun n -> function
+           | kinds, when_, Some s, None -> Ok (kinds, when_, Show s)
+           | kinds, when_, None, Some ps -> Ok (kinds, when_, Parts ps)
+           | _ -> fail n "a view rule has either show: or parts:"))
+  |> Shape.map_value ~f:(fun ((kinds, when_, effect), pos) -> { kinds; sections = None; when_; effect; pos })
+
+let view_shape = file_shape ~what:"a view file" view_rule_shape
+
+type phases = action list rule list
+type view = effect rule list
+
+let load_phases ~file : (phases, Diag.t list) Result.t = Shape.parse_file phases_shape file
+let load_view ~file : (view, Diag.t list) Result.t = Shape.parse_file view_shape file
+let load_phases_string ~file text = Shape.parse_string phases_shape ~file text
+let load_view_string ~file text = Shape.parse_string view_shape ~file text

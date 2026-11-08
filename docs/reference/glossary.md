@@ -2,22 +2,32 @@
 title: Glossary
 description: Short definitions of the terms that ALVIE documentation and output use.
 sidebar:
-  order: 1
+  order: 4
 isNew: true
 ---
 
 This glossary gives short definitions.
-The [How ALVIE Works](/alvie/guides/concepts/) page explains how the terms fit together.
+The [How ALVIE Works](/alvie/core/concepts/) page explains how the terms fit together.
 
 ## The tool
 
 - **ALVIE**: The framework.
   It learns models of a system and compares them to find information leaks.
-- **ALVIE/Sancus**: The part of ALVIE that analyzes the Sancus processor.
+- **ALVIE/Sancus**: The plugin of ALVIE for the Sancus processor.
 - **alvie-ui**: A graphical interface for ALVIE.
   It is a separate project.
 - **System under learning (SUL)**: The system that ALVIE tests.
   In ALVIE/Sancus, it is a simulation of the Sancus processor.
+- **ALVIE/Core**: The part of ALVIE that does not depend on a platform: learning, input generation, comparison, and the spec language.
+- **Plugin**: What connects ALVIE/Core to a platform: YAML files that declare the platform's sections, atoms, observations, phase rules and attacker view, and a backend that runs inputs on it.
+  See the [Plugin Files Reference](/alvie/plugin-authors/plugin-files/).
+- **Atom class**: The set of atoms that the inputs of a section can be, for example the attacker's actions or the enclave's instructions.
+- **Attacker view**: What the attacker sees of each observation, declared in the plugin's `view.yaml`.
+- **Backend**: The part of a plugin that runs the inputs on the platform and reports what it observes. A *native* backend is OCaml, linked with Core; an *external* one is a program that speaks the [protocol of Core](/alvie/plugin-authors/protocol/).
+- **Tiny**: The reference platform of ALVIE/Core (`plugins/tiny`): a small processor with two planted timing leaks, whose models learn in a fraction of a second. `plugins/tiny-py` is the same platform as an external plugin in Python.
+- **Variant**: A version of the system that a backend can run instead, declared in the manifest: `no-interrupts` is the baseline without interrupts.
+- **Conformance**: Whether a backend keeps the contract of Core (determinism, reset, restore, clone, and the rest), checked on random tests of a spec by the `conformance` command.
+- **Fixture**: A spec of a plugin with the verdict of noninterference it must give: a planted leak, a safe spec, or a known attack. The `fixtures` command checks them.
 
 ## Learning
 
@@ -80,7 +90,7 @@ The [How ALVIE Works](/alvie/guides/concepts/) page explains how the terms fit t
   The output field `timerA_counter` shows its value.
 - **Commit**: A version of the Sancus processor.
   The option `--commit` selects it.
-  The [Attack Catalogue](/alvie/reference/attack-catalogue/) lists the important ones.
+  The [Attack Catalogue](/alvie/sancus/attack-catalogue/) lists the important ones.
 
 ## Security terms
 
@@ -108,7 +118,7 @@ The [How ALVIE Works](/alvie/guides/concepts/) page explains how the terms fit t
 - **`timerA_counter`**: The value of Timer A.
 - **`mode`**: `PM` or `UM` at the end of the step.
 
-The symbols in the live output (`t`, `o`, `i`, `†`, `•`, and others) are in the [Log and Output Reference](/alvie/reference/log-output-reference/).
+The symbols in the live output (`t`, `o`, `i`, `†`, `•`, and others) are in the [Log and Output Reference](/alvie/sancus/log-output-reference/).
 
 ## Tools
 

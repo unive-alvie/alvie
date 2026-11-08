@@ -48,7 +48,6 @@ let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sa
   let enclave = Enclave.expand_secret secret enclave in
   let open Testdl in
   let complete_spec = (Enclave enclave, ISR isr, Prepare prepare, Cleanup cleanup) in
-  let spec_dfa = Inputgen.build_spec_dfa complete_spec in
   (* Pasrse the enclave and fill in the secret *)
   let input_sequence_w_secret = attack_trace_parse_or_fail input_str in
   let open Input in
@@ -75,7 +74,7 @@ let exec_sim ~tmpdir ~enclave_spec_fn ~attacker_spec_fn ~sancus_core_gap_dir ~sa
       ~templatefile:(cwd ^ "/../src/generic_template.s43")
       ~filledfile:"generic.s43"
       ~dumpfile:"tb_openMSP430.vcd"
-      ~initial_spec:spec_dfa
+      ~spec:(Generic_inputgen.spec_of_test_spec complete_spec)
       ~ignore_interrupts:ignore_interrupts () in
         List.fold input_sequence ~init:[] ~f:(fun acc i -> let o = Sancus.Verilog.step sul i in acc @ [o])
 
