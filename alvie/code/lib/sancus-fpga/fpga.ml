@@ -21,6 +21,10 @@ module Output_internal = Sancus.Output_internal
 external serial_open : string -> int -> Core_unix.File_descr.t = "caml_alvie_serial_open"
 external serial_flush_input : Core_unix.File_descr.t -> unit = "caml_alvie_serial_flush_input" [@@noalloc]
 
+(* A problem of the board or of its setup, which the user can fix: the commands report it as an error of the backend,
+   not as a bug of ALVIE *)
+let fail fmt = Printf.ksprintf (fun m -> raise (Alvie_backend.Backend.Failed m)) fmt
+
 let baud_rate = 5_000_000
 
 (* The trace of a query: window entries of entry_size bytes *)
@@ -40,8 +44,8 @@ let check_latency_timer port =
   | `Yes ->
     let latency = String.strip (In_channel.read_all file) in
     if not (String.equal latency "1") then
-      failwithf "The latency timer of %s is %s ms, and the FPGA target needs 1 ms: run echo 1 | sudo tee %s, or add a udev rule (see docs/sancus/fpga.md)."
-        port latency file ()
+      fail "The latency timer of %s is %s ms, and the FPGA target needs 1 ms: run echo 1 | sudo tee %s, or add a udev rule (see docs/sancus/fpga.md)."
+        port latency file
   | `No | `Unknown ->
     Logs.warn (fun m -> m "Could not read the latency timer of %s (%s): if it is not 1 ms, every query waits for it." port file)
 
@@ -60,10 +64,10 @@ let connect ~port =
     (match Sys_unix.file_exists port with
      | `Yes -> ()
      | `No | `Unknown ->
-       failwithf "The serial port %s of the FPGA does not exist: check that the board is connected and the value of --fpga-port (the board's UART is usually the second port of its USB device, e.g. /dev/ttyUSB1)." port ());
+       fail "The serial port %s of the FPGA does not exist: check that the board is connected and the value of --fpga-port (the board's UART is usually the second port of its USB device, e.g. /dev/ttyUSB1)." port);
     check_latency_timer port;
     let fd = try serial_open port baud_rate with Failure m ->
-      failwithf "%s. Check that your user can open it (e.g., is in the group dialout)." m () in
+      fail "%s. Check that your user can open it (e.g., is in the group dialout)." m in
     Hashtbl.set ports ~key:port ~data:fd;
     Logs.debug (fun m -> m "Fpga: serial port %s open" port);
     fd
@@ -90,11 +94,12 @@ let elf_sections elf =
       if j < String.length s then s.[j] else '\000') in
   swap_bytes (section ".text"), swap_bytes (section ".vectors")
 
-(* 0xff, then the program memory, the vectors and the breakpoint, each length and number in 16 bits little-endian *)
-let payload ~pmem ~vectors ~breakpoint =
+(* The command (0xff: run, '?': identify the image), then the program memory, the vectors and the breakpoint, each
+   length and number in 16 bits little-endian *)
+let payload ?(command = '\xff') ~pmem ~vectors ~breakpoint () =
   let buf = Buffer.create (String.length pmem + String.length vectors + 7) in
   let u16 n = Buffer.add_char buf (Char.of_int_exn (n land 0xff)); Buffer.add_char buf (Char.of_int_exn ((n lsr 8) land 0xff)) in
-  Buffer.add_char buf '\xff';
+  Buffer.add_char buf command;
   u16 (String.length pmem); Buffer.add_string buf pmem;
   u16 (String.length vectors); Buffer.add_string buf vectors;
   u16 breakpoint;
@@ -127,12 +132,8 @@ let entries_of_raw raw =
       timerA = (b 12 lsl 8) lor b 13;
       umem = (b 14 lsl 8) lor b 15 }))
 
-(* The trace of the window from breakpoint, or None if the board sends none in time *)
-let query fd ~pmem ~vectors ~breakpoint =
-  if breakpoint > 0xFFFF then
-    failwithf "Fpga: the test is too long for the board, whose breakpoints are 16-bit instruction numbers (%d)" breakpoint ();
-  let data = payload ~pmem ~vectors ~breakpoint in
-  let size = window * entry_size in
+(* Sends data and reads at most size bytes of the answer, until the board stops sending for read_timeout *)
+let exchange fd ~data ~size =
   let raw = Bytes.create size in
   Core_unix.flock_blocking fd Core_unix.Flock_command.lock_exclusive;
   Exn.protect ~finally:(fun () -> ignore (Core_unix.flock fd Core_unix.Flock_command.unlock : bool)) ~f:(fun () ->
@@ -142,14 +143,74 @@ let query fd ~pmem ~vectors ~breakpoint =
         write_all (pos + Core_unix.single_write_substring fd ~buf:data ~pos ~len:(String.length data - pos)) in
     write_all 0;
     let rec read_all pos =
-      if pos >= size then true
+      if pos >= size then pos
       else
         match Core_unix.select ~read:[ fd ] ~write:[] ~except:[] ~timeout:(`After (Time_ns.Span.of_sec read_timeout)) () with
-        | { read = []; _ } -> false
+        | { read = []; _ } -> pos
         | _ ->
           let n = Core_unix.read fd ~buf:raw ~pos ~len:(size - pos) in
-          n > 0 && read_all (pos + n) in
-    if read_all 0 then Some (entries_of_raw (Bytes.to_string raw)) else None)
+          if n > 0 then read_all (pos + n) else pos in
+    Bytes.To_string.sub raw ~pos:0 ~len:(read_all 0))
+
+(* The trace of the window from breakpoint, or None if the board sends none in time *)
+let query fd ~pmem ~vectors ~breakpoint =
+  if breakpoint > 0xFFFF then
+    fail "Fpga: the test is too long for the board, whose breakpoints are 16-bit instruction numbers (%d)" breakpoint;
+  let raw = exchange fd ~data:(payload ~pmem ~vectors ~breakpoint ()) ~size:(window * entry_size) in
+  if String.length raw = window * entry_size then Some (entries_of_raw raw) else None
+
+(* What an image says about itself *)
+type identity = {
+  version : int; (* of the protocol *)
+  depth : int; (* the cycles of a trace window *)
+  inst_number_trigger : bool; (* the breakpoint is an instruction number (not a PC) *)
+  sancus_commit : string; (* the first 7 hexadecimal digits of the commit of sancus-core-gap *)
+  build : string; (* the first 7 hexadecimal digits of the commit of the board project *)
+  build_dirty : bool; (* the board project had changes that were not committed *)
+}
+
+let magic = "ALVIE-FPGA"
+
+(*
+  Asks the image who it is: the identification command ('?') with an empty program and breakpoint 0. An image that
+  knows the command answers with magic, then the version, the depth, the trigger, the Sancus commit and the build
+  (each 32 bits big-endian) and the flag of uncommitted changes. An earlier image takes it for an empty program with
+  breakpoint 0 and answers with a trace: None.
+*)
+let identify fd =
+  let raw = exchange fd ~data:(payload ~command:'?' ~pmem:"" ~vectors:"" ~breakpoint:0 ()) ~size:(window * entry_size) in
+  let m = String.length magic in
+  if String.length raw >= m + 12 && String.equal (String.prefix raw m) magic then
+    let b o = Char.to_int raw.[m + o] in
+    let u32 o = (b o lsl 24) lor (b (o + 1) lsl 16) lor (b (o + 2) lsl 8) lor b (o + 3) in
+    Some { version = b 0; depth = b 1; inst_number_trigger = b 2 = 1; sancus_commit = sprintf "%07x" (u32 3);
+           build = sprintf "%07x" (u32 7); build_dirty = b 11 = 1 }
+  else None
+
+(* Whether the commits a and b of the checkout sancus have the same core (the Verilog of core/rtl/verilog), e.g. 264f135
+   and bf89c0b: the image of one runs the other. False when git cannot tell. *)
+let same_core ~sancus a b =
+  Sys_unix.command (sprintf "git -C %s diff --quiet %s %s -- core/rtl/verilog 2>/dev/null" (Filename.quote sancus)
+                      (Filename.quote a) (Filename.quote b)) = 0
+
+(* Checks that the image on port is one ALVIE supports, and that it runs commit, or a commit with the same core *)
+let check_image ~port ~sancus ~commit fd =
+  match identify fd with
+  | None ->
+    Logs.warn (fun m -> m "The image on %s does not say which Sancus commit it runs: check that it is the image of %s, or program the board with the image of alvie/fpga/images (see docs/sancus/fpga.md)." port commit)
+  | Some id ->
+    Logs.info (fun m -> m "Fpga: image on %s: Sancus %s, protocol %d, window %d, built from %s%s" port id.sancus_commit id.version
+                  id.depth id.build (if id.build_dirty then " with uncommitted changes" else ""));
+    if id.version <> 1 || id.depth <> window || not id.inst_number_trigger then
+      fail "The image on %s is not one ALVIE/Sancus-FPGA supports (protocol %d, window of %d cycles, breakpoint by %s): it needs protocol 1, a window of %d cycles and breakpoints by instruction number."
+        port id.version id.depth (if id.inst_number_trigger then "instruction number" else "PC") window;
+    let c = String.lowercase commit in
+    if String.is_prefix c ~prefix:id.sancus_commit || String.is_prefix id.sancus_commit ~prefix:c then ()
+    else if same_core ~sancus id.sancus_commit commit then
+      Logs.info (fun m -> m "Fpga: the image on %s runs Sancus %s, whose core is that of %s" port id.sancus_commit commit)
+    else
+      fail "The image on %s runs Sancus %s, not %s: program the board with the image of %s (vivado -mode batch -source alvie/scripts/program_fpga.tcl -tclargs %s), or give --commit %s." port
+        id.sancus_commit commit commit commit id.sancus_commit
 
 (*
   Runs the program (pmem, vectors) up to the first instruction not analysed yet and returns its trace, and whether the step diverged.
@@ -273,8 +334,14 @@ let extend fd ~pmem ~vectors trace =
     Option.map (Prof.time "sul.fpga_query" (fun () -> query fd ~pmem ~vectors ~breakpoint:last.inst_number)) ~f:(fun window ->
       List.filter trace ~f:(fun e -> e.inst_number < last.inst_number) @ window)
 
-let target ~port : Sancus.Simulator.cfg_t Sancus.Simulator.target =
-  ignore (connect ~port : Core_unix.File_descr.t);
+(* The ports whose image was checked in this process, with the commit it was checked for *)
+let checked : string String.Table.t = String.Table.create ()
+
+let target ~port ~sancus ~commit : Sancus.Simulator.cfg_t Sancus.Simulator.target =
+  let fd = connect ~port in
+  (match Hashtbl.find checked port with
+   | Some c when String.equal c commit -> ()
+   | _ -> check_image ~port ~sancus ~commit fd; Hashtbl.set checked ~key:port ~data:commit);
   Other {
     name = "fpga " ^ port;
     boot;

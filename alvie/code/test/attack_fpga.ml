@@ -2,12 +2,13 @@
   tt_attack_fpga: the attack traces of tt_attack, replayed on an FPGA board (ALVIE/Sancus-FPGA: the Sancus backend
   with the board as its target).
 
-  It needs the board, so it is not part of CI: see docs/sancus/fpga.md. The board must run the image
-  inst_number_50_ef753b6 (the commit these expectations are for); the serial port is ALVIE_FPGA_PORT (default
-  /dev/ttyUSB1). Run it from alvie/code: dune exec test/attack_fpga.exe.
+  It needs the board, so it is not part of CI: see docs/sancus/fpga.md. It runs the cases of tt_attack for the Sancus
+  commit of the image on the board, ef753b6 or bf89c0b, which the image says (an image that does not say it: the
+  commit is ALVIE_FPGA_COMMIT). The serial port is ALVIE_FPGA_PORT (default /dev/ttyUSB1). Run it from alvie/code:
+  dune exec test/attack_fpga.exe.
 
   The expected observations are the simulator's (Attacklib), compared as tt_attack compares them: the board must
-  observe what the simulator observes.
+  observe what the simulator observes. The cases of "cleanup re-entry" are not here.
 *)
 open Core
 open Sancus
@@ -29,8 +30,18 @@ let tmpdir = "../../tmp"
 let specdir = "../../spec-lib/"
 let sancus_core_gap_dir = "../../sancus-core-gap"
 let sancus_master_key = "cafe"
-let image_commit = "ef753b6"
+let orig_commit = "ef753b6"
+let last_commit = "bf89c0b"
 let port = Option.value (Sys.getenv "ALVIE_FPGA_PORT") ~default:"/dev/ttyUSB1"
+
+(* The commit of the image on the board *)
+let image_commit =
+  match Sancus_fpga.Fpga.identify (Sancus_fpga.Fpga.connect ~port) with
+  | Some id -> id.sancus_commit
+  | None ->
+    match Sys.getenv "ALVIE_FPGA_COMMIT" with
+    | Some c -> c
+    | None -> failwith "The image on the board does not say which Sancus commit it runs: give it with ALVIE_FPGA_COMMIT"
 
 (* Runs input_str on the board and returns the list of outputs *)
 let exec_fpga ~enclave_spec_fn ~attacker_spec_fn ~secret ~input_str ~ignore_interrupts =
@@ -59,7 +70,7 @@ let exec_fpga ~enclave_spec_fn ~attacker_spec_fn ~secret ~input_str ~ignore_inte
       ~templatefile:(cwd ^ "/../src/generic_template.s43")
       ~filledfile:"generic.s43" ~dumpfile:"tb_openMSP430.vcd"
       ~spec:(Generic_inputgen.spec_of_test_spec complete_spec)
-      ~ignore_interrupts ~target:(Sancus_fpga.Fpga.target ~port) () in
+      ~ignore_interrupts ~target:(Sancus_fpga.Fpga.target ~port ~sancus:sancus_core_gap_dir ~commit:image_commit) () in
   List.fold input_sequence ~init:[] ~f:(fun acc i -> acc @ [ Verilog.step sul i ])
 
 (* As tt_attack's comparison: k is not compared (on the board, the window bounds it), and payloads in PM are equal *)
@@ -91,58 +102,91 @@ let exec ?(ignore_illegal = false) ?(n = 1) ?(encl_spec_name = "enclave-complete
 
 let () =
   let open Alcotest in
-  let case name ?ignore_illegal ?n ?encl_spec_name ~att_spec_name ~input_str ~ignore_interrupts expected =
-    test_case name `Slow (exec ?ignore_illegal ?n ?encl_spec_name ~att_spec_name ~input_str ~ignore_interrupts ~expected) in
+  if not (List.mem [ orig_commit; last_commit ] image_commit ~equal:String.equal) then
+    failwithf "The image on the board runs Sancus %s: tt_attack_fpga has cases for %s and %s only" image_commit orig_commit last_commit ();
+  (* The cases of tt_attack for commit, only if it is the image's *)
+  let case ~commit name ?ignore_illegal ?n ?encl_spec_name ~att_spec_name ~input_str ~ignore_interrupts expected =
+    if String.equal commit image_commit then
+      [ test_case name `Slow (exec ?ignore_illegal ?n ?encl_spec_name ~att_spec_name ~input_str ~ignore_interrupts ~expected) ]
+    else [] in
+  let orig = case ~commit:orig_commit and last = case ~commit:last_commit in
   let both o = [ ("0", o); ("1", o) ] in
-  run "fpga" [
-    "example", [
-      case "(bugged enclave) w/o interrupts, example" ~att_spec_name:"example/attacker" ~encl_spec_name:"example/enclave"
-        ~input_str:input_attacker_encl ~ignore_interrupts:true [ ("0", output_attacker_encl0); ("1", output_attacker_encl1) ];
-      case "(bugged enclave) w interrupts, example" ~att_spec_name:"example/attacker" ~encl_spec_name:"example/enclave"
-        ~input_str:input_attacker_encl ~ignore_interrupts:false [ ("0", output_attacker_encl0); ("1", output_attacker_encl1) ];
-    ];
-    "b1", [
-      case "w/o interrupts, b1 + encl" ~att_spec_name:"b1" ~input_str:input_b1_encl_noint ~ignore_interrupts:true (both output_b1_encl_noint);
-      case "w interrupts, b1 + encl" ~att_spec_name:"b1" ~input_str:input_b1_encl_int ~ignore_interrupts:false
+  let example ~commit = List.concat [
+    case ~commit "(bugged enclave) w/o interrupts, example" ~att_spec_name:"example/attacker" ~encl_spec_name:"example/enclave"
+      ~input_str:input_attacker_encl ~ignore_interrupts:true [ ("0", output_attacker_encl0); ("1", output_attacker_encl1) ];
+    case ~commit "(bugged enclave) w interrupts, example" ~att_spec_name:"example/attacker" ~encl_spec_name:"example/enclave"
+      ~input_str:input_attacker_encl ~ignore_interrupts:false [ ("0", output_attacker_encl0); ("1", output_attacker_encl1) ];
+  ] in
+  run ("fpga " ^ image_commit) [
+    "example", example ~commit:orig_commit @ example ~commit:last_commit;
+    "b1", List.concat [
+      orig "(original commit) w/o interrupts, b1 + encl" ~att_spec_name:"b1" ~input_str:input_b1_encl_noint ~ignore_interrupts:true (both output_b1_encl_noint);
+      orig "(original commit) w interrupts, b1 + encl" ~att_spec_name:"b1" ~input_str:input_b1_encl_int ~ignore_interrupts:false
         [ ("0", output_b1_encl0_int_orig); ("1", output_b1_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b1 + encl" ~att_spec_name:"b1" ~input_str:input_b1_encl_noint ~ignore_interrupts:true (both output_b1_encl_noint);
+      last "(last commit) w interrupts, b1 + encl" ~att_spec_name:"b1" ~input_str:input_b1_encl_int ~ignore_interrupts:false (both output_b1_encl_int_last);
     ];
-    "b2", [
-      case "w/o interrupts, b2 + encl" ~att_spec_name:"b2" ~input_str:input_b2_encl_noint ~ignore_interrupts:true (both output_b2_encl_noint);
-      case "w interrupts, b2 + encl" ~att_spec_name:"b2" ~input_str:input_b2_encl_int ~ignore_interrupts:false
+    "b2", List.concat [
+      orig "(original commit) w/o interrupts, b2 + encl" ~att_spec_name:"b2" ~input_str:input_b2_encl_noint ~ignore_interrupts:true (both output_b2_encl_noint);
+      orig "(original commit) w interrupts, b2 + encl" ~att_spec_name:"b2" ~input_str:input_b2_encl_int ~ignore_interrupts:false
         [ ("0", output_b2_encl0_int_orig); ("1", output_b2_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b2 + encl" ~att_spec_name:"b2" ~input_str:input_b2_encl_noint ~ignore_interrupts:true (both output_b2_encl_noint);
+      last "(last commit) w interrupts, b2 + encl" ~att_spec_name:"b2" ~input_str:input_b2_encl_int ~ignore_interrupts:false (both output_b2_encl_int_last);
     ];
-    "b3", [
-      case "w/o interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_noint ~ignore_interrupts:true (both output_b3_encl_noint);
-      case "w interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_int ~ignore_interrupts:false [ ("0", output_b3_encl0_int_orig); ("1", output_b3_encl1_int_orig) ];
+    "b3", List.concat [
+      orig "(original commit) w/o interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_noint ~ignore_interrupts:true (both output_b3_encl_noint);
+      orig "(original commit) w interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_int ~ignore_interrupts:false
+        [ ("0", output_b3_encl0_int_orig); ("1", output_b3_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_noint ~ignore_interrupts:true (both output_b3_encl_noint);
+      last "(last commit) w interrupts, b3 + encl" ~att_spec_name:"b3" ~input_str:input_b3_encl_int_last ~ignore_interrupts:false (both output_b3_encl_int_last);
     ];
-    "b4", [
-      case "w/o interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_noint ~ignore_interrupts:true (both output_b4_encl_noint);
-      case "w interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_int ~ignore_interrupts:false [ ("0", output_b4_encl0_int_orig); ("1", output_b4_encl1_int_orig) ];
+    "b4", List.concat [
+      orig "(original commit) w/o interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_noint ~ignore_interrupts:true (both output_b4_encl_noint);
+      orig "(original commit) w interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_int ~ignore_interrupts:false
+        [ ("0", output_b4_encl0_int_orig); ("1", output_b4_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_noint ~ignore_interrupts:true (both output_b4_encl_noint);
+      last "(last commit) w interrupts, b4 + encl" ~att_spec_name:"b4" ~input_str:input_b4_encl_int_last ~ignore_interrupts:false (both output_b4_encl_int_last);
     ];
-    "b6", [
-      case "w/o interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_noint ~ignore_interrupts:true (both output_b6_encl_noint);
-      case "w interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_int ~ignore_interrupts:false
+    "b6", List.concat [
+      orig "(original commit) w/o interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_noint ~ignore_interrupts:true (both output_b6_encl_noint);
+      orig "(original commit) w interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_int ~ignore_interrupts:false
         [ ("0", output_b6_encl0_int_orig); ("1", output_b6_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_noint_last ~ignore_interrupts:true (both output_b6_encl_noint_last);
+      last "(last commit -- also *WITNESS of b8*) w interrupts, b6 + encl" ~att_spec_name:"b6" ~input_str:input_b6_encl_int_last ~ignore_interrupts:false
+        [ ("0", output_b6_encl0_int_last); ("1", output_b6_encl1_int_last) ];
     ];
-    "b7", [
-      case "w/o interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_noint ~ignore_interrupts:true
+    "b7", List.concat [
+      orig "(original commit) w/o interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_noint ~ignore_interrupts:true
         (both output_b7_encl_noint);
-      case "w interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_int ~ignore_interrupts:false
+      orig "(original commit) w interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_int ~ignore_interrupts:false
         [ ("0", output_b7_encl0_int_orig); ("1", output_b7_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_noint ~ignore_interrupts:true
+        (both output_b7_encl_noint_last);
+      last "(last commit) w interrupts, b7 + encl" ~ignore_illegal:true ~att_spec_name:"b7" ~input_str:input_b7_encl_int_last ~ignore_interrupts:false
+        (both output_b7_encl_int_last);
     ];
-    "b8", [
-      case "w/o interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_noint ~ignore_interrupts:true (both output_b8_encl_noint);
-      case "w interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_int ~ignore_interrupts:false
+    "b8", List.concat [
+      orig "(original commit) w/o interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_noint ~ignore_interrupts:true (both output_b8_encl_noint);
+      orig "(original commit) w interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_int ~ignore_interrupts:false
         [ ("0", output_b8_encl0_int_orig); ("1", output_b8_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_noint_last ~ignore_interrupts:true (both output_b8_encl_noint_last);
+      last "(last commit) w interrupts, b8 + encl" ~att_spec_name:"b8" ~input_str:input_b8_encl_int_last ~ignore_interrupts:false
+        [ ("0", output_b8_encl0_int_last); ("1", output_b8_encl1_int_last) ];
     ];
-    "b9", [
-      case "w/o interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_noint ~ignore_interrupts:true (both output_b9_encl_noint);
-      case "w interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_int ~ignore_interrupts:false
+    "b9", List.concat [
+      orig "(original commit) w/o interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_noint ~ignore_interrupts:true (both output_b9_encl_noint);
+      orig "(original commit) w interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_int ~ignore_interrupts:false
         [ ("0", output_b9_encl0_int_orig); ("1", output_b9_encl1_int_orig) ];
+      last "(last commit) w/o interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_noint_last ~ignore_interrupts:true (both output_b9_encl_noint_last);
+      last "(last commit -- vulnerable) w interrupts, b9 + encl" ~att_spec_name:"b9" ~input_str:input_b9_encl_int_last ~ignore_interrupts:false
+        [ ("0", output_b9_encl0_int_last); ("1", output_b9_encl1_int_last) ];
     ];
-    "new anomaly", [
-      case "w/o interrupts, new anomaly + encl" ~att_spec_name:"a" ~input_str:input_a_encl_noint ~ignore_interrupts:true (both output_a_encl_noint);
-      case "w interrupts, new anomaly + encl" ~n:2 ~att_spec_name:"a" ~input_str:input_a_encl_int ~ignore_interrupts:false
+    "new anomaly", List.concat [
+      orig "(original commit) w/o interrupts, new anomaly + encl" ~att_spec_name:"a" ~input_str:input_a_encl_noint ~ignore_interrupts:true (both output_a_encl_noint);
+      orig "(original commit) w interrupts, new anomaly + encl" ~n:2 ~att_spec_name:"a" ~input_str:input_a_encl_int ~ignore_interrupts:false
+        [ ("0", output_a_encl0_int); ("1", output_a_encl1_int) ];
+      last "(bugged, last_commit) w/o interrupts, new anomaly + encl" ~att_spec_name:"a" ~input_str:input_a_encl_noint ~ignore_interrupts:true (both output_a_encl_noint);
+      last "(bugged, last_commit) w interrupts, new anomaly + encl" ~n:2 ~att_spec_name:"a" ~input_str:input_a_encl_int ~ignore_interrupts:false
         [ ("0", output_a_encl0_int); ("1", output_a_encl1_int) ];
     ];
   ]

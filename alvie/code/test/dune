@@ -1,9 +1,9 @@
 (executables
-  (names attack attack_fpga diagnostics features)
-  (public_names tt_attack tt_attack_fpga tt_diagnostics tt_features)
+  (names attack attack_fpga stress_fpga diagnostics features)
+  (public_names tt_attack tt_attack_fpga tt_stress_fpga tt_diagnostics tt_features)
   (package alvie-sancus)
   (modes byte exe)
-  (modules attack attack_fpga attacklib diagnostics features)
+  (modules attack attack_fpga stress_fpga attacklib diagnostics features)
   (libraries alcotest alvie_cli_diagnostics sancus sancus_fpga learninglib core core_unix core_unix.command_unix core_unix.filename_unix logs logs.fmt ocamlgraph shexp.process ltscompare alvie_plugin)
   (preprocess (pps ppx_jane ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_sexp_conv ppx_hash))
 )
