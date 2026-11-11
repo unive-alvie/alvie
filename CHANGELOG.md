@@ -92,6 +92,20 @@ the documentation lists what users must do.
   no longer matched the earlier steps, and the simulator reported
   `OUnsupported`. The specifications of the attack catalogue have a single
   choice in `cleanup`, so their models and witnesses do not change.
+- The exhaustive oracle (`--oracle exhaustive`, and the incremental one)
+  explores the branches of a test from deep copies of the SUL (`clone`). It
+  copied the record of the SUL only, so all its branches shared the state of
+  the backend, and a branch started from the state that another one left.
+  E.g. in B3 on `bf89c0b`, the branch `ifz (rst; nop)` reset the state, and
+  the next branch (`reti` after `ifz (dint; nop)`) ran from the start of the
+  program. The simulator searches its whole dump and found the step anyway.
+  The FPGA board searches from the breakpoint, could not get past `protect`,
+  and gave `OUnsupported`. Found by comparing the board with the simulator.
+  The models of `results/` use the PAC oracle and do not change. A plugin
+  must declare `clone` for the exhaustive oracle. The oracle has no length
+  bound, and the shared state had cut some branches short: with a spec whose
+  tests can go on forever, such as B3, it now does not end (it did not end on
+  `ef753b6` before either).
 
 ### Tests and CI
 
@@ -286,12 +300,31 @@ the documentation lists what users must do.
   the default 0 (no change).
 - It needs no clone of Sancus: building the programs reads the memory sizes
   and the linker script of `--commit` from the checkout (`git show`).
-- New script `alvie/scripts/program_fpga.tcl`: programs the board with a
-  bitstream, after checking that its SHA-256 is that of a known image, and
+- New directory `alvie/fpga/images`: an image (bitstream, gzip) for each
+  commit of the experiments of `learn_all.sh` (`ef753b6`, `e8cf011`,
+  `3170d5d`, `6475709`, `3636536`, `d54f031`, `bf89c0b`; `264f135` has the
+  core of `bf89c0b` and runs on its image). On the board, each learns the
+  models of `results/` for its commit, as the simulator does (60 models; `k`
+  of `create` aside). The images are built from the board project
+  (`scripts/build.tcl`). New page section: Build an Image.
+- An image says which Sancus commit it runs. ALVIE asks it when a command
+  starts, and stops with an error when it is not `--commit` (or a commit with
+  the same core in the `--sancus` checkout); an earlier image, which does not
+  say it, gives a warning.
+- New script `alvie/scripts/program_fpga.tcl`: programs the board with the
+  image of a commit (`-tclargs bf89c0b`) or with a bitstream (`.bit` or
+  `.bit.gz`), after checking that its SHA-256 is that of a known image, and
   prints the commit of the image.
+- New suite `tt_stress_fpga`: runs 12 programs that create an enclave on the
+  board, at every breakpoint, 20 times each, and fails when a query does not
+  always get the same answer. The Sancus core has combinational loops that
+  timing analysis does not cover, and some builds do not run `sancus_enable`
+  reliably (2 of the 9 placements tried: the board did not answer some
+  queries after it, at random); an image is accepted only if it passes. It
+  needs the board, so CI does not run it.
 - Fixtures: those of ALVIE/Sancus, each for the image of its commit.
 - New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
-  (image `ef753b6`), with the simulator's expected observations, compared as
+  (for the commit of the image, `ef753b6` or `bf89c0b`), with the simulator's expected observations, compared as
   `tt_attack` compares them (the branch had board-only values for 7 of the 20
   cases, and did not compare `reg_val`). It needs the board, so CI does not
   run it.

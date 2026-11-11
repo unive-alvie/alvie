@@ -28,8 +28,8 @@ config:
     type: string
     required: true
     doc: >-
-      The commit of sancus-core-gap of the image on the board (ef753b6 or bf89c0b): the programs are built for it,
-      and the board cannot tell which image it runs
+      The commit of sancus-core-gap that the programs are built for: that of the image on the board, or one with the
+      same core (alvie/fpga/images has an image for each commit of the paper; ALVIE checks the image's commit)
   fpga-port:
     type: string
     default: /dev/ttyUSB1
