@@ -18,7 +18,7 @@ This guide helps you to choose.
 Read [How ALVIE Works](/alvie/core/concepts/) first.
 The commands run from `alvie/code`.
 
-## The three oracles
+## The four oracles
 
 The `--oracle` option selects how ALVIE searches for a difference between the model and the system.
 
@@ -26,10 +26,12 @@ The `--oracle` option selects how ALVIE searches for a difference between the mo
 | --- | --- | --- | --- |
 | `randomwalk` | Follows random paths that the specification allows. Stops after `--step-limit` steps. | None. | Low. You control it. |
 | `pac` | Samples many random paths. The number grows with each round. | A probability bound from `--epsilon` and `--delta`. | Medium to high. |
+| `wmethod` | Runs a fixed suite of tests that the model gives (the W-method). | The model is exact if the system has at most `--extra-states` more states than the model. | High. It grows quickly with `--extra-states`. |
 | `exhaustive` | Tries every input sequence from the full alphabet, level by level. | It checks every sequence up to its stop condition. | Very high. |
 
 Use `randomwalk` to develop and test a specification.
 Use `pac` for a result that you report.
+Use `wmethod` when you need a guarantee that does not depend on chance, and the model is small.
 Use `exhaustive` only for very small specifications.
 
 The wrapper scripts (`learn_one.sh`, `learn_all.sh`) use `pac` with `--epsilon 0.01 --delta 0.01`.
@@ -89,6 +91,36 @@ The paper gives (1 − δ)⁴ for the confidence and (1 − ε)⁴ for the accur
 
 `--pac-bound` has no effect on the oracle.
 It appears only in the `--report` output.
+
+## W-method
+
+The W-method oracle does not sample.
+For a model with *n* states, it runs every test of the suite
+
+```text
+P · Σ^≤k · W
+```
+
+- P (the transition cover) holds a shortest input sequence to each state of the model, and each of these sequences followed by each input.
+- Σ^≤k holds every input sequence of length at most *k*, the value of `--extra-states`.
+- W (the characterization set) holds, for each pair of states of the model, a sequence on which their outputs differ.
+
+The tests use the full alphabet of the spec, and a test stops at the first input that the specification does not allow.
+If the system is deterministic, has at most *n* + *k* states, and passes every test, the model is exact.
+`learn` says so at the end of the run.
+
+Two options control it:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--extra-states` | 1 | The number of states that the system may have beyond the model. |
+| `--max-tests` | No limit | The maximum number of tests of an equivalence query. A limit removes the guarantee, and ALVIE logs a warning when it cuts the suite. |
+
+The guarantee is only as good as `--extra-states`.
+A behavior that needs more states than that can stay hidden, for example a counter that changes its output only after many steps.
+The number of tests grows with the alphabet size to the power *k*: each extra state multiplies the cost by about the alphabet size.
+
+The oracle runs its tests on the system itself and does not copy it, so it works with any backend, also one that cannot be copied.
 
 ## Exhaustive
 

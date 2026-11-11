@@ -101,9 +101,10 @@ The specification guides the inputs.
 ALVIE sends an input only if the specification still allows it after the inputs already sent.
 The [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) explains this in detail.
 
-No oracle can prove that the model is exact.
+No oracle can prove that the model is exact without an assumption on the system.
 The question is undecidable in general.
-ALVIE has three oracles.
+ALVIE has four oracles.
+The W-method oracle gives a guarantee if the system has at most a given number of states more than the model; the others sample or search up to a limit.
 They give different amounts of confidence for different costs.
 The [Choosing Learner Settings](/alvie/core/learning-settings/) guide explains how to choose.
 

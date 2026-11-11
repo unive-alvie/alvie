@@ -24,6 +24,14 @@ the documentation lists what users must do.
 - A file that is not a model, given to `fa.exe` or `alvie compare`, is a
   mistake in the command (exit 2, `cannot read --m1-int ...`), no longer an
   unexpected failure.
+- New oracle: the W-method (`--oracle wmethod`), from the VaultLink variant,
+  for `learn.exe` and for `alvie <plugin> learn`. It runs the test suite
+  P · Σ^≤k · W of the model, and the model is then exact if the system has
+  at most k more states than it (`--extra-states k`, default 1);
+  `--max-tests` limits each equivalence query and removes the guarantee.
+  `alvie <plugin> learn` says which guarantee applies. The oracle does not
+  copy the backend, so it works with every backend, the FPGA board too. Tests:
+  `test/wmethod`, and Tiny learns the same models with it as with PAC.
 
 ### Documentation
 

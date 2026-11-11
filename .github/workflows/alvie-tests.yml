@@ -80,6 +80,9 @@ jobs:
       - name: Run the suite of Tiny and of the commands of Core
         working-directory: alvie/code
         run: opam exec -- dune exec tt_tiny -- --color=never
+      - name: Run the W-method oracle suite
+        working-directory: alvie/code
+        run: opam exec -- dune test test/wmethod
       - name: Check the plugin templates
         working-directory: alvie/code
         run: opam exec -- bash test/plugin_new.sh

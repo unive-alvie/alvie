@@ -83,6 +83,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
   module L_rw = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Randomwalkoracle.RandomWalkOracle)
   module L_pac = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Pacoracle.PACOracle)
   module L_exh = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Exhaustiveoracle.ExhaustiveOracle)
+  module Wm = Learninglib.Wmethodoracle.WMethodOracle (I) (O) (Sul)
+  module L_wm = Learninglib.Lsharp.LSharp (I) (O) (Sul) (Learninglib.Wmethodoracle.WMethodOracle)
 
   let class_of section = Plugin.atoms_of (plugin ()) section
 
@@ -207,6 +209,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     | Pac of { epsilon : float; delta : float; round_limit : int option }
     | Random_walk of { test_count : int; reset_probability : float }
     | Exhaustive
+    | W_method of { extra_states : int; max_tests : int option }
 
   (* The statistics of the learner: output queries, equivalence queries, resets, steps, dry steps, and the average and
      variance of the length of the equivalence queries *)
@@ -253,7 +256,12 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
             ~stop_cond:(fun available is os ->
                 List.is_empty available || List.mem is Codec.no_input ~equal:I.equal || List.exists os ~f:Codec.contains_illegal) () in
         let m = if dry then trivial () else L_exh.lsharp_run o sul alphabet in
-        (m, Exh.get_stats o) in
+        (m, Exh.get_stats o)
+      | W_method { extra_states; max_tests } ->
+        (* the tests of the W-method on the whole alphabet: a test stops at the first illegal output *)
+        let o = Wm.make ~extra_states ?max_tests () in
+        let m = if dry then trivial () else L_wm.lsharp_run o sul alphabet in
+        (m, Wm.get_stats o) in
     let nanoseconds = Int63.(Time_now.nanoseconds_since_unix_epoch () - start) in
     { model = legal_part model; seconds = Int63.to_float nanoseconds /. 1e9; nanoseconds;
       stats = { queries; equivalence_queries; resets; steps; dry_steps; avg_length; var_length } }
@@ -270,12 +278,14 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                      ~doc:(sprintf "name the variant of the system to run (%s)" (match vs with [] -> "this plugin has none" | _ -> String.concat ~sep:", " (List.map vs ~f:fst))))
 
   let oracle_param =
-    let%map_open.Command name = flag "--oracle" (optional_with_default `Pac (Arg_type.of_alist_exn [ ("pac", `Pac); ("randomwalk", `Rw); ("exhaustive", `Exh) ])) ~doc:"pac|randomwalk|exhaustive the equivalence oracle (default: pac)"
+    let%map_open.Command name = flag "--oracle" (optional_with_default `Pac (Arg_type.of_alist_exn [ ("pac", `Pac); ("randomwalk", `Rw); ("exhaustive", `Exh); ("wmethod", `Wm) ])) ~doc:"pac|randomwalk|exhaustive|wmethod the equivalence oracle (default: pac)"
     and epsilon = flag "--epsilon" (optional_with_default 0.01 float) ~doc:"e PAC: the error bound (default: 0.01)"
     and delta = flag "--delta" (optional_with_default 0.01 float) ~doc:"d PAC: the confidence bound (default: 0.01)"
     and round_limit = flag "--round-limit" (optional int) ~doc:"n PAC: at most n rounds of equivalence queries"
     and test_count = flag "--test-count" (optional_with_default 10000 int) ~doc:"n random walk: the number of steps (default: 10000)"
-    and reset_probability = flag "--reset-probability" (optional_with_default 0.09 float) ~doc:"p random walk: the probability of a reset at each step (default: 0.09)" in
+    and reset_probability = flag "--reset-probability" (optional_with_default 0.09 float) ~doc:"p random walk: the probability of a reset at each step (default: 0.09)"
+    and extra_states = flag "--extra-states" (optional_with_default 1 int) ~doc:"k W-method: the system may have up to k more states than the model, which is then exact (default: 1)"
+    and max_tests = flag "--max-tests" (optional int) ~doc:"n W-method: stop each equivalence query after n tests, giving up the guarantee (default: no limit)" in
     let check_prob option p = if Float.(p <= 0. || p >= 1.) then Errors.fail "%s must be between 0 and 1 (exclusive), not %g." option p in
     fun () ->
       match name with
@@ -283,6 +293,9 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
         Option.iter round_limit ~f:(fun n -> if n <= 0 then Errors.fail "--round-limit must be greater than zero.");
         Pac { epsilon; delta; round_limit }
       | `Exh -> Exhaustive
+      | `Wm -> if extra_states < 0 then Errors.fail "--extra-states must not be negative.";
+        Option.iter max_tests ~f:(fun n -> if n <= 0 then Errors.fail "--max-tests must be greater than zero.");
+        W_method { extra_states; max_tests }
       | `Rw -> if test_count <= 0 then Errors.fail "--test-count must be greater than zero.";
         check_prob "--reset-probability" reset_probability;
         Random_walk { test_count; reset_probability }
@@ -310,7 +323,14 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
              let l = learn ?bad_probability ~config ~variant ~spec ~oracle ~seed () in
              write_model res l.model;
              printf "Learned a model of %d states and %d transitions in %.1fs (%d queries, %d steps): %s\n"
-               (Set.length l.model.states) (Map.length l.model.transition) l.seconds l.stats.queries l.stats.steps res))
+               (Set.length l.model.states) (Map.length l.model.transition) l.seconds l.stats.queries l.stats.steps res;
+             match oracle with
+             | W_method { extra_states; max_tests = None } ->
+               printf "The model is exact if the system has at most %d more state%s than it, for the inputs of the spec.\n"
+                 extra_states (if extra_states = 1 then "" else "s")
+             | W_method { max_tests = Some n; _ } ->
+               printf "Each equivalence query stopped after %d tests: the model is not guaranteed to be exact.\n" n
+             | Pac _ | Random_walk _ | Exhaustive -> ()))
 
   (* Noninterference *)
 

@@ -50,7 +50,7 @@ let command =
     flag
       "--oracle"
       (required string)
-      ~doc:"oracle Equivalence oracle: randomwalk, pac, or exhaustive"
+      ~doc:"oracle Equivalence oracle: randomwalk, pac, exhaustive, or wmethod"
     and epsilon =
       flag
         "--epsilon"
@@ -81,6 +81,16 @@ let command =
         "--reset-probability"
         (optional_with_default 0.05 float)
         ~doc:"probability (Only for randomwalk oracle) Probability for the equivalence oracle to give up the current exploration path and start with a new one. Step count *will not* be reset! (default: 0.05)"
+    and extra_states =
+      flag
+        "--extra-states"
+        (optional_with_default 1 int)
+        ~doc:"k (Only for wmethod oracle) The system may have up to k more states than the model, which is then exact (default: 1)"
+    and max_tests =
+      flag
+        "--max-tests"
+        (optional int)
+        ~doc:"n (Only for wmethod oracle) Stop each equivalence query after n tests, giving up the guarantee (default: no limit)"
     and bad_prob =
       flag
         "--bad-probability"
@@ -119,7 +129,7 @@ let command =
         let config = List.Assoc.add config ~equal:String.equal "tmpdir" tmpdir in
         ignore (Cli_diagnostics.prepare_directory ~option:"parent directory of --res" (Filename.dirname resfile));
         Cli_diagnostics.validate_learning_options ~oracle:oracle_name ~epsilon ~delta ~step_limit
-          ~reset_probability:reset_prob ~bad_probability:bad_prob ~round_limit;
+          ~reset_probability:reset_prob ~bad_probability:bad_prob ~round_limit ~extra_states ~max_tests;
         ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
         (* The spec, with the grammar of plugins/sancus; its secret expanded *)
         ignore (Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn);
@@ -135,9 +145,10 @@ let command =
         let oracle : R.oracle = match oracle_name with
           | "randomwalk" -> Random_walk { test_count = step_limit; reset_probability = reset_prob }
           | "pac" -> Pac { epsilon; delta; round_limit }
+          | "wmethod" -> W_method { extra_states; max_tests }
           | _ -> Exhaustive (* validate_learning_options accepts no other *) in
         (* The random walk and the PAC oracle offer an input outside the spec with probability --bad-probability *)
-        let bad_probability = match oracle with Exhaustive -> None | Pac _ | Random_walk _ -> Some bad_prob in
+        let bad_probability = match oracle with Exhaustive | W_method _ -> None | Pac _ | Random_walk _ -> Some bad_prob in
         let variant = if ignore_interrupts then Some "no-interrupts" else None in
         let l = R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:0 () in
         if report then
