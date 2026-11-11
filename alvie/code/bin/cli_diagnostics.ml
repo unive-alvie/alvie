@@ -31,8 +31,8 @@ let parse_spec_files ~enclave_spec_file ~attacker_spec_file =
      | Error m -> fail "The specifications use something that the simulator does not support: %s." m)
 
 let validate_oracle oracle =
-  if not (List.mem ["randomwalk"; "pac"; "exhaustive"] oracle ~equal:String.equal) then
-    fail "Unknown --oracle value %S. Choose randomwalk, pac, or exhaustive." oracle
+  if not (List.mem ["randomwalk"; "pac"; "exhaustive"; "wmethod"] oracle ~equal:String.equal) then
+    fail "Unknown --oracle value %S. Choose randomwalk, pac, exhaustive, or wmethod." oracle
 
 let validate_probability ~option value =
   if Float.is_nan value || Float.(value < 0.0 || value > 1.0) then
@@ -45,14 +45,16 @@ let validate_open_probability ~option value =
 let validate_positive ~option value =
   if value <= 0 then fail "%s must be greater than zero, but got %d." option value
 
-let validate_learning_options ~oracle ~epsilon ~delta ~step_limit ~reset_probability ~bad_probability ~round_limit =
+let validate_learning_options ~oracle ~epsilon ~delta ~step_limit ~reset_probability ~bad_probability ~round_limit ~extra_states ~max_tests =
   validate_oracle oracle;
   validate_open_probability ~option:"--epsilon" epsilon;
   validate_open_probability ~option:"--delta" delta;
   validate_positive ~option:"--step-limit" step_limit;
   validate_probability ~option:"--reset-probability" reset_probability;
   validate_probability ~option:"--bad-probability" bad_probability;
-  Option.iter round_limit ~f:(validate_positive ~option:"--round-limit")
+  Option.iter round_limit ~f:(validate_positive ~option:"--round-limit");
+  if extra_states < 0 then fail "--extra-states must not be negative, but got %d." extra_states;
+  Option.iter max_tests ~f:(validate_positive ~option:"--max-tests")
 
 let require_secret_if_needed enclave secret =
   if Option.is_none secret && Sancus.Enclave.Enclave.has_secret enclave then
