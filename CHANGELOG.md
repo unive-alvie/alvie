@@ -92,6 +92,20 @@ the documentation lists what users must do.
   no longer matched the earlier steps, and the simulator reported
   `OUnsupported`. The specifications of the attack catalogue have a single
   choice in `cleanup`, so their models and witnesses do not change.
+- The exhaustive oracle (`--oracle exhaustive`, and the incremental one)
+  explores the branches of a test from deep copies of the SUL (`clone`). It
+  copied the record of the SUL only, so all its branches shared the state of
+  the backend, and a branch started from the state that another one left.
+  E.g. in B3 on `bf89c0b`, the branch `ifz (rst; nop)` reset the state, and
+  the next branch (`reti` after `ifz (dint; nop)`) ran from the start of the
+  program. The simulator searches its whole dump and found the step anyway.
+  The FPGA board searches from the breakpoint, could not get past `protect`,
+  and gave `OUnsupported`. Found by comparing the board with the simulator.
+  The models of `results/` use the PAC oracle and do not change. A plugin
+  must declare `clone` for the exhaustive oracle. The oracle has no length
+  bound, and the shared state had cut some branches short: with a spec whose
+  tests can go on forever, such as B3, it now does not end (it did not end on
+  `ef753b6` before either).
 
 ### Tests and CI
 
