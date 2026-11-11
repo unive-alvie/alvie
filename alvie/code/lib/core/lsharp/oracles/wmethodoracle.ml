@@ -53,7 +53,7 @@ module WMethodOracle (I : EltType) (O : EltType) (S : SUL with type input_t = I.
     stats : stats_t;
   }
 
-  let make ?(extra_states = 1) ?max_tests () : t =
+  let make ?(extra_states = Defaults.wmethod_extra_states) ?max_tests () : t =
     if extra_states < 0 then invalid_arg "WMethodOracle.make: extra_states must not be negative";
     {
       last_state = 0;

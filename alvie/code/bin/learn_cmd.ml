@@ -7,6 +7,10 @@ open Core
 open Sancus
 
 module R = Sancus_runner.R
+module D = Learninglib.Defaults
+
+(* The default of --bad-probability: that of the plugin, as for alvie sancus learn *)
+let sancus_bad_probability = Option.value Sancus.Native.Codec.default_bad_probability ~default:0.
 
 let command =
   Command.basic
@@ -49,13 +53,13 @@ let command =
     and oracle_name =
     flag
       "--oracle"
-      (required string)
-      ~doc:"oracle Equivalence oracle: randomwalk, pac, exhaustive, or wmethod"
+      (optional_with_default D.oracle string)
+      ~doc:(sprintf "oracle Equivalence oracle: randomwalk, pac, exhaustive, or wmethod (default: %s)" D.oracle)
     and epsilon =
       flag
         "--epsilon"
-        (optional_with_default 0.001 float)
-        ~doc:"probability PAC error bound used by the pac oracle (default: 0.001)"
+        (optional_with_default D.pac_epsilon float)
+        ~doc:(sprintf "probability PAC error bound used by the pac oracle (default: %g)" D.pac_epsilon)
     and pac_bound =
       flag
         "--pac-bound"
@@ -64,13 +68,13 @@ let command =
     and delta =
       flag
         "--delta"
-        (optional_with_default 0.001 float)
-        ~doc:"probability PAC confidence parameter used by the pac oracle (default: 0.001)"
+        (optional_with_default D.pac_delta float)
+        ~doc:(sprintf "probability PAC confidence parameter used by the pac oracle (default: %g)" D.pac_delta)
     and step_limit =
       flag
         "--step-limit"
-        (optional_with_default 500 int)
-        ~doc:"limit (Only for randomwalk oracle) Maximum number of steps for the equivalence oracle before giving up looking for a counterexample (default: 500)"
+        (optional_with_default D.random_walk_steps int)
+        ~doc:(sprintf "limit (Only for randomwalk oracle) Maximum number of steps for the equivalence oracle before giving up looking for a counterexample (default: %d)" D.random_walk_steps)
     and round_limit =
       flag
         "--round-limit"
@@ -79,13 +83,13 @@ let command =
     and reset_prob =
       flag
         "--reset-probability"
-        (optional_with_default 0.05 float)
-        ~doc:"probability (Only for randomwalk oracle) Probability for the equivalence oracle to give up the current exploration path and start with a new one. Step count *will not* be reset! (default: 0.05)"
+        (optional_with_default D.random_walk_reset_probability float)
+        ~doc:(sprintf "probability (Only for randomwalk oracle) Probability for the equivalence oracle to give up the current exploration path and start with a new one. Step count *will not* be reset! (default: %g)" D.random_walk_reset_probability)
     and extra_states =
       flag
         "--extra-states"
-        (optional_with_default 1 int)
-        ~doc:"k (Only for wmethod oracle) The system may have up to k more states than the model, which is then exact (default: 1)"
+        (optional_with_default D.wmethod_extra_states int)
+        ~doc:(sprintf "k (Only for wmethod oracle) The system may have up to k more states than the model, which is then exact (default: %d)" D.wmethod_extra_states)
     and max_tests =
       flag
         "--max-tests"
@@ -94,8 +98,8 @@ let command =
     and bad_prob =
       flag
         "--bad-probability"
-        (optional_with_default 0.20 float)
-        ~doc:"probability Probability of generating bad observables (i.e. not driven by the specification) during the equivalence check (default: 0.20)"
+        (optional_with_default sancus_bad_probability float)
+        ~doc:(sprintf "probability Probability of generating bad observables (i.e. not driven by the specification) during the equivalence check (default: %g)" sancus_bad_probability)
     and secret =
       flag
         "--secret"
@@ -150,7 +154,7 @@ let command =
         (* The random walk and the PAC oracle offer an input outside the spec with probability --bad-probability *)
         let bad_probability = match oracle with Exhaustive | W_method _ -> None | Pac _ | Random_walk _ -> Some bad_prob in
         let variant = if ignore_interrupts then Some "no-interrupts" else None in
-        let l = R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:0 () in
+        let l = R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:D.seed () in
         if report then
           eprintf "%s, %d, %f, %f, %d, %f, %d, %d, %d, %d, %d, %f, %f, %Ld\n"
             oracle_name pac_bound epsilon delta step_limit reset_prob

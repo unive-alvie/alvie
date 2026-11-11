@@ -36,6 +36,10 @@ Use `exhaustive` only for very small specifications.
 
 The wrapper scripts (`learn_one.sh`, `learn_all.sh`) use `pac` with `--epsilon 0.01 --delta 0.01`.
 
+`learn.exe` and `alvie <plugin> learn` (and `fixtures`) have the same defaults for every plugin: `pac` with `--epsilon 0.01 --delta 0.01`, the values of the paper.
+The step limit of the random walk is `--step-limit` in `learn.exe` and `--test-count` in `alvie <plugin> learn`.
+Only `--bad-probability` depends on the plugin: 0.20 for Sancus and Sancus-FPGA, 0 for the plugins that learn on values, such as Tiny.
+
 ## Random walk
 
 The random-walk oracle starts at the initial state of the model.
@@ -72,8 +76,8 @@ The first round samples these numbers of paths:
 
 | `--epsilon` and `--delta` | Paths in round 1 | Paths in round 2 |
 | --- | --- | --- |
-| 0.01 | 530 | 600 |
-| 0.001 (default) | 7601 | 8295 |
+| 0.01 (default) | 530 | 600 |
+| 0.001 | 7601 | 8295 |
 
 - `--epsilon` is the error bound.
   A smaller value means that the model can disagree with the system on fewer paths.
@@ -145,8 +149,8 @@ The learning time does not include the preparation of the simulator (see below).
 | `randomwalk --step-limit 20` | 136 | 0.2 s | 5 states. **Incomplete.** |
 | `randomwalk --step-limit 100` | 200 | 0.2 s | 6 states. Complete. |
 | `randomwalk --step-limit 500` | 220 | 0.3 s | 6 states. Complete. |
-| `pac --epsilon 0.01 --delta 0.01` | 287 | 0.4 s | 6 states. Complete. |
-| `pac` (default 0.001) | 1116 | 0.9 s | 6 states. Complete. |
+| `pac` (default 0.01) | 287 | 0.4 s | 6 states. Complete. |
+| `pac --epsilon 0.001 --delta 0.001` | 1116 | 0.9 s | 6 states. Complete. |
 
 The shortest random walk accepted a model that had merged two states.
 ALVIE did not report an error.
@@ -219,7 +223,7 @@ resets, steps, dry-steps, output-queries, equivalence-queries,
 average-path-length, path-length-variance, time-in-milliseconds
 ```
 
-Example (the `randomwalk --step-limit 500` run above):
+Example (the `randomwalk --step-limit 500` run above, with the PAC defaults of then):
 
 ```text
 randomwalk, 1, 0.001000, 0.001000, 500, 0.050000, 295, 220, 1031, 186, 6, 4.310680, 4.078235, 267

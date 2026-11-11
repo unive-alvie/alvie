@@ -278,13 +278,19 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                      ~doc:(sprintf "name the variant of the system to run (%s)" (match vs with [] -> "this plugin has none" | _ -> String.concat ~sep:", " (List.map vs ~f:fst))))
 
   let oracle_param =
-    let%map_open.Command name = flag "--oracle" (optional_with_default `Pac (Arg_type.of_alist_exn [ ("pac", `Pac); ("randomwalk", `Rw); ("exhaustive", `Exh); ("wmethod", `Wm) ])) ~doc:"pac|randomwalk|exhaustive|wmethod the equivalence oracle (default: pac)"
-    and epsilon = flag "--epsilon" (optional_with_default 0.01 float) ~doc:"e PAC: the error bound (default: 0.01)"
-    and delta = flag "--delta" (optional_with_default 0.01 float) ~doc:"d PAC: the confidence bound (default: 0.01)"
+    let module D = Learninglib.Defaults in
+    let oracles = [ ("pac", `Pac); ("randomwalk", `Rw); ("exhaustive", `Exh); ("wmethod", `Wm) ] in
+    let%map_open.Command name = flag "--oracle" (optional_with_default (List.Assoc.find_exn oracles ~equal:String.equal D.oracle) (Arg_type.of_alist_exn oracles))
+        ~doc:(sprintf "pac|randomwalk|exhaustive|wmethod the equivalence oracle (default: %s)" D.oracle)
+    and epsilon = flag "--epsilon" (optional_with_default D.pac_epsilon float) ~doc:(sprintf "e PAC: the error bound (default: %g)" D.pac_epsilon)
+    and delta = flag "--delta" (optional_with_default D.pac_delta float) ~doc:(sprintf "d PAC: the confidence bound (default: %g)" D.pac_delta)
     and round_limit = flag "--round-limit" (optional int) ~doc:"n PAC: at most n rounds of equivalence queries"
-    and test_count = flag "--test-count" (optional_with_default 10000 int) ~doc:"n random walk: the number of steps (default: 10000)"
-    and reset_probability = flag "--reset-probability" (optional_with_default 0.09 float) ~doc:"p random walk: the probability of a reset at each step (default: 0.09)"
-    and extra_states = flag "--extra-states" (optional_with_default 1 int) ~doc:"k W-method: the system may have up to k more states than the model, which is then exact (default: 1)"
+    and test_count = flag "--test-count" (optional_with_default D.random_walk_steps int)
+        ~doc:(sprintf "n random walk: the number of steps of each equivalence query (default: %d)" D.random_walk_steps)
+    and reset_probability = flag "--reset-probability" (optional_with_default D.random_walk_reset_probability float)
+        ~doc:(sprintf "p random walk: the probability of a reset after each step (default: %g)" D.random_walk_reset_probability)
+    and extra_states = flag "--extra-states" (optional_with_default D.wmethod_extra_states int)
+        ~doc:(sprintf "k W-method: the system may have up to k more states than the model, which is then exact (default: %d)" D.wmethod_extra_states)
     and max_tests = flag "--max-tests" (optional int) ~doc:"n W-method: stop each equivalence query after n tests, giving up the guarantee (default: no limit)" in
     let check_prob option p = if Float.(p <= 0. || p >= 1.) then Errors.fail "%s must be between 0 and 1 (exclusive), not %g." option p in
     fun () ->
@@ -304,7 +310,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     Command.basic ~summary:(sprintf "Learn a model of %s under a spec" (manifest ()).name)
       (let%map_open.Command files = spec_flag and secret = secret_flag and variant = variant_flag ()
        and res = flag "--res" (required string) ~doc:"file where to write the model (.dot)"
-       and seed = flag "--seed" (optional_with_default 0 int) ~doc:"n the seed of the random choices (default: 0; learning is deterministic for a seed)"
+       and seed = flag "--seed" (optional_with_default Learninglib.Defaults.seed int)
+           ~doc:(sprintf "n the seed of the random choices (default: %d; learning is deterministic for a seed)" Learninglib.Defaults.seed)
        and bad_probability = flag "--bad-probability" (optional float)
            ~doc:(sprintf "p the probability that the oracle offers an input of the whole alphabet, not one the spec allows, which tells apart states where the spec allows different inputs (default: %s)"
                    (match Codec.default_bad_probability with Some p -> Float.to_string p | None -> "0, never"))
@@ -475,7 +482,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     let model ~secret ~variant =
       let path = Filename.concat out (sprintf "%s-%s%s.dot" name secret (match variant with Some v -> "-" ^ v | None -> "")) in
       let spec = load_spec ~files ~secret:(Some secret) in
-      write_model path (learn ~config ~variant ~spec ~oracle ~seed:0 ()).model;
+      (* as learn does by default: the plugin's inputs outside the spec, and the default seed *)
+      write_model path (learn ?bad_probability:Codec.default_bad_probability ~config ~variant ~spec ~oracle ~seed:Learninglib.Defaults.seed ()).model;
       path in
     let s1, s2 = fx.secrets in
     let m1 = model ~secret:s1 ~variant:None and m2 = model ~secret:s2 ~variant:None in

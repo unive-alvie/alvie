@@ -35,7 +35,7 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
   type ot_t = IIOObservationTree.t
   type m_t = IIOMealy.t
 
-  let make ?(step_limit = 10000) ?(reset_prob = 0.09) ~next_input () : t =
+  let make ?(step_limit = Defaults.random_walk_steps) ?(reset_prob = Defaults.random_walk_reset_probability) ~next_input () : t =
     {
       last_state = 0;
       step_limit=step_limit;

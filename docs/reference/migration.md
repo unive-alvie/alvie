@@ -27,6 +27,16 @@ The former names stay for this release, for scripts and for alvie-ui, which runs
 
 The options of the backend of `learn` (`--sancus`, `--commit`, `--sancus-master-key`, `--tmpdir`, `--keep-repeated-reentries`) are the same; they now come from the manifest of the plugin (`plugins/sancus/alvie-plugin.yaml`).
 
+The defaults of the learner are now those of every plugin and of the paper, so two options of `learn` change:
+
+| Option | 2026.10 | Now |
+| --- | --- | --- |
+| `--oracle` | required | `pac` |
+| `--epsilon`, `--delta` | 0.001 | 0.01 |
+
+**What to do:** a command that gives `--epsilon` and `--delta`, as the scripts of the repository do, learns the same models.
+To learn as with the defaults of 2026.10, give `--epsilon 0.001 --delta 0.001`.
+
 New commands, which 2026.10 did not have:
 
 | Command | Does |
