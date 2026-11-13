@@ -156,6 +156,18 @@ let test_wmethod_like_pac file () =
   Alcotest.(check int) "the same number of states" (Set.length pac.states) (Set.length wm.states);
   Alcotest.(check int) "the same number of transitions" (Map.length pac.transition) (Map.length wm.transition)
 
+(* Interval learning (prototype): the timer values 1, 2 and 3 of leak-interrupt all behave differently, so the
+   interval [1..3] is split into three, and the model is the one learned without intervals *)
+let test_intervals_like_plain () =
+  let spec_ = spec "leak-interrupt.spec" in
+  let oracle = R.Pac { epsilon = 0.01; delta = 0.01; round_limit = None } in
+  let plain = (R.learn ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0 ()).model in
+  let r = R.learn_intervals ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0 ~tests:200 ~length:20 ~max_refinements:10 () in
+  Alcotest.(check (list string)) "three intervals" [ "attacker timer(cycles = _): [1] [2] [3]" ] (List.map r.groups ~f:R.Intervals.show);
+  Alcotest.(check bool) "complete" false r.missed;
+  Alcotest.(check int) "the same number of states" (Set.length plain.states) (Set.length r.learned.model.states);
+  Alcotest.(check int) "the same number of transitions" (Map.length plain.transition) (Map.length r.learned.model.transition)
+
 (* L# learns a model of a model back: the backend that replays the model of leak-interrupt gives a model with the
    same states, and the two agree on random tests of the spec *)
 let test_model_backend () =
@@ -211,4 +223,5 @@ let () =
                      Alcotest.test_case "model files" `Quick test_model_files;
                      Alcotest.test_case "a model learned back from its replay" `Quick test_model_backend;
                      Alcotest.test_case "the W-method learns what PAC learns (leak-interrupt)" `Quick (test_wmethod_like_pac "leak-interrupt.spec");
-                     Alcotest.test_case "the W-method learns what PAC learns (leak-time)" `Quick (test_wmethod_like_pac "leak-time.spec") ]) ]
+                     Alcotest.test_case "the W-method learns what PAC learns (leak-time)" `Quick (test_wmethod_like_pac "leak-time.spec");
+                     Alcotest.test_case "intervals learn what plain learning learns (leak-interrupt)" `Quick test_intervals_like_plain ]) ]

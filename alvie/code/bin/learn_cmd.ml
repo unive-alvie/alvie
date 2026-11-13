@@ -105,6 +105,15 @@ let command =
         "--secret"
         (optional string)
         ~doc:"value This is the value of the secret. It will be substituted inside the enclave."
+    and intervals =
+      flag "--intervals" no_arg
+        ~doc:" (prototype) learn atoms that differ in one integer argument as intervals of values, refined by tests"
+    and interval_tests =
+      flag "--interval-tests" (optional_with_default 200 int) ~doc:"n (with --intervals) the random tests that check each model (default: 200)"
+    and interval_length =
+      flag "--interval-length" (optional_with_default 20 int) ~doc:"n (with --intervals) the most inputs of such a test (default: 20)"
+    and max_refinements =
+      flag "--max-refinements" (optional_with_default 100 int) ~doc:"n (with --intervals) the most splits of intervals (default: 100)"
     and ignore_interrupts =
       flag
         "--ignore-interrupts"
@@ -154,7 +163,16 @@ let command =
         (* The random walk and the PAC oracle offer an input outside the spec with probability --bad-probability *)
         let bad_probability = match oracle with Exhaustive | W_method _ -> None | Pac _ | Random_walk _ -> Some bad_prob in
         let variant = if ignore_interrupts then Some "no-interrupts" else None in
-        let l = R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:D.seed () in
+        let l =
+          if not intervals then R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:D.seed ()
+          else (
+            let r = R.learn_intervals ?bad_probability ~config ~variant ~spec ~oracle ~seed:D.seed ~tests:interval_tests
+                ~length:interval_length ~max_refinements () in
+            let lines = List.map r.groups ~f:R.Intervals.show in
+            Out_channel.write_lines (resfile ^ ".intervals") lines;
+            eprintf "Intervals (%d refinements, %d steps of checks%s):\n%s\n" r.refinements r.check_steps
+              (if r.missed then "; incomplete" else "") (String.concat ~sep:"\n" (List.map lines ~f:(fun l -> "  " ^ l)));
+            r.learned) in
         if report then
           eprintf "%s, %d, %f, %f, %d, %f, %d, %d, %d, %d, %d, %f, %f, %Ld\n"
             oracle_name pac_bound epsilon delta step_limit reset_prob

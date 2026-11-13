@@ -223,12 +223,14 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     ALVIE/Sancus always did). ~dry skips the learning (a model with one state). The random choices depend only on
     ~seed: learning is deterministic.
   *)
-  let learn ?bad_probability ?(dry = false) ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
+  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
     Random.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
-    let sul = Sul.make ~backend:(make_backend ~config ~variant) ~gen in
-    let alphabet = alphabet spec in
+    let sul = match sul with Some s -> s | None -> Sul.make ~backend:(make_backend ~config ~variant) ~gen in
+    (* ~alphabet and ~map_input: learning over a part of the alphabet (Intervals), each input the oracle draws mapped
+       into it *)
+    let alphabet = Option.value alphabet_of ~default:(alphabet spec) in
     if List.is_empty alphabet then Errors.fail "the spec has no atoms: there is nothing to learn.";
     let pick il ol =
       let bad = match bad_probability with
@@ -237,7 +239,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
       if bad then `Next (List.random_element_exn alphabet)
       else match options cache il ol with
         | [] -> `Stop
-        | os -> (match List.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (input_of_core i)) in
+        | os -> (match List.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (map_input (input_of_core i))) in
     let trivial () = IO.IIOMealy.make ~states:(IO.IIOMealy.SSet.singleton 0) ~s0:0 ~input_alphabet:IO.IIOMealy.ISet.empty ~transition:IO.IIOMealy.TransitionMap.empty in
     let start = Time_now.nanoseconds_since_unix_epoch () in
     let model, (queries, equivalence_queries, resets, steps, dry_steps, avg_length, var_length) = match oracle with
@@ -265,6 +267,145 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     let nanoseconds = Int63.(Time_now.nanoseconds_since_unix_epoch () - start) in
     { model = legal_part model; seconds = Int63.to_float nanoseconds /. 1e9; nanoseconds;
       stats = { queries; equivalence_queries; resets; steps; dry_steps; avg_length; var_length } }
+
+  (*
+    Interval learning (prototype). Atoms that differ only in one integer argument (timer_enable 1, ..., timer_enable
+    64) form a group, split into intervals of their values; L# learns over one representative of each interval, the
+    lowest value, and the oracle draws only representatives. After each model, random concrete tests of the spec,
+    with any value of each interval, check it: when a test disagrees with the model, its values are replaced by
+    their representatives one at a time, until it agrees. If even the test of representatives disagrees, the oracle
+    missed a state: the model is reported as is. Otherwise the last value replaced and its representative behave
+    differently after the same prefix and before the same suffix: a binary search finds where the behaviour changes
+    between them, the interval is split there, and L# learns again. No abstraction of the outputs: a value whose
+    outputs differ from its representative's is in another interval.
+  *)
+  module Intervals = struct
+    type group = {
+      name : string; (* the atom, with the integer argument as _ *)
+      members : (int * I.t) array; (* by value *)
+      mutable cuts : int list; (* the indices where an interval starts, after 0, ascending *)
+    }
+
+    (* The group of an input: its class and atom with its only integer argument as _, and that argument *)
+    let key (i : I.t) : (string * int) option =
+      match Codec.atom_of_input i with
+      | Some (cls, Value.Node (tag, fields)) ->
+        (match List.filter_mapi fields ~f:(fun idx (_, v) -> match v with Value.Int n -> Some (idx, n) | _ -> None) with
+         | [ (idx, n) ] ->
+           let fields = List.mapi fields ~f:(fun j (name, v) -> if j = idx then (name, Value.Sym "_") else (name, v)) in
+           Some (cls ^ " " ^ Value.to_string (Value.Node (tag, fields)), n)
+         | _ -> None)
+      | _ -> None
+
+    let groups (alphabet : I.t list) : group list =
+      List.filter_map alphabet ~f:(fun i -> Option.map (key i) ~f:(fun (k, n) -> (k, (n, i))))
+      |> String.Map.of_alist_multi |> Map.to_alist
+      |> List.filter_map ~f:(fun (name, ms) ->
+          if List.length ms < 2 then None
+          else Some { name; members = Array.of_list (List.sort ms ~compare:(fun (a, _) (b, _) -> Int.compare a b)); cuts = [] })
+
+    let find groups (i : I.t) =
+      List.find_map groups ~f:(fun g -> Option.map (Array.findi g.members ~f:(fun _ (_, j) -> I.equal i j)) ~f:(fun (idx, _) -> (g, idx)))
+
+    (* The interval of an index: its first and last index *)
+    let interval g idx =
+      let start = List.fold g.cuts ~init:0 ~f:(fun acc c -> if c <= idx then c else acc) in
+      let stop = match List.find g.cuts ~f:(fun c -> c > idx) with Some c -> c - 1 | None -> Array.length g.members - 1 in
+      (start, stop)
+
+    let rep groups i = match find groups i with
+      | Some (g, idx) -> snd g.members.(fst (interval g idx))
+      | None -> i
+
+    let split g at = g.cuts <- List.dedup_and_sort ~compare:Int.compare (at :: g.cuts)
+
+    let show g =
+      let starts = 0 :: g.cuts in
+      sprintf "%s: %s" g.name (String.concat ~sep:" " (List.map starts ~f:(fun a ->
+          let a, b = interval g a in
+          let v k = fst g.members.(k) in
+          if a = b then sprintf "[%d]" (v a) else sprintf "[%d..%d]" (v a) (v b))))
+  end
+
+  type interval_result = { learned : learned; groups : Intervals.group list; refinements : int; check_steps : int; missed : bool }
+
+  let learn_intervals ?bad_probability ~config ~variant ~(spec : Spec.t) ~oracle ~seed ~tests ~length ~max_refinements () =
+    let full = alphabet spec in
+    let groups = Intervals.groups full in
+    let gen = G.make (plugin ()) spec in
+    let cache = Cache.create gen ~step:gen_step in
+    let sul = Sul.make ~backend:(make_backend ~config ~variant) ~gen in
+    let check_steps = ref 0 in
+    (* the tests have their own random state: learning and the backend set the global one *)
+    let random_state = Random.State.make [| seed; 0x1e7 |] in
+    let run (w : I.t list) : O.t list =
+      Sul.pre sul;
+      let os = List.map w ~f:(fun i -> incr check_steps; Sul.step ~silent:true sul i) in
+      Sul.post sul; os in
+    let rec loop refinements (acc : stats) seconds =
+      let reps = List.dedup_and_sort ~compare:I.compare (List.map full ~f:(Intervals.rep groups)) in
+      let l = learn ?bad_probability ~alphabet:reps ~map_input:(Intervals.rep groups) ~sul ~config ~variant ~spec ~oracle
+          ~seed:(seed + refinements) () in
+      let acc = { queries = acc.queries + l.stats.queries; equivalence_queries = acc.equivalence_queries + l.stats.equivalence_queries;
+                  resets = acc.resets + l.stats.resets; steps = acc.steps + l.stats.steps; dry_steps = acc.dry_steps + l.stats.dry_steps;
+                  avg_length = l.stats.avg_length; var_length = l.stats.var_length } in
+      let seconds = seconds +. l.seconds in
+      let finish ~missed = { learned = { l with stats = acc; seconds }; groups; refinements; check_steps = !check_steps; missed } in
+      (* the model's outputs for a word of representatives: the model keeps only legal transitions (legal_part) and
+         L# defines every input in every state, so a missing transition is an illegal output, and so is every output
+         after it *)
+      let predict w =
+        List.folding_map w ~init:(Some l.model.s0) ~f:(fun st i ->
+            match Option.bind st ~f:(fun st -> IO.IIOMealy.transition l.model (st, i)) with
+            | Some (o, st') -> (Some st', o)
+            | None -> (None, Codec.illegal)) in
+      (* a random concrete test of the spec, up to its first illegal output *)
+      let test () =
+        let rec go il ol n =
+          if n >= length then il
+          else match options cache il ol with
+            | [] -> il
+            | os -> (match List.random_element_exn ~random_state os with
+                | `Stop -> il
+                | `Next ci ->
+                  let i = input_of_core ci in
+                  let il = il @ [ i ] in
+                  let ol = run il in
+                  if List.exists ol ~f:Codec.contains_illegal then List.drop_last_exn il else go il ol (n + 1)) in
+        go [] [] 0 in
+      let agrees w = List.equal O.equal (run w) (predict (List.map w ~f:(Intervals.rep groups))) in
+      let rec check k =
+        if k >= tests then `Done
+        else let w = test () in if agrees w then check (k + 1) else `Disagrees w in
+      match check 0 with
+      | `Done -> finish ~missed:false
+      | `Disagrees w ->
+        let n = List.length w in
+        let reps_w = List.map w ~f:(Intervals.rep groups) in
+        (* mixed k: the first k inputs as representatives, the rest concrete *)
+        let mixed k = List.take reps_w k @ List.drop w k in
+        if not (agrees reps_w) then (Logs.warn (fun m -> m "Intervals: the oracle missed a state (a test of representatives disagrees with the model)"); finish ~missed:true)
+        else if refinements >= max_refinements then (Logs.warn (fun m -> m "Intervals: stopped after %d refinements" refinements); finish ~missed:true)
+        else (
+          (* the first k at which the test agrees: mixed (k - 1) disagrees *)
+          let rec first lo hi = if hi - lo <= 1 then hi else let mid = (lo + hi) / 2 in if agrees (mixed mid) then first lo mid else first mid hi in
+          let k = first 0 n in
+          let prefix = List.take reps_w (k - 1) and suffix = List.drop w k in
+          let ci = List.nth_exn w (k - 1) in
+          (match Intervals.find groups ci with
+           | None -> failwith "Intervals: an input without a group behaves differently from itself"
+           | Some (g, j) ->
+             let a, _ = Intervals.interval g j in
+             let behaviour idx = run (prefix @ [ snd g.members.(idx) ] @ suffix) in
+             let base = behaviour a in
+             (* behaviour lo = base, behaviour hi <> base *)
+             let rec boundary lo hi = if hi - lo <= 1 then hi else
+                 let mid = (lo + hi) / 2 in if List.equal O.equal (behaviour mid) base then boundary mid hi else boundary lo mid in
+             let b = boundary a j in
+             Intervals.split g b;
+             Logs.info (fun m -> m "Intervals: split %s at %d" g.name (fst g.members.(b))));
+          loop (refinements + 1) acc seconds) in
+    loop 0 { queries = 0; equivalence_queries = 0; resets = 0; steps = 0; dry_steps = 0; avg_length = 0.; var_length = 0. } 0.
 
   (* Command-line pieces *)
 
@@ -315,7 +456,15 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
        and bad_probability = flag "--bad-probability" (optional float)
            ~doc:(sprintf "p the probability that the oracle offers an input of the whole alphabet, not one the spec allows, which tells apart states where the spec allows different inputs (default: %s)"
                    (match Codec.default_bad_probability with Some p -> Float.to_string p | None -> "0, never"))
-       and oracle = oracle_param and config = Config.param (manifest ()) and debug = debug_flag in
+       and oracle = oracle_param and config = Config.param (manifest ()) and debug = debug_flag
+       and intervals = flag "--intervals" no_arg
+           ~doc:" (prototype) learn atoms that differ in one integer argument as intervals of values, refined by tests"
+       and interval_tests = flag "--interval-tests" (optional_with_default 200 int)
+           ~doc:"n (with --intervals) the random tests that check each model (default: 200)"
+       and interval_length = flag "--interval-length" (optional_with_default 20 int)
+           ~doc:"n (with --intervals) the most inputs of such a test (default: 20)"
+       and max_refinements = flag "--max-refinements" (optional_with_default 100 int)
+           ~doc:"n (with --intervals) the most splits of intervals (default: 100)" in
        fun () ->
          Errors.protect ~debug (fun () ->
              Errors.setup_logs ~debug;
@@ -327,7 +476,18 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                | None -> Codec.default_bad_probability in
              let spec = load_spec ~files ~secret in
              ignore (Errors.prepare_directory ~option:"the directory of --res" (Filename.dirname res));
-             let l = learn ?bad_probability ~config ~variant ~spec ~oracle ~seed () in
+             let l =
+               if not intervals then learn ?bad_probability ~config ~variant ~spec ~oracle ~seed ()
+               else (
+                 let r = learn_intervals ?bad_probability ~config ~variant ~spec ~oracle ~seed ~tests:interval_tests
+                     ~length:interval_length ~max_refinements () in
+                 let lines = List.map r.groups ~f:Intervals.show in
+                 Out_channel.write_lines (res ^ ".intervals") lines;
+                 printf "Intervals (%d refinement%s, %d steps of checks%s): %s\n%s\n" r.refinements
+                   (if r.refinements = 1 then "" else "s") r.check_steps
+                   (if r.missed then "; incomplete, see the warnings" else "") (res ^ ".intervals")
+                   (String.concat ~sep:"\n" (List.map lines ~f:(fun l -> "  " ^ l)));
+                 r.learned) in
              write_model res l.model;
              printf "Learned a model of %d states and %d transitions in %.1fs (%d queries, %d steps): %s\n"
                (Set.length l.model.states) (Map.length l.model.transition) l.seconds l.stats.queries l.stats.steps res;
