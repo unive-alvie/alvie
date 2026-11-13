@@ -227,7 +227,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     Random.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
-    let sul = match sul with Some s -> s | None -> Sul.make ~backend:(make_backend ~config ~variant) ~gen in
+    let sul = match sul with Some s -> s | None -> Sul.make ~backend:(make_backend ~config ~variant) ~gen () in
     (* ~alphabet and ~map_input: learning over a part of the alphabet (Intervals), each input the oracle draws mapped
        into it *)
     let alphabet = Option.value alphabet_of ~default:(alphabet spec) in
@@ -327,14 +327,16 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
           if a = b then sprintf "[%d]" (v a) else sprintf "[%d..%d]" (v a) (v b))))
   end
 
-  type interval_result = { learned : learned; groups : Intervals.group list; refinements : int; check_steps : int; missed : bool }
+  type interval_result = { learned : learned; groups : Intervals.group list; refinements : int; check_steps : int; backend_steps : int; missed : bool }
 
   let learn_intervals ?bad_probability ~config ~variant ~(spec : Spec.t) ~oracle ~seed ~tests ~length ~max_refinements () =
     let full = alphabet spec in
     let groups = Intervals.groups full in
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
-    let sul = Sul.make ~backend:(make_backend ~config ~variant) ~gen in
+    (* one system for every run of L#, which remembers its answers: a run after a split asks most of its questions
+       again *)
+    let sul = Sul.make ~memo:true ~backend:(make_backend ~config ~variant) ~gen () in
     let check_steps = ref 0 in
     (* the tests have their own random state: learning and the backend set the global one *)
     let random_state = Random.State.make [| seed; 0x1e7 |] in
@@ -350,7 +352,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                   resets = acc.resets + l.stats.resets; steps = acc.steps + l.stats.steps; dry_steps = acc.dry_steps + l.stats.dry_steps;
                   avg_length = l.stats.avg_length; var_length = l.stats.var_length } in
       let seconds = seconds +. l.seconds in
-      let finish ~missed = { learned = { l with stats = acc; seconds }; groups; refinements; check_steps = !check_steps; missed } in
+      let finish ~missed = { learned = { l with stats = acc; seconds }; groups; refinements; check_steps = !check_steps; backend_steps = Sul.backend_steps sul; missed } in
       (* the model's outputs for a word of representatives: the model keeps only legal transitions (legal_part) and
          L# defines every input in every state, so a missing transition is an illegal output, and so is every output
          after it *)
@@ -361,6 +363,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
             | None -> (None, Codec.illegal)) in
       (* a random concrete test of the spec, up to its first illegal output *)
       let test () =
+        Sul.pre sul;
         let rec go il ol n =
           if n >= length then il
           else match options cache il ol with
@@ -369,10 +372,11 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                 | `Stop -> il
                 | `Next ci ->
                   let i = input_of_core ci in
-                  let il = il @ [ i ] in
-                  let ol = run il in
-                  if List.exists ol ~f:Codec.contains_illegal then List.drop_last_exn il else go il ol (n + 1)) in
-        go [] [] 0 in
+                  incr check_steps;
+                  let o = Sul.step ~silent:true sul i in
+                  if Codec.contains_illegal o then il else go (il @ [ i ]) (ol @ [ o ]) (n + 1)) in
+        let w = go [] [] 0 in
+        Sul.post sul; w in
       let agrees w = List.equal O.equal (run w) (predict (List.map w ~f:(Intervals.rep groups))) in
       let rec check k =
         if k >= tests then `Done
@@ -483,8 +487,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                      ~length:interval_length ~max_refinements () in
                  let lines = List.map r.groups ~f:Intervals.show in
                  Out_channel.write_lines (res ^ ".intervals") lines;
-                 printf "Intervals (%d refinement%s, %d steps of checks%s): %s\n%s\n" r.refinements
-                   (if r.refinements = 1 then "" else "s") r.check_steps
+                 printf "Intervals (%d refinement%s, %d steps of checks, %d steps of the backend in all%s): %s\n%s\n" r.refinements
+                   (if r.refinements = 1 then "" else "s") r.check_steps r.backend_steps
                    (if r.missed then "; incomplete, see the warnings" else "") (res ^ ".intervals")
                    (String.concat ~sep:"\n" (List.map lines ~f:(fun l -> "  " ^ l)));
                  r.learned) in
@@ -563,7 +567,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     let p = plugin () in
     let gen = G.make p spec in
     let backend = make_backend ~config ~variant in
-    let sul = Sul.make ~backend ~gen in
+    let sul = Sul.make ~backend ~gen () in
     Sul.pre sul;
     let lines = String.split_lines (Errors.read_file ~option:"--inputs" inputs_file) in
     List.iteri lines ~f:(fun n line ->

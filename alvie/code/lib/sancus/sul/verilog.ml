@@ -56,7 +56,7 @@ let make ~spec ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~base
     Simulator.make ~sancus_repo ~sancus_master_key ~commit ~workingdir ~tmpdir ~basename ~verilog_compile ~get_symbolpos
       ~pmem_script ~simulate_script ~submitfile ~templatefile ~pmem_elf ~filledfile ~dumpfile ~ignore_interrupts
       ?sim_cycle_ratio ?collapse_reentries ?target () in
-  S.make ~backend ~gen:(G.make (Lazy.force Generic_inputgen.plugin) spec)
+  S.make ~backend ~gen:(G.make (Lazy.force Generic_inputgen.plugin) spec) ()
 
 let pre = S.pre
 let post = S.post

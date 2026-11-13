@@ -40,20 +40,40 @@ module Make (B : Backend.S) (C : CODEC with type bookkeeping = B.bookkeeping) = 
     gen : G.t;
     mutable st : G.state;
     mutable stopped : bool;
+    mutable history : C.input list; (* the inputs of the current test, last first *)
+    memo : (C.input list, C.output) Hashtbl.t option; (* the output of each history run, with ~memo *)
+    backend_steps : int ref; (* the steps that ran the backend (not restored), shared by the clones *)
   }
 
-  let make ~backend ~gen = { backend; gen; st = G.initial gen; stopped = false }
+  (* ~memo: remember the output of every history, and restore the backend (a dry step) when a test repeats one, e.g.
+     when learning starts again on the same system (Runner.learn_intervals). The backend must be deterministic. *)
+  let make ?(memo = false) ~backend ~gen () =
+    { backend; gen; st = G.initial gen; stopped = false; history = [];
+      memo = (if memo then Some (Hashtbl.Poly.create ()) else None); backend_steps = ref 0 }
 
   let clone s = { s with backend = B.clone s.backend }
+
+  let backend_steps s = !(s.backend_steps)
 
   let pre s =
     B.pre s.backend;
     s.st <- G.initial s.gen;
-    s.stopped <- false
+    s.stopped <- false;
+    s.history <- []
 
   let post s = B.post s.backend
 
-  let step ?(silent = false) ?dry_output s (i : input_t) : output_t =
+  let rec step ?(silent = false) ?dry_output s (i : input_t) : output_t =
+    let key = i :: s.history in
+    s.history <- key;
+    match s.memo with
+    | Some m when Option.is_none dry_output ->
+      let dry_output = Hashtbl.find m key in
+      let o = step_core ~silent ?dry_output s i in
+      Hashtbl.set m ~key ~data:o; o
+    | _ -> step_core ~silent ?dry_output s i
+
+  and step_core ~silent ?dry_output s (i : input_t) : output_t =
     if s.stopped then C.illegal
     else
       match C.input_to_core ~section:(G.current s.st) i with
@@ -68,7 +88,7 @@ module Make (B : Backend.S) (C : CODEC with type bookkeeping = B.bookkeeping) = 
           | Some ((_ :: _ as observations), bookkeeping) ->
             B.restore s.backend step ~observations bookkeeping;
             (observations, bookkeeping)
-          | Some ([], _) | None -> B.step s.backend step in
+          | Some ([], _) | None -> incr s.backend_steps; B.step s.backend step in
         s.st <- G.observe s.gen st' observations;
         (match s.st.status with Running -> () | Finished | Invalid -> s.stopped <- true);
         C.output_of_core observations bookkeeping

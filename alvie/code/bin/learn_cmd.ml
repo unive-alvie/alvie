@@ -170,7 +170,7 @@ let command =
                 ~length:interval_length ~max_refinements () in
             let lines = List.map r.groups ~f:R.Intervals.show in
             Out_channel.write_lines (resfile ^ ".intervals") lines;
-            eprintf "Intervals (%d refinements, %d steps of checks%s):\n%s\n" r.refinements r.check_steps
+            eprintf "Intervals (%d refinements, %d steps of checks, %d steps of the backend in all%s):\n%s\n" r.refinements r.check_steps r.backend_steps
               (if r.missed then "; incomplete" else "") (String.concat ~sep:"\n" (List.map lines ~f:(fun l -> "  " ^ l)));
             r.learned) in
         if report then

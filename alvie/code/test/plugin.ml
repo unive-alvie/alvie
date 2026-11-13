@@ -449,7 +449,7 @@ let toy_learning_spec = "main { (call x; nop)* };\nvictim { (put 1 | put 2); ret
 let test_backend_adapter () =
   let gen = toy_spec toy_learning_spec in
   let backend = Toy_backend.make () in
-  let sul = Toy_sul.make ~backend ~gen in
+  let sul = Toy_sul.make ~backend ~gen () in
   Toy_sul.pre sul;
   let i section text = Some { G.section; atom = atom text } in
   let obs o = List.map o.Toy_codec.Output.observations ~f:Value.to_string in
@@ -512,7 +512,7 @@ let learn_toy () =
     | [] | `Stop :: _ -> None
     | options -> (match List.random_element_exn options with `Next i -> Some i | `Stop -> None) in
   let oracle = Toy_rw.make ~step_limit:200 ~next_input () in
-  let sul = Toy_sul.make ~backend:(Toy_backend.make ()) ~gen in
+  let sul = Toy_sul.make ~backend:(Toy_backend.make ()) ~gen () in
   let alphabet =
     List.concat_map [ ("main", [ "call x"; "nop" ]); ("victim", [ "put 1"; "put 2"; "ret" ]) ] ~f:(fun (section, atoms) ->
         List.map atoms ~f:(fun a -> Some { G.section; atom = atom a })) in
