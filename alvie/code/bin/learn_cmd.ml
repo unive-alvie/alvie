@@ -114,6 +114,8 @@ let command =
       flag "--interval-length" (optional_with_default 20 int) ~doc:"n (with --intervals) the most inputs of such a test (default: 20)"
     and max_refinements =
       flag "--max-refinements" (optional_with_default 100 int) ~doc:"n (with --intervals) the most splits of intervals (default: 100)"
+    and interval_exact =
+      flag "--interval-exact" no_arg ~doc:" (with --intervals) compare whole outputs, not what the attacker sees (view.yaml)"
     and ignore_interrupts =
       flag
         "--ignore-interrupts"
@@ -166,7 +168,7 @@ let command =
         let l =
           if not intervals then R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:D.seed ()
           else (
-            let r = R.learn_intervals ?bad_probability ~config ~variant ~spec ~oracle ~seed:D.seed ~tests:interval_tests
+            let r = R.learn_intervals ?bad_probability ~view:(not interval_exact) ~config ~variant ~spec ~oracle ~seed:D.seed ~tests:interval_tests
                 ~length:interval_length ~max_refinements () in
             let lines = List.map r.groups ~f:R.Intervals.show in
             Out_channel.write_lines (resfile ^ ".intervals") lines;

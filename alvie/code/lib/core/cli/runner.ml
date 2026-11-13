@@ -276,8 +276,10 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     their representatives one at a time, until it agrees. If even the test of representatives disagrees, the oracle
     missed a state: the model is reported as is. Otherwise the last value replaced and its representative behave
     differently after the same prefix and before the same suffix: a binary search finds where the behaviour changes
-    between them, the interval is split there, and L# learns again. No abstraction of the outputs: a value whose
-    outputs differ from its representative's is in another interval.
+    between them, the interval is split there, and L# learns again. With ~view (the default of --intervals), outputs
+    are compared as the attacker sees them (view.yaml, as the comparison of models does): values whose outputs
+    differ only in what it does not see are in the same interval, and the model, learned on the representative,
+    is exact for the other values of an interval up to the view. Without, outputs are compared whole.
   *)
   module Intervals = struct
     type group = {
@@ -329,7 +331,21 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
 
   type interval_result = { learned : learned; groups : Intervals.group list; refinements : int; check_steps : int; backend_steps : int; missed : bool }
 
-  let learn_intervals ?bad_probability ~config ~variant ~(spec : Spec.t) ~oracle ~seed ~tests ~length ~max_refinements () =
+  let learn_intervals ?bad_probability ?(view = true) ~config ~variant ~(spec : Spec.t) ~oracle ~seed ~tests ~length ~max_refinements () =
+    (* what the attacker sees of a sequence of outputs: the visible parts of the observations, each with whether its
+       input is the interrupt *)
+    let attacker_view = Ltscompare.View.make (plugin ()) in
+    let seen (os : O.t list) =
+      List.map os ~f:(fun o ->
+          List.concat_map (Codec.observations o) ~f:(fun obs ->
+              List.filter_map (Ltscompare.View.parts attacker_view obs) ~f:(fun (p, irq) ->
+                  match Ltscompare.View.see attacker_view p with
+                  | Hidden -> None
+                  | Visible s -> Some (s, irq)
+                  | Distinct s -> Some ("distinct " ^ s, irq)))) in
+    let same a b =
+      if view then List.equal (List.equal (Tuple2.equal ~eq1:String.equal ~eq2:Bool.equal)) (seen a) (seen b)
+      else List.equal O.equal a b in
     let full = alphabet spec in
     let groups = Intervals.groups full in
     let gen = G.make (plugin ()) spec in
@@ -377,7 +393,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
                   if Codec.contains_illegal o then il else go (il @ [ i ]) (ol @ [ o ]) (n + 1)) in
         let w = go [] [] 0 in
         Sul.post sul; w in
-      let agrees w = List.equal O.equal (run w) (predict (List.map w ~f:(Intervals.rep groups))) in
+      let agrees w = same (run w) (predict (List.map w ~f:(Intervals.rep groups))) in
       let rec check k =
         if k >= tests then `Done
         else let w = test () in if agrees w then check (k + 1) else `Disagrees w in
@@ -404,7 +420,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
              let base = behaviour a in
              (* behaviour lo = base, behaviour hi <> base *)
              let rec boundary lo hi = if hi - lo <= 1 then hi else
-                 let mid = (lo + hi) / 2 in if List.equal O.equal (behaviour mid) base then boundary mid hi else boundary lo mid in
+                 let mid = (lo + hi) / 2 in if same (behaviour mid) base then boundary mid hi else boundary lo mid in
              let b = boundary a j in
              Intervals.split g b;
              Logs.info (fun m -> m "Intervals: split %s at %d" g.name (fst g.members.(b))));
@@ -468,7 +484,9 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
        and interval_length = flag "--interval-length" (optional_with_default 20 int)
            ~doc:"n (with --intervals) the most inputs of such a test (default: 20)"
        and max_refinements = flag "--max-refinements" (optional_with_default 100 int)
-           ~doc:"n (with --intervals) the most splits of intervals (default: 100)" in
+           ~doc:"n (with --intervals) the most splits of intervals (default: 100)"
+       and interval_exact = flag "--interval-exact" no_arg
+           ~doc:" (with --intervals) compare whole outputs, not what the attacker sees (view.yaml)" in
        fun () ->
          Errors.protect ~debug (fun () ->
              Errors.setup_logs ~debug;
@@ -483,7 +501,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
              let l =
                if not intervals then learn ?bad_probability ~config ~variant ~spec ~oracle ~seed ()
                else (
-                 let r = learn_intervals ?bad_probability ~config ~variant ~spec ~oracle ~seed ~tests:interval_tests
+                 let r = learn_intervals ?bad_probability ~view:(not interval_exact) ~config ~variant ~spec ~oracle ~seed ~tests:interval_tests
                      ~length:interval_length ~max_refinements () in
                  let lines = List.map r.groups ~f:Intervals.show in
                  Out_channel.write_lines (res ^ ".intervals") lines;
