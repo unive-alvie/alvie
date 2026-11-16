@@ -226,7 +226,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     ALVIE/Sancus always did). ~dry skips the learning (a model with one state). The random choices depend only on
     ~seed: learning is deterministic.
   *)
-  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ?initial_ot ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
+  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ?initial_ot ?(jobs = 1) ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
     Random.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
@@ -247,7 +247,9 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     let start = Time_now.nanoseconds_since_unix_epoch () in
     let model, tree, (queries, equivalence_queries, resets, steps, dry_steps, avg_length, var_length) = match oracle with
       | Pac { epsilon; delta; round_limit } ->
-        let o = Pac.make ?round_limit ~epsilon ~delta ~next_input:(fun _ il ol -> pick il ol) () in
+        (* ~jobs > 1: the tests of each equivalence query run on as many other systems, in parallel (prototype) *)
+        let workers = if jobs <= 1 then [] else List.init jobs ~f:(fun _ -> Sul.make ~backend:(make_backend ~config ~variant) ~gen ()) in
+        let o = Pac.make ?round_limit ~epsilon ~delta ~workers ~next_input:(fun _ il ol -> pick il ol) () in
         let m, t = if dry then (trivial (), None) else (let m, t = L_pac.lsharp_run_from ?initial_ot o sul alphabet in (m, Some t)) in
         (m, t, Pac.get_stats o)
       | Random_walk { test_count; reset_probability } ->

@@ -116,6 +116,9 @@ let command =
       flag "--max-refinements" (optional_with_default 100 int) ~doc:"n (with --intervals) the most splits of intervals (default: 100)"
     and interval_exact =
       flag "--interval-exact" no_arg ~doc:" (with --intervals) compare whole outputs, not what the attacker sees (view.yaml)"
+    and jobs =
+      flag "--jobs" (optional_with_default 1 int)
+        ~doc:"n (prototype, pac oracle) run the tests of each equivalence query on n systems in parallel (default: 1)"
     and ignore_interrupts =
       flag
         "--ignore-interrupts"
@@ -166,7 +169,7 @@ let command =
         let bad_probability = match oracle with Exhaustive | W_method _ -> None | Pac _ | Random_walk _ -> Some bad_prob in
         let variant = if ignore_interrupts then Some "no-interrupts" else None in
         let l =
-          if not intervals then R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:D.seed ()
+          if not intervals then R.learn ?bad_probability ~dry ~jobs ~config ~variant ~spec ~oracle ~seed:D.seed ()
           else (
             let r = R.learn_intervals ?bad_probability ~view:(not interval_exact) ?tests:interval_tests ~config ~variant ~spec ~oracle ~seed:D.seed
                 ~length:interval_length ~max_refinements () in

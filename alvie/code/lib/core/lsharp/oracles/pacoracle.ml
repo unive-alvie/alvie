@@ -30,13 +30,17 @@ struct
     epsilon : float;
     delta : float;
     next_input : IIOMealy.t -> I.t list -> O.t list -> [`Next of I.t | `Stop];
-    stats : stats_t
+    stats : stats_t;
+    (* With workers (other systems, each with its own backend), the tests of an equivalence query run in as many
+       processes, the test i with the random state of (round, i): see equiv_query_parallel *)
+    workers : S.t list;
   }
 
   let start_time = Time_now.nanoseconds_since_unix_epoch ()
 
-  let make ?(round_limit) ?(epsilon = Defaults.pac_epsilon) ?(delta = Defaults.pac_delta) ~next_input () : t =
+  let make ?(round_limit) ?(epsilon = Defaults.pac_epsilon) ?(delta = Defaults.pac_delta) ?(workers = []) ~next_input () : t =
     {
+      workers;
       round_limit=round_limit;
       last_state = 0;
       round = 0;
@@ -153,6 +157,59 @@ struct
 
     This is implemented following the ideas from Angluin's 1987's paper on sampling oracles.
   *)
+  (*
+    The tests of an equivalence query in parallel (prototype). Worker c runs, in a process of its own, the tests
+    c, c + n, c + 2n, ... (n workers), each with the random state of (round, test), until it finds a counterexample
+    or runs out of tests. The counterexample is the one of the lowest test: the result does not depend on n. It is
+    replayed on sul, so that the tree has it, and the statistics of the workers are added to the oracle's.
+  *)
+  let equiv_query_parallel (oracle : t) (ot : IIOObservationTree.t) (sul : S.t) (hyp : IIOMealy.t) (r : int) =
+    let n = List.length oracle.workers in
+    let round = oracle.round in
+    let run_worker c (w : S.t) =
+      let s0 = oracle.stats in
+      let before = (s0.sul_reset_cnt, s0.sul_step_cnt, s0.sul_step_dry_cnt, s0.equivquery_samples) in
+      let rec go i =
+        if i >= r then None
+        else (
+          Random.init (Hashtbl.hash (round, i));
+          pre_with_stats oracle w;
+          oracle.stats.equivquery_samples <- oracle.stats.equivquery_samples + 1;
+          match sample_and_run oracle ot w hyp hyp.s0 ot.s0 [] [] with
+          | `Cex (_, is, _) -> Some (i, is)
+          | `Equivalent _ -> S.post w; go (i + n)) in
+      let found = go c in
+      let a, b, d, e = before in
+      (found, (oracle.stats.sul_reset_cnt - a, oracle.stats.sul_step_cnt - b, oracle.stats.sul_step_dry_cnt - d, oracle.stats.equivquery_samples - e)) in
+    let children = List.mapi oracle.workers ~f:(fun c w ->
+        let rd, wr = Core_unix.pipe () in
+        match Core_unix.fork () with
+        | `In_the_child ->
+          Core_unix.close rd;
+          let result = (try Ok (run_worker c w) with e -> Error (Exn.to_string e)) in
+          let oc = Core_unix.out_channel_of_descr wr in
+          Stdlib.Marshal.to_channel oc (result : ((int * I.t list) option * (int * int * int * int), string) Result.t) [];
+          Stdlib.flush oc;
+          Core_unix.exit_immediately 0
+        | `In_the_parent pid -> Core_unix.close wr; (pid, rd)) in
+    let results = List.map children ~f:(fun (pid, rd) ->
+        let ic = Core_unix.in_channel_of_descr rd in
+        let (res : ((int * I.t list) option * (int * int * int * int), string) Result.t) = Stdlib.Marshal.from_channel ic in
+        Stdlib.close_in ic;
+        ignore (Core_unix.waitpid pid);
+        match res with Ok x -> x | Error m -> failwithf "PAC worker failed: %s" m ()) in
+    List.iter results ~f:(fun (_, (a, b, d, e)) ->
+        oracle.stats.sul_reset_cnt <- oracle.stats.sul_reset_cnt + a;
+        oracle.stats.sul_step_cnt <- oracle.stats.sul_step_cnt + b;
+        oracle.stats.sul_step_dry_cnt <- oracle.stats.sul_step_dry_cnt + d;
+        oracle.stats.equivquery_samples <- oracle.stats.equivquery_samples + e);
+    match List.filter_map results ~f:fst |> List.min_elt ~compare:(fun (i, _) (j, _) -> Int.compare i j) with
+    | None -> `Equivalent
+    | Some (_, is) ->
+      (* the tree gets the counterexample from sul, which the workers' trees had *)
+      let ot', _ = output_query oracle ot sul is in
+      `Cex (ot', is)
+
   let equiv_query (oracle : t) (ot : IIOObservationTree.t) (sul : S.t) (hyp : IIOMealy.t) =
     oracle.stats.equivquery_cnt <- oracle.stats.equivquery_cnt + 1;
     let do_reset () = S.post sul; pre_with_stats oracle sul in
@@ -165,6 +222,7 @@ struct
         Logs.info (fun m -> m "[%.1fs] (PAC) equivalence query #%d: hypothesis with %d states, %d samples to draw (so far: %d samples, %d output queries, %d resets, %d SUL steps, %d dry steps)"
           (Float.of_int63 Int63.(Time_now.nanoseconds_since_unix_epoch () - start_time) /. 1e9) oracle.round (Set.length hyp.states) !r oracle.stats.equivquery_samples oracle.stats.outputquery_cnt oracle.stats.sul_reset_cnt oracle.stats.sul_step_cnt oracle.stats.sul_step_dry_cnt);
         Logs.debug (fun m -> m "(PAC) equiv_query (eps: %f, delta: %f): samples: %d, round #%d, sampling %d paths" oracle.epsilon oracle.delta oracle.stats.equivquery_samples oracle.round !r);
+        if not (List.is_empty oracle.workers) then equiv_query_parallel oracle ot sul hyp !r else
         let result = ref `Equivalent in
         let first = ref true in
         let upd first len =
