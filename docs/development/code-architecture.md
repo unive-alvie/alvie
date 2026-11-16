@@ -84,6 +84,7 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/sancus/generic_inputgen.ml` | The Core generator on Sancus inputs and outputs, with the embedded plugin files |
 | `lib/sancus/inputgen.ml` | The former input generator, kept to compare with (`tt_inputgen_golden check --engine legacy`) |
 | `lib/sancus/sul/simulator.ml` | The Sancus backend: code generation, the targets, simulation, the instructions of a step in the VCD dump |
+| `lib/sancus/msp430_asm.ml` | The assembler of the programs of the steps: the memory image and the symbols that `msp430-as` and `msp430-ld` give (checked by `tt_asm_golden`) |
 | `lib/sancus/sul/step_analysis.ml` | From the instructions of a step to its observations, for every target |
 | `lib/sancus-fpga/fpga.ml` | ALVIE/Sancus-FPGA: the board as a target of the Sancus backend (the serial port, the queries, the instructions of a step in the board's trace) |
 | `lib/sancus-fpga/native.ml` | ALVIE/Sancus-FPGA as a native plugin (`alvie sancus-fpga ...`), with the codec of Sancus |

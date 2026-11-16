@@ -1,0 +1,204 @@
+; config a7a7584bde46e69c20ed3c28eb2bffb0
+.include "pmem_defs.asm"
+.include "sancus_macros.asm"
+
+.set init_sp, DMEM_200
+.set data_s, DMEM_240
+.set data_e, DMEM_24A
+.set data_s_2, DMEM_260
+.set data_e_2, DMEM_26F
+
+.set unprot_mem, DMEM_250
+.set irq_cnt, DMEM_252
+.set tactl_val, DMEM_254
+.set time, DMEM_256
+.set reti_cnt, DMEM_258
+
+.global main
+
+main:
+	; [@inst_boot]
+	; === Setup
+	mov #0x4, &tactl_val
+	disable_wdt
+    dint
+
+	; === Attacker's code ===
+	S_21:
+	; (CTimerEnable #0x3)
+	E_21:
+	S_22:
+	dint
+	E_22:
+	S_23:
+	mov #0x4, &TACTL
+	E_23:
+	S_24:
+	mov #3, &TACCR0
+	E_24:
+	S_25:
+	mov #0x212, &tactl_val
+	E_25:
+	S_26:
+	eint
+	E_26:
+	S_27:
+	; (CCreateEncl ("enc_s", "enc_e", "data_s", "data_e"))
+	E_27:
+	S_28:
+	sancus_enable #enc_s, #enc_s, #enc_e, #data_s, #data_e
+	E_28:
+	S_29:
+	cmp #0, r15
+	E_29:
+	S_30:
+	jnz ok_1794830458852738331
+	E_30:
+	S_31:
+	mov #0x0, &WDTCTL
+	E_31:
+	S_32:
+	ok_1794830458852738331:
+
+	E_32:
+	S_33:
+	; (CJmpIn "enc_s")
+	E_33:
+	S_34:
+	mov #0x4, &TACTL
+	E_34:
+	S_35:
+	add #2, &TACCR0
+	E_35:
+	S_36:
+	mov #0x0, &TACCTL0
+	E_36:
+	S_37:
+	mov &tactl_val, &TACTL
+	E_37:
+	S_38:
+	br #enc_s
+	E_38:
+	; - May enable or disable interrupts via eint/dint
+	; - May setup a timer
+	; - May create an enclave and/or jump into it
+
+	; If nothing happened, just jump to the end of the test
+	br #end_of_test
+
+unprot_code:
+	nop ; Useful to reproduce B2
+
+enc_s:
+	; === Victim's code
+	S_0:
+	cmp #1, r4
+	E_0:
+	S_1:
+	jnz else_1794830458852710904
+	E_1:
+	S_2:
+	add #1, &data_s
+	E_2:
+	S_3:
+	nop
+	E_3:
+	S_4:
+	jmp end_1794830458852710904
+	E_4:
+	S_5:
+	else_1794830458852710904:
+	E_5:
+	S_6:
+	nop
+	E_6:
+	S_7:
+	add #1, &data_s
+	E_7:
+	S_8:
+	jmp end_1794830458852710904
+	E_8:
+	S_9:
+	end_1794830458852710904:
+	E_9:
+	nop  ; This is to ensure that _internal <> _start and see if jumping in a place <> _start breaks stuff
+enc_internal:
+	nop ; The NOP here ensures that _internal <> _end and the enclave does not end abruptly after the victim's code
+	br #enc_e
+enc_e:
+
+end_of_test:
+	dint
+	mov #0x0, &TACTL ; Reset timer/interrupt flag
+	
+	mov #0xdead, r15
+	br #0xffff
+
+enc_s_2:
+	nop
+enc_e_2:
+
+; Attacker's owned ISR for testing
+isr_timer:
+	mov #0x4, &tactl_val
+	disable_wdt
+    dint
+	mov #0x0, &TACTL ; Reset interrupt flag, keep TAR value
+
+	S_10:
+	; (CTimerEnable #0x1)
+	E_10:
+	S_11:
+	dint
+	E_11:
+	S_12:
+	mov #0x4, &TACTL
+	E_12:
+	S_13:
+	mov #1, &TACCR0
+	E_13:
+	S_14:
+	mov #0x212, &tactl_val
+	E_14:
+	S_15:
+	eint
+	E_15:
+	S_16:
+	; CReti
+	E_16:
+	S_17:
+	mov #0x4, &TACTL
+	E_17:
+	S_18:
+	mov #0x0, &TACCTL0
+	E_18:
+	S_19:
+	mov &tactl_val, &TACTL
+	E_19:
+	S_20:
+	reti
+	E_20:
+	br #end_of_test
+
+; Facility for easy resetting
+reset:
+	mov #0x0, &WDTCTL
+
+; Interrupt vectors
+.section .vectors, "a"
+.word end_of_test  ; Interrupt  0 (lowest priority)    <unused>
+.word end_of_test  ; Interrupt  1                      <unused>
+.word end_of_test  ; Interrupt  2                      <unused>
+.word end_of_test  ; Interrupt  3                      <unused>
+.word end_of_test  ; Interrupt  4                      <unused>
+.word end_of_test  ; Interrupt  5                      <unused>
+.word end_of_test  ; Interrupt  6                      <unused>
+.word end_of_test  ; Interrupt  7                      <unused>
+.word isr_timer    ; Interrupt  8                      IRQ
+.word end_of_test  ; Interrupt  9                      <unused>
+.word end_of_test  ; Interrupt 10                      Watchdog timer
+.word end_of_test  ; Interrupt 11                      <unused>
+.word end_of_test  ; Interrupt 12                      <unused>
+.word end_of_test  ; Interrupt 13                      SM_IRQ
+.word end_of_test  ; Interrupt 14                      NMI
+.word main         ; Interrupt 15 (highest priority)   RESET

@@ -230,6 +230,20 @@ the documentation lists what users must do.
 
 ### Backends
 
+- ALVIE/Sancus builds the program of each step with its own assembler
+  (`Sancus.Msp430_asm`), not with `msp430-as` and `msp430-ld`: the memory
+  image and the symbols are those of the toolchain, in about 0.6 ms instead
+  of about 8.5 ms a step (fast-A on the simulator: 23.4 ms to 15.3 ms a
+  step, the same model). The board gets the image directly, without an ELF
+  file. The first build of a `--tmpdir` still uses the toolchain, which
+  prepares it; `ALVIE_ASM=toolchain` uses it for every step, and a program
+  that the assembler does not accept is built by the toolchain, with a
+  warning. `tt_asm_golden check` compares it with the toolchain on a corpus
+  (`test/asm/corpus`: 120 programs of learning runs and a program that uses
+  every instruction and addressing mode); it gave the same words and symbols
+  on all the 21605 programs of learning runs on `spec-lib/fast` and
+  `spec-lib/example` (ef753b6, bf89c0b, with and without interrupts).
+  `ALVIE_DUMP_PROGRAMS` collects the programs of a run for the corpus.
 - ALVIE/Core defines the contract with a backend (`Alvie_backend.Backend.S`):
   `step` gets the programs of all the sections from Core and returns
   observations (values) and bookkeeping; `restore` replays a step whose

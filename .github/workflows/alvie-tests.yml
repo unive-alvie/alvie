@@ -74,6 +74,9 @@ jobs:
       - name: Check the input generator against its corpus
         working-directory: alvie/code
         run: opam exec -- dune exec tt_inputgen_golden -- check
+      - name: Check the assembler against the toolchain's corpus
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_asm_golden -- check
       - name: Run the plugin files suite
         working-directory: alvie/code
         run: opam exec -- dune exec tt_plugin -- test --color=never
