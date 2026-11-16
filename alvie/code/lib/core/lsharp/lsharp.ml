@@ -78,7 +78,11 @@ struct
     in
     _check_consistency (Fqueue.enqueue Fqueue.empty (ot.s0, hyp.s0))
 
-  let lsharp_run (oracle : IOSOracle.t) (sul : S.t) (input_alphabet : I.t list) (* (output_alphabet : O.t list) *) =
+  (* L# from a tree (~initial_ot, with its alphabet replaced by input_alphabet; an empty one by default); returns the
+     model and the tree it was learned from. The tree must be of the same system: its observations stay true. *)
+  let rec lsharp_run oracle sul input_alphabet = fst (lsharp_run_from oracle sul input_alphabet)
+
+  and lsharp_run_from ?initial_ot (oracle : IOSOracle.t) (sul : S.t) (input_alphabet : I.t list) (* (output_alphabet : O.t list) *) =
     (*
       All the observation trees handled during a run are extensions of one another, and apartness is
       monotone wrt extension: once q # r holds, it holds forever. Hence we remember positive answers
@@ -572,12 +576,17 @@ struct
     in
     (* Initialize basis, frontier and observation tree *)
     let basis = Int.Set.singleton 0 in
-    let ot =
-      IIOObservationTree.make
-        ~states:(IIOObservationTree.SSet.singleton 0)
-        ~s0:0
-        ~input_alphabet: (Set.Using_comparator.of_list ~comparator:I.comparator input_alphabet)
-        ~transition:(IIOObservationTree.TransitionMap.empty) in
+    let alphabet_set = Set.Using_comparator.of_list ~comparator:I.comparator input_alphabet in
+    let ot = match initial_ot with
+      | None ->
+        IIOObservationTree.make
+          ~states:(IIOObservationTree.SSet.singleton 0)
+          ~s0:0
+          ~input_alphabet:alphabet_set
+          ~transition:(IIOObservationTree.TransitionMap.empty)
+      | Some (t : IIOObservationTree.t) ->
+        IOSOracle.set_last_state oracle (Option.value (Set.max_elt t.states) ~default:0);
+        IIOObservationTree.make ~states:t.states ~s0:t.s0 ~input_alphabet:alphabet_set ~transition:t.transition in
     (* let frontier = gen_frontier ot basis in
     let f2b = gen_f2b ot ~basis:basis ~frontier:frontier in *)
     let rule_sched = [
@@ -602,7 +611,7 @@ struct
             _rule_apply rs p_ot p_basis
         | `Finished h ->
             (* Rule 4 completed the learning process *)
-            h
+            (h, c_ot)
       ) in
     _rule_apply rule_sched ot basis
 end

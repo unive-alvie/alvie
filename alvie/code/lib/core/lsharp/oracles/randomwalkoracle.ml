@@ -44,6 +44,8 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
       stats = make_stats_t ~outputquery_cnt:0 ~equivquery_cnt:0 ~sul_reset_cnt:0 ~sul_step_cnt:0 ~sul_step_dry_cnt:0 ~equivquery_len_avg:0 ~equivquery_len_sigmasq:0 ~equivquery_samples:0
     }
 
+  let set_last_state (oracle : t) n = oracle.last_state <- n
+
   let get_stats (oracle : t) =
     let ex = Float.of_int oracle.stats.equivquery_len_avg in
     let ex2 = Float.of_int oracle.stats.equivquery_len_sigmasq in

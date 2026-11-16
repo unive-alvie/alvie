@@ -215,7 +215,10 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
      variance of the length of the equivalence queries *)
   type stats = { queries : int; equivalence_queries : int; resets : int; steps : int; dry_steps : int; avg_length : float; var_length : float }
 
-  type learned = { model : IO.IIOMealy.t; seconds : float; nanoseconds : Int63.t; stats : stats }
+  module OT = Learninglib.Observationtree.ObservationTree (Learninglib.Showableint.ShowableInt) (I) (O)
+
+  (* tree: the observation tree the model was learned from (None for --dry), which a later run can start from *)
+  type learned = { model : IO.IIOMealy.t; seconds : float; nanoseconds : Int63.t; stats : stats; tree : OT.t option }
 
   (*
     Learns a model of the backend under the spec. With ~bad_probability p, the oracle offers an input of the whole
@@ -223,7 +226,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     ALVIE/Sancus always did). ~dry skips the learning (a model with one state). The random choices depend only on
     ~seed: learning is deterministic.
   *)
-  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
+  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ?initial_ot ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
     Random.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
@@ -242,31 +245,31 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
         | os -> (match List.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (map_input (input_of_core i))) in
     let trivial () = IO.IIOMealy.make ~states:(IO.IIOMealy.SSet.singleton 0) ~s0:0 ~input_alphabet:IO.IIOMealy.ISet.empty ~transition:IO.IIOMealy.TransitionMap.empty in
     let start = Time_now.nanoseconds_since_unix_epoch () in
-    let model, (queries, equivalence_queries, resets, steps, dry_steps, avg_length, var_length) = match oracle with
+    let model, tree, (queries, equivalence_queries, resets, steps, dry_steps, avg_length, var_length) = match oracle with
       | Pac { epsilon; delta; round_limit } ->
         let o = Pac.make ?round_limit ~epsilon ~delta ~next_input:(fun _ il ol -> pick il ol) () in
-        let m = if dry then trivial () else L_pac.lsharp_run o sul alphabet in
-        (m, Pac.get_stats o)
+        let m, t = if dry then (trivial (), None) else (let m, t = L_pac.lsharp_run_from ?initial_ot o sul alphabet in (m, Some t)) in
+        (m, t, Pac.get_stats o)
       | Random_walk { test_count; reset_probability } ->
         let o = Rw.make ~step_limit:test_count ~reset_prob:reset_probability
             ~next_input:(fun _ il ol -> match pick il ol with `Stop -> Codec.no_input | `Next i -> i) () in
-        let m = if dry then trivial () else L_rw.lsharp_run o sul alphabet in
-        (m, Rw.get_stats o)
+        let m, t = if dry then (trivial (), None) else (let m, t = L_rw.lsharp_run_from ?initial_ot o sul alphabet in (m, Some t)) in
+        (m, t, Rw.get_stats o)
       | Exhaustive ->
         (* every input of the alphabet, until no input, an illegal output, or nothing left *)
         let o = Exh.make ~next_options:(fun _ _ -> List.map alphabet ~f:(fun i -> `Next i))
             ~stop_cond:(fun available is os ->
                 List.is_empty available || List.mem is Codec.no_input ~equal:I.equal || List.exists os ~f:Codec.contains_illegal) () in
-        let m = if dry then trivial () else L_exh.lsharp_run o sul alphabet in
-        (m, Exh.get_stats o)
+        let m, t = if dry then (trivial (), None) else (let m, t = L_exh.lsharp_run_from ?initial_ot o sul alphabet in (m, Some t)) in
+        (m, t, Exh.get_stats o)
       | W_method { extra_states; max_tests } ->
         (* the tests of the W-method on the whole alphabet: a test stops at the first illegal output *)
         let o = Wm.make ~extra_states ?max_tests () in
-        let m = if dry then trivial () else L_wm.lsharp_run o sul alphabet in
-        (m, Wm.get_stats o) in
+        let m, t = if dry then (trivial (), None) else (let m, t = L_wm.lsharp_run_from ?initial_ot o sul alphabet in (m, Some t)) in
+        (m, t, Wm.get_stats o) in
     let nanoseconds = Int63.(Time_now.nanoseconds_since_unix_epoch () - start) in
     { model = legal_part model; seconds = Int63.to_float nanoseconds /. 1e9; nanoseconds;
-      stats = { queries; equivalence_queries; resets; steps; dry_steps; avg_length; var_length } }
+      stats = { queries; equivalence_queries; resets; steps; dry_steps; avg_length; var_length }; tree }
 
   (*
     Interval learning (prototype). Atoms that differ only in one integer argument (timer_enable 1, ..., timer_enable
@@ -274,12 +277,17 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     lowest value, and the oracle draws only representatives. After each model, random concrete tests of the spec,
     with any value of each interval, check it: when a test disagrees with the model, its values are replaced by
     their representatives one at a time, until it agrees. If even the test of representatives disagrees, the oracle
-    missed a state: the model is reported as is. Otherwise the last value replaced and its representative behave
+    missed a state: the test goes into the tree, and L# learns again from it. Otherwise the last value replaced and its representative behave
     differently after the same prefix and before the same suffix: a binary search finds where the behaviour changes
     between them, the interval is split there, and L# learns again. With ~view (the default of --intervals), outputs
     are compared as the attacker sees them (view.yaml, as the comparison of models does): values whose outputs
     differ only in what it does not see are in the same interval, and the model, learned on the representative,
     is exact for the other values of an interval up to the view. Without, outputs are compared whole.
+
+    Each round of checks runs as many tests as a round of the PAC oracle, ceil((ln (1/delta) + (r + 1) ln 2) /
+    epsilon) for the r-th model (with the epsilon and delta of the oracle, or the defaults): when no test disagrees,
+    the model, read with intervals, is wrong on a random concrete test of the spec with probability at most epsilon,
+    with confidence 1 - delta, as for PAC. ~tests fixes the number instead.
   *)
   module Intervals = struct
     type group = {
@@ -331,7 +339,13 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
 
   type interval_result = { learned : learned; groups : Intervals.group list; refinements : int; check_steps : int; backend_steps : int; missed : bool }
 
-  let learn_intervals ?bad_probability ?(view = true) ~config ~variant ~(spec : Spec.t) ~oracle ~seed ~tests ~length ~max_refinements () =
+  let learn_intervals ?bad_probability ?(view = true) ?tests ~config ~variant ~(spec : Spec.t) ~oracle ~seed ~length ~max_refinements () =
+    let epsilon, delta = match oracle with
+      | Pac { epsilon; delta; _ } -> (epsilon, delta)
+      | Random_walk _ | Exhaustive | W_method _ -> (Learninglib.Defaults.pac_epsilon, Learninglib.Defaults.pac_delta) in
+    let tests_of_round r = match tests with
+      | Some n -> n
+      | None -> Float.(to_int (round_up ((log (1.0 /. delta) +. (of_int r +. 1.0) *. log 2.0) /. epsilon))) in
     (* what the attacker sees of a sequence of outputs: the visible parts of the observations, each with whether its
        input is the interrupt *)
     let attacker_view = Ltscompare.View.make (plugin ()) in
@@ -360,9 +374,11 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
       Sul.pre sul;
       let os = List.map w ~f:(fun i -> incr check_steps; Sul.step ~silent:true sul i) in
       Sul.post sul; os in
-    let rec loop refinements (acc : stats) seconds =
+    (* a split keeps every representative (the first value of each part), so the tree of a run stays true for the
+       next one, which starts from it *)
+    let rec loop refinements (acc : stats) seconds tree =
       let reps = List.dedup_and_sort ~compare:I.compare (List.map full ~f:(Intervals.rep groups)) in
-      let l = learn ?bad_probability ~alphabet:reps ~map_input:(Intervals.rep groups) ~sul ~config ~variant ~spec ~oracle
+      let l = learn ?bad_probability ~alphabet:reps ~map_input:(Intervals.rep groups) ~sul ?initial_ot:tree ~config ~variant ~spec ~oracle
           ~seed:(seed + refinements) () in
       let acc = { queries = acc.queries + l.stats.queries; equivalence_queries = acc.equivalence_queries + l.stats.equivalence_queries;
                   resets = acc.resets + l.stats.resets; steps = acc.steps + l.stats.steps; dry_steps = acc.dry_steps + l.stats.dry_steps;
@@ -394,6 +410,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
         let w = go [] [] 0 in
         Sul.post sul; w in
       let agrees w = same (run w) (predict (List.map w ~f:(Intervals.rep groups))) in
+      let tests = tests_of_round refinements in
       let rec check k =
         if k >= tests then `Done
         else let w = test () in if agrees w then check (k + 1) else `Disagrees w in
@@ -404,8 +421,18 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
         let reps_w = List.map w ~f:(Intervals.rep groups) in
         (* mixed k: the first k inputs as representatives, the rest concrete *)
         let mixed k = List.take reps_w k @ List.drop w k in
-        if not (agrees reps_w) then (Logs.warn (fun m -> m "Intervals: the oracle missed a state (a test of representatives disagrees with the model)"); finish ~missed:true)
-        else if refinements >= max_refinements then (Logs.warn (fun m -> m "Intervals: stopped after %d refinements" refinements); finish ~missed:true)
+        if refinements >= max_refinements then (Logs.warn (fun m -> m "Intervals: stopped after %d refinements" refinements); finish ~missed:true)
+        else if not (agrees reps_w) then (
+          (* the oracle missed a state: the test, with its outputs, goes into the tree, where L# finds that the model
+             is not consistent with it *)
+          Logs.info (fun m -> m "Intervals: the oracle missed a state; learning again with the counterexample");
+          let tree = Option.map l.tree ~f:(fun (t : OT.t) ->
+              let next = ref (Option.value (Set.max_elt t.states) ~default:0) in
+              fst (List.fold (List.zip_exn reps_w (run reps_w)) ~init:(t, t.s0) ~f:(fun (t, q) (i, o) ->
+                  match OT.transition t (q, i) with
+                  | Some (_, q') -> (t, q')
+                  | None -> incr next; (OT.update t q i o !next, !next)))) in
+          loop (refinements + 1) acc seconds tree)
         else (
           (* the first k at which the test agrees: mixed (k - 1) disagrees *)
           let rec first lo hi = if hi - lo <= 1 then hi else let mid = (lo + hi) / 2 in if agrees (mixed mid) then first lo mid else first mid hi in
@@ -415,17 +442,25 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
           (match Intervals.find groups ci with
            | None -> failwith "Intervals: an input without a group behaves differently from itself"
            | Some (g, j) ->
-             let a, _ = Intervals.interval g j in
+             let a, z = Intervals.interval g j in
              let behaviour idx = run (prefix @ [ snd g.members.(idx) ] @ suffix) in
-             let base = behaviour a in
-             (* behaviour lo = base, behaviour hi <> base *)
-             let rec boundary lo hi = if hi - lo <= 1 then hi else
-                 let mid = (lo + hi) / 2 in if same (behaviour mid) base then boundary mid hi else boundary lo mid in
-             let b = boundary a j in
-             Intervals.split g b;
-             Logs.info (fun m -> m "Intervals: split %s at %d" g.name (fst g.members.(b))));
-          loop (refinements + 1) acc seconds) in
-    loop 0 { queries = 0; equivalence_queries = 0; resets = 0; steps = 0; dry_steps = 0; avg_length = 0.; var_length = 0. } 0.
+             (* every boundary of the interval in this context: a segment whose ends behave differently is halved
+                until its ends are neighbours, where it is split; a segment whose ends behave alike is taken as
+                constant (the later checks test it) *)
+             let rec split_all lo hi blo bhi =
+               if same blo bhi then ()
+               else if hi - lo <= 1 then (
+                 Intervals.split g hi;
+                 Logs.info (fun m -> m "Intervals: split %s at %d" g.name (fst g.members.(hi))))
+               else (
+                 let mid = (lo + hi) / 2 in
+                 let bmid = behaviour mid in
+                 split_all lo mid blo bmid; split_all mid hi bmid bhi) in
+             let ba = behaviour a and bj = behaviour j in
+             split_all a j ba bj;
+             if z > j then split_all j z bj (behaviour z));
+          loop (refinements + 1) acc seconds l.tree) in
+    loop 0 { queries = 0; equivalence_queries = 0; resets = 0; steps = 0; dry_steps = 0; avg_length = 0.; var_length = 0. } 0. None
 
   (* Command-line pieces *)
 
@@ -479,8 +514,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
        and oracle = oracle_param and config = Config.param (manifest ()) and debug = debug_flag
        and intervals = flag "--intervals" no_arg
            ~doc:" (prototype) learn atoms that differ in one integer argument as intervals of values, refined by tests"
-       and interval_tests = flag "--interval-tests" (optional_with_default 200 int)
-           ~doc:"n (with --intervals) the random tests that check each model (default: 200)"
+       and interval_tests = flag "--interval-tests" (optional int)
+           ~doc:"n (with --intervals) the random tests that check each model (default: as many as a round of PAC)"
        and interval_length = flag "--interval-length" (optional_with_default 20 int)
            ~doc:"n (with --intervals) the most inputs of such a test (default: 20)"
        and max_refinements = flag "--max-refinements" (optional_with_default 100 int)
@@ -501,7 +536,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
              let l =
                if not intervals then learn ?bad_probability ~config ~variant ~spec ~oracle ~seed ()
                else (
-                 let r = learn_intervals ?bad_probability ~view:(not interval_exact) ~config ~variant ~spec ~oracle ~seed ~tests:interval_tests
+                 let r = learn_intervals ?bad_probability ~view:(not interval_exact) ?tests:interval_tests ~config ~variant ~spec ~oracle ~seed
                      ~length:interval_length ~max_refinements () in
                  let lines = List.map r.groups ~f:Intervals.show in
                  Out_channel.write_lines (res ^ ".intervals") lines;

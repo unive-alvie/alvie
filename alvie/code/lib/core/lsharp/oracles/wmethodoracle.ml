@@ -65,6 +65,8 @@ module WMethodOracle (I : EltType) (O : EltType) (S : SUL with type input_t = I.
       };
     }
 
+  let set_last_state (oracle : t) n = oracle.last_state <- n
+
   let get_stats (oracle : t) =
     let n = Float.of_int oracle.stats.tests_run in
     let ex = Float.of_int oracle.stats.tests_len_sum in

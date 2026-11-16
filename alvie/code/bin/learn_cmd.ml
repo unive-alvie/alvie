@@ -109,7 +109,7 @@ let command =
       flag "--intervals" no_arg
         ~doc:" (prototype) learn atoms that differ in one integer argument as intervals of values, refined by tests"
     and interval_tests =
-      flag "--interval-tests" (optional_with_default 200 int) ~doc:"n (with --intervals) the random tests that check each model (default: 200)"
+      flag "--interval-tests" (optional int) ~doc:"n (with --intervals) the random tests that check each model (default: as many as a round of PAC)"
     and interval_length =
       flag "--interval-length" (optional_with_default 20 int) ~doc:"n (with --intervals) the most inputs of such a test (default: 20)"
     and max_refinements =
@@ -168,7 +168,7 @@ let command =
         let l =
           if not intervals then R.learn ?bad_probability ~dry ~config ~variant ~spec ~oracle ~seed:D.seed ()
           else (
-            let r = R.learn_intervals ?bad_probability ~view:(not interval_exact) ~config ~variant ~spec ~oracle ~seed:D.seed ~tests:interval_tests
+            let r = R.learn_intervals ?bad_probability ~view:(not interval_exact) ?tests:interval_tests ~config ~variant ~spec ~oracle ~seed:D.seed
                 ~length:interval_length ~max_refinements () in
             let lines = List.map r.groups ~f:R.Intervals.show in
             Out_channel.write_lines (resfile ^ ".intervals") lines;

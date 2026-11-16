@@ -162,7 +162,7 @@ let test_intervals_like_plain () =
   let spec_ = spec "leak-interrupt.spec" in
   let oracle = R.Pac { epsilon = 0.01; delta = 0.01; round_limit = None } in
   let plain = (R.learn ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0 ()).model in
-  let r = R.learn_intervals ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0 ~tests:200 ~length:20 ~max_refinements:10 () in
+  let r = R.learn_intervals ~config:[] ~variant:None ~spec:spec_ ~oracle ~seed:0 ~length:20 ~max_refinements:10 () in
   Alcotest.(check (list string)) "three intervals" [ "attacker timer(cycles = _): [1] [2] [3]" ] (List.map r.groups ~f:R.Intervals.show);
   Alcotest.(check bool) "complete" false r.missed;
   Alcotest.(check int) "the same number of states" (Set.length plain.states) (Set.length r.learned.model.states);
