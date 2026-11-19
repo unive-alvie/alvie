@@ -4,7 +4,7 @@
   The plugin files use a small subset of YAML: one document of mappings, sequences and scalars. Anchors, aliases and
   tags are rejected: they are not needed, and aliases can make a small file expand into a huge one.
 
-  Scalars keep whether they were quoted. libyaml implements YAML 1.1, where unquoted yes, no, on, off, y and n are
+  Scalars keep whether they were quoted. The events come from Alvie_yaml (libyaml in the native ALVIE). libyaml implements YAML 1.1, where unquoted yes, no, on, off, y and n are
   booleans; in YAML 1.2 (and in most editors) they are strings. Core rejects them unquoted (see Shape), so that a
   file means the same thing everywhere.
 *)
@@ -25,28 +25,26 @@ let describe n =
   | Map _ -> "a mapping"
 
 let parse ~file (text : string) : (node, Diag.t) result =
-  let pos_of (p : Yaml.Stream.Event.pos) = { Diag.file; line = p.start_mark.line + 1; col = p.start_mark.column + 1 } in
+  let pos_of (p : Alvie_yaml.Yaml_event.pos) = { Diag.file; line = p.line + 1; col = p.col + 1 } in
   let start = { Diag.file; line = 1; col = 1 } in
   let fail ?(pos = start) fmt = Printf.ksprintf (fun m -> Error (Diag.error ~pos m)) fmt in
-  match Yaml.Stream.parser text with
-  | Error (`Msg m) -> fail "cannot read the YAML: %s" m
+  match Alvie_yaml.Yaml_parser.create text with
+  | Error m -> fail "cannot read the YAML: %s" m
   | Ok parser ->
     let next () =
-      match Yaml.Stream.do_parse parser with
+      match Alvie_yaml.Yaml_parser.next parser with
       | Ok (e, p) -> Ok (e, pos_of p)
-      | Error (`Msg m) -> fail "invalid YAML: %s" m in
+      | Error m -> fail "invalid YAML: %s" m in
     let open Result.Let_syntax in
     (* Reads one node whose first event is e *)
-    let rec node (e : Yaml.Stream.Event.t) pos : (node, Diag.t) result =
+    let rec node (e : Alvie_yaml.Yaml_event.t) pos : (node, Diag.t) result =
       match e with
       | Scalar { anchor = Some a; _ } | Mapping_start { anchor = Some a; _ } | Sequence_start { anchor = Some a; _ } ->
         fail ~pos "YAML anchors (&%s) are not supported in plugin files" a
       | Alias { anchor } -> fail ~pos "YAML aliases (*%s) are not supported in plugin files" anchor
       | Scalar { tag = Some t; _ } | Mapping_start { tag = Some t; _ } | Sequence_start { tag = Some t; _ } ->
         fail ~pos "YAML tags (%s) are not supported in plugin files" t
-      | Scalar s ->
-        let quoted = match s.style with `Single_quoted | `Double_quoted | `Literal | `Folded -> true | _ -> false in
-        Ok { desc = Scalar { value = s.value; quoted }; pos }
+      | Scalar { value; quoted; _ } -> Ok { desc = Scalar { value; quoted }; pos }
       | Sequence_start _ ->
         let rec items acc =
           let%bind e, p = next () in
@@ -77,15 +75,15 @@ let parse ~file (text : string) : (node, Diag.t) result =
         { desc = Map members; pos }
       | _ -> fail ~pos "invalid YAML: unexpected structure" in
     let%bind e, _ = next () in
-    let%bind () = match e with Stream_start _ -> Ok () | _ -> fail "invalid YAML stream" in
+    let%bind () = match e with Stream_start -> Ok () | _ -> fail "invalid YAML stream" in
     let%bind e, p = next () in
     (match e with
      | Stream_end -> Ok { desc = Map []; pos = start } (* an empty file is an empty mapping *)
-     | Document_start _ ->
+     | Document_start ->
        let%bind e, p = next () in
        let%bind root = node e p in
        let%bind e, _ = next () in
-       let%bind () = match e with Document_end _ -> Ok () | _ -> fail ~pos:p "invalid YAML document" in
+       let%bind () = match e with Document_end -> Ok () | _ -> fail ~pos:p "invalid YAML document" in
        let%bind e, p = next () in
        (match e with
         | Stream_end -> Ok root
