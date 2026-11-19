@@ -31,7 +31,7 @@ let accepts edges initial labels =
   not (Set.is_empty (List.fold visible ~init:(close (Int.Set.singleton initial)) ~f:(fun set l ->
       close (List.fold edges ~init:Int.Set.empty ~f:(fun acc (s, l', t) -> if Set.mem set s && String.equal l l' then Set.add acc t else acc)))))
 
-let is_cex e1 e2 p = (match List.last p with Some l -> not (silent l) | None -> false) && not (accepts e2 0 p)
+let is_cex e2 p = (match List.last p with Some l -> not (silent l) | None -> false) && not (accepts e2 0 p)
 
 let random () =
   let rng = Random.State.make [| 7 |] in
@@ -41,13 +41,13 @@ let random () =
   for case = 1 to 3000 do
     let e1 = system () and e2 = system () in
     let all = paths ~depth:5 e1 0 in
-    let shortest = List.filter all ~f:(is_cex e1 e2) |> List.map ~f:List.length |> List.min_elt ~compare:Int.compare in
+    let shortest = List.filter all ~f:(is_cex e2) |> List.map ~f:List.length |> List.min_elt ~compare:Int.compare in
     match cex e1 e2, shortest with
     | None, None -> ()
     | None, Some k -> Alcotest.failf "case %d: no counterexample, but there is one of %d steps" case k
     | Some p, _ ->
       if not (List.mem all p ~equal:[%equal: string list]) && List.length p <= 5 then Alcotest.failf "case %d: %s is not a path of m1" case (String.concat ~sep:" " p);
-      if not (is_cex e1 e2 p) then Alcotest.failf "case %d: %s is not a counterexample" case (String.concat ~sep:" " p);
+      if not (is_cex e2 p) then Alcotest.failf "case %d: %s is not a counterexample" case (String.concat ~sep:" " p);
       Option.iter shortest ~f:(fun k -> if List.length p <> k then Alcotest.failf "case %d: %d steps, the shortest has %d" case (List.length p) k)
   done
 

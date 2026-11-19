@@ -1,0 +1,7 @@
+; The tools of mCRL2 that the comparison engine can use. It is a virtual library: the default implementation runs the
+; tools (native); a build that cannot run programs, e.g. for a browser, links alvie-core.mcrl2-none instead.
+(library
+ (name alvie_mcrl2)
+ (public_name alvie-core.mcrl2)
+ (virtual_modules mcrl2_engine)
+ (default_implementation alvie-core.mcrl2-native))
