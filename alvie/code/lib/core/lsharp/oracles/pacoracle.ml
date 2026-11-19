@@ -35,7 +35,7 @@ struct
 
   let start_time = Time_now.nanoseconds_since_unix_epoch ()
 
-  let make ?(round_limit) ?(epsilon = 0.001) ?(delta = 0.001) ~next_input () : t =
+  let make ?(round_limit) ?(epsilon = Defaults.pac_epsilon) ?(delta = Defaults.pac_delta) ~next_input () : t =
     {
       round_limit=round_limit;
       last_state = 0;

@@ -46,7 +46,7 @@ These messages start with `ALVIE error:`.
 | `… names a directory that does not exist` | The `--sancus` path is wrong. | Point `--sancus` to the `sancus-core-gap` directory. |
 | `Could not parse the TestDL specifications: …` | A specification has a syntax error. The message shows the place. | Check for a missing `;`, a missing section, or a register outside `r0` to `r14`. See the [Specification Reference](/alvie/sancus/testdl-specification-reference/). |
 | `The enclave specification uses ?. Supply --secret <value>.` | The enclave uses the secret placeholder. | Add `--secret 0` or `--secret 1`. |
-| `Unknown --oracle value … Choose randomwalk, pac, or exhaustive.` | The oracle name is wrong. | Use one of the three names. |
+| `Unknown --oracle value … Choose randomwalk, pac, exhaustive, or wmethod.` | The oracle name is wrong. | Use one of the four names. |
 | `--epsilon must be greater than 0 and smaller than 1` | A number is out of range. | Use a value in the range that the message shows. |
 | `--X requires --Y` | Two options must be used together. | Add the missing option. |
 

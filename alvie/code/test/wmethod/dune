@@ -1,0 +1,6 @@
+(test
+  (name wmethod_tests)
+  (package alvie-core)
+  (libraries alcotest learninglib core)
+  (preprocess (pps ppx_jane))
+)

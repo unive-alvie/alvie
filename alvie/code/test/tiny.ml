@@ -148,6 +148,14 @@ let test_model_files () =
   Alcotest.check_raises "a model of another plugin" (Alvie_cli.Errors.User_error (sprintf "M: %s/other.dot is a model of plugin sancus, not of tiny." dir))
     (fun () -> ignore (R.read_model ~what:"M" (Filename.concat dir "other.dot")))
 
+(* The W-method oracle, through the runner, learns the model that PAC learns *)
+let test_wmethod_like_pac file () =
+  let spec_ = spec file in
+  let pac = (R.learn ~config:[] ~variant:None ~spec:spec_ ~oracle:(Pac { epsilon = 0.01; delta = 0.01; round_limit = None }) ~seed:0 ()).model in
+  let wm = (R.learn ~config:[] ~variant:None ~spec:spec_ ~oracle:(W_method { extra_states = 1; max_tests = None }) ~seed:0 ()).model in
+  Alcotest.(check int) "the same number of states" (Set.length pac.states) (Set.length wm.states);
+  Alcotest.(check int) "the same number of transitions" (Map.length pac.transition) (Map.length wm.transition)
+
 (* L# learns a model of a model back: the backend that replays the model of leak-interrupt gives a model with the
    same states, and the two agree on random tests of the spec *)
 let test_model_backend () =
@@ -201,4 +209,6 @@ let () =
                     Alcotest.test_case "a random observation" `Quick (test_mutant Random_time "determinism") ]);
       ("learning", [ Alcotest.test_case "deterministic, without illegal transitions" `Quick test_learning_is_deterministic;
                      Alcotest.test_case "model files" `Quick test_model_files;
-                     Alcotest.test_case "a model learned back from its replay" `Quick test_model_backend ]) ]
+                     Alcotest.test_case "a model learned back from its replay" `Quick test_model_backend;
+                     Alcotest.test_case "the W-method learns what PAC learns (leak-interrupt)" `Quick (test_wmethod_like_pac "leak-interrupt.spec");
+                     Alcotest.test_case "the W-method learns what PAC learns (leak-time)" `Quick (test_wmethod_like_pac "leak-time.spec") ]) ]

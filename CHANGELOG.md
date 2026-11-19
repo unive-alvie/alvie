@@ -17,13 +17,31 @@ the documentation lists what users must do.
   compare with the commands of ALVIE/Core (`Alvie_cli.Runner`), as every other
   plugin does, through the codec of Sancus (`Sancus.Native.Codec`): their
   options and output, and the models they learn, do not change (regression:
-  no differences). The runner gains what Sancus needed: a codec of the
+  no differences), except for the defaults of PAC (below). The runner gains what Sancus needed: a codec of the
   plugin's own (`Runner.Make_codec`), random inputs outside the spec
   (`--bad-probability`), the exhaustive oracle, `--dry` and the statistics of
   `--report`. `alvie sancus fixtures` writes models in the format of Sancus.
 - A file that is not a model, given to `fa.exe` or `alvie compare`, is a
   mistake in the command (exit 2, `cannot read --m1-int ...`), no longer an
   unexpected failure.
+- New oracle: the W-method (`--oracle wmethod`), from the VaultLink variant,
+  for `learn.exe` and for `alvie <plugin> learn`. It runs the test suite
+  P · Σ^≤k · W of the model, and the model is then exact if the system has
+  at most k more states than it (`--extra-states k`, default 1);
+  `--max-tests` limits each equivalence query and removes the guarantee.
+  `alvie <plugin> learn` says which guarantee applies. The oracle does not
+  copy the backend, so it works with every backend, the FPGA board too. Tests:
+  `test/wmethod`, and Tiny learns the same models with it as with PAC.
+- One set of defaults for the learner and its oracles
+  (`Learninglib.Defaults`), used by `learn.exe`, `alvie <plugin> learn` and
+  `fixtures`, and by the oracles themselves: PAC with ε = δ = 0.01 (the
+  values of the paper and of every script), a random walk of 500 steps with
+  reset probability 0.05, `--extra-states 1`, seed 0. Before, `learn.exe`
+  had ε = δ = 0.001, and `alvie <plugin> learn` a random walk of 10000 steps
+  with reset probability 0.09. `learn.exe --oracle` is now optional (`pac`).
+  `fixtures` now offers inputs outside the spec with the plugin's
+  `--bad-probability` (0.20 for Sancus), as `learn` does; it offered none.
+  "Migrating from 2026.10" says what changes for `learn.exe`.
 
 ### Documentation
 

@@ -84,7 +84,7 @@ Options of `learn` (and of `exec` and `conformance` where they apply):
 | --- | --- | --- |
 | `--secret V` | | The value of the secret `?` in the spec; needed when the spec has one |
 | `--variant NAME` | | A variant of the system from the manifest, such as `no-interrupts` |
-| `--oracle` | `pac` | `pac`, with `--epsilon` and `--delta` (0.01 each) and `--round-limit`, or `randomwalk`, with `--test-count` (10000) and `--reset-probability` (0.09) |
+| `--oracle` | `pac` | `pac`, with `--epsilon` and `--delta` (0.01 each) and `--round-limit`; `randomwalk`, with `--test-count` (500) and `--reset-probability` (0.05); `wmethod`, with `--extra-states` (1) and `--max-tests` (no limit); or `exhaustive` |
 | `--seed N` | 0 | The seed of the random choices: learning is deterministic for a seed |
 | `--debug` | | Debug-level logging |
 
@@ -129,7 +129,6 @@ This is the main experiment driver.
 |------|-------------|
 | `--att-spec <file>` | Path to attacker specification (`.atdl` file) |
 | `--encl-spec <file>` | Path to enclave specification (`.etdl` file) |
-| `--oracle <mode>` | Query oracle mode: `randomwalk`, `pac`, or `exhaustive` |
 | `--res <file>` | Output `.dot` file path for the learned model |
 | `--tmpdir <dir>` | Directory for temporary Verilog simulation files |
 | `--sancus <dir>` | Path to the Sancus simulator root |
@@ -138,14 +137,17 @@ This is the main experiment driver.
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--oracle <mode>` | `pac` | Query oracle mode: `randomwalk`, `pac`, `exhaustive`, or `wmethod` |
 | `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check |
 | `--secret <value>` | absent | Secret substituted into the enclave specification; required when the spec contains `?` |
-| `--epsilon <float>` | `0.001` | PAC error bound, used only by `pac` |
-| `--delta <float>` | `0.001` | PAC confidence parameter, used only by `pac` |
+| `--epsilon <float>` | `0.01` | PAC error bound, used only by `pac` |
+| `--delta <float>` | `0.01` | PAC confidence parameter, used only by `pac` |
 | `--pac-bound <int>` | `1` | Included in `--report` output only; does not limit the current PAC oracle |
 | `--step-limit <int>` | `500` | Max steps for a random-walk equivalence query |
 | `--round-limit <int>` | unlimited | Max rounds for a PAC equivalence query |
 | `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
+| `--extra-states <int>` | `1` | W-method: the number of states that the system may have beyond the model |
+| `--max-tests <int>` | unlimited | W-method: the maximum number of tests of an equivalence query; a limit removes the guarantee |
 | `--bad-probability <float>` | `0.20` | Probability of generating an input not driven by the specification |
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
 | `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/core/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
