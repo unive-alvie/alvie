@@ -58,6 +58,17 @@ let status t =
   | _, s -> t.alive <- false; Some s
   | exception Unix.Unix_error _ -> None
 
+(* How the process ended, waiting up to grace seconds for it: a process that closed its output is about to exit, but
+   its status may not be there yet *)
+let status_within t ~grace =
+  let deadline = Unix.gettimeofday () +. grace in
+  let rec wait () =
+    match status t with
+    | Some s -> Some s
+    | None when Unix.gettimeofday () < deadline -> Unix.sleepf 0.01; wait ()
+    | None -> None in
+  wait ()
+
 let describe_status = function
   | Unix.WEXITED n -> Printf.sprintf "it exited with status %d" n
   | Unix.WSIGNALED n -> Printf.sprintf "it was killed by signal %d" n
