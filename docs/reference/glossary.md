@@ -127,5 +127,5 @@ The symbols in the live output (`t`, `o`, `i`, `†`, `•`, and others) are in 
 - **`exec.exe`**: Replays one input sequence.
 - **`pbt.exe`**: Runs a random test for reset behavior.
   It does not learn a model.
-- **mCRL2**: The model checker that `fa.exe` uses.
+- **mCRL2**: The model checker that `alvie property formula` uses. ALVIE used it to compare models too; `ALVIE_MCRL2=1` still does.
 - **Graphviz (`dot`)**: The tool that draws `.dot` files as PDF or image files.

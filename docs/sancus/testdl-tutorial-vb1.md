@@ -213,7 +213,7 @@ The four model arguments are what make this a security comparison rather than a 
   ALVIE/Sancus subtracts differences already present without interrupts, leaving behavior attributable to the interrupt-enabled threat model.
 - `ALVIE_OUTPUT=/output` selects the Docker bind mount.
   For native use, we can set it to `/tmp/alvie-output` instead.
-  `--tmpdir` is a disposable work directory for mCRL2 intermediate files.
+  `--tmpdir` is a disposable work directory for mCRL2 intermediate files (only with `ALVIE_MCRL2=1`).
 - `--witness-file-basename` chooses the output prefix; ALVIE/Sancus writes `$ALVIE_OUTPUT/vb1-fa/witness_int.dot`.
 - `--cex-limit 1` stops the search after its first round, which keeps this introductory result small and fast. The first round already finds several witnesses, among them the V-B1 one.
 

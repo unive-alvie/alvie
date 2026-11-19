@@ -277,7 +277,7 @@ The expected counts for the checked-in models are:
 | B3 | 11 | 9 |
 | B6 | 8 | 9 |
 
-If your counts are different, check the build and the mCRL2 installation first.
+If your counts are different, check the build first.
 See [Troubleshooting](/alvie/reference/troubleshooting/).
 
 ## 9. Report what you found

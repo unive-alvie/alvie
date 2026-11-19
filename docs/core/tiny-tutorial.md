@@ -11,7 +11,7 @@ Tiny is a small processor written in OCaml, so learning a model takes a fraction
 It has two planted timing leaks: one that any attacker sees, and one that only an attacker with interrupts sees.
 The steps are those of an experiment on Sancus (see [Getting Started](/alvie/getting-started/)), and [How ALVIE Works](/alvie/core/concepts/) explains the ideas behind them.
 
-You need the OCaml build of ALVIE (`dune build` in `alvie/code`, for example in the Docker image) and, to compare models, mCRL2.
+You need the OCaml build of ALVIE (`dune build` in `alvie/code`, for example in the Docker image), and mCRL2 only to check formulas.
 Run every command from `alvie/code`.
 
 ## 1. The platform

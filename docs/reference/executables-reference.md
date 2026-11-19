@@ -44,7 +44,7 @@ The options of the backend (`--sancus`, `--commit`, `--sancus-master-key`, `--tm
 `alvie property` checks the other properties of the catalogue of ALVIE/Core (version 1) on learned models.
 Noninterference, the fourth, is `alvie compare`.
 Like `alvie compare`, it sees the models as the attacker does: through the view of `plugins/sancus/view.yaml`, with hidden outputs silent (`τ` in traces).
-Each needs mCRL2.
+Only `formula` needs mCRL2.
 
 ```bash
 _build/default/bin/alvie.exe property equivalence ../../results/264f135-b7-enclave-complete-0-0.01-0.01-int.dot ../../results/264f135-b7-enclave-complete-1-0.01-0.01-int.dot
@@ -53,7 +53,7 @@ _build/default/bin/alvie.exe property formula model.dot --formula my-property.mc
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `--tmpdir` | `/tmp/alvie` | Directory for the files given to mCRL2 |
+| `--tmpdir` | `/tmp/alvie` | Directory for the files given to mCRL2 (`formula`, or `ALVIE_MCRL2=1`) |
 | `--formula`, `-f` | | The formula (`formula` only) |
 | `--debug` | | Debug-level logging, and keep the files of mCRL2; the command prints where they are |
 
@@ -88,8 +88,8 @@ Options of `learn` (and of `exec` and `conformance` where they apply):
 | `--seed N` | 0 | The seed of the random choices: learning is deterministic for a seed |
 | `--debug` | | Debug-level logging |
 
-Options of `compare`: `--m1-baseline` and `--m2-baseline` (models of a baseline variant, whose witnesses do not count), `--tmpdir` (for mCRL2, default `/tmp/alvie`) and `--cex-limit`.
-Options of `conformance`: `--tests` (50), `--length` (30) and `--seed`; of `fixtures`: `--dir` (another directory of fixtures) and `--out` (the models, witnesses and files of mCRL2, default `/tmp/alvie/fixtures`).
+Options of `compare`: `--m1-baseline` and `--m2-baseline` (models of a baseline variant, whose witnesses do not count), `--tmpdir` (for mCRL2 with `ALVIE_MCRL2=1`, default `/tmp/alvie`) and `--cex-limit`.
+Options of `conformance`: `--tests` (50), `--length` (30) and `--seed`; of `fixtures`: `--dir` (another directory of fixtures) and `--out` (the models and witnesses, default `/tmp/alvie/fixtures`).
 
 The models of these commands are of the generic form: their inputs are atoms and their outputs observations, as the plugin files declare them; they do not contain the inputs that the spec does not allow.
 `compare`, `property` and `fixtures` refuse a model of another plugin.
@@ -166,6 +166,7 @@ This is the main experiment driver.
 | `ALVIE_CHECK_APART` | With `1`, check every answer of the learner's caches against a computation from scratch, and stop at the first difference. Very slow: for testing changes to the learner |
 | `ALVIE_FULL_TRACE` | With `1`, the simulator dumps every signal instead of the top level of the testbench (useful to inspect the VCD files); used when the simulator is compiled |
 | `ALVIE_ASM` | With `toolchain`, the programs of the steps are built by `msp430-as` and `msp430-ld`, as before; by default ALVIE's assembler builds them (the first build of a `--tmpdir` still uses the toolchain, which prepares it) |
+| `ALVIE_MCRL2` | With `1`, comparisons ask mCRL2 (`ltscompare` and `tracepp`) for the traces that one model has and the other does not, as before; with `check`, ALVIE asks both and warns when they differ. By default ALVIE checks the inclusion itself |
 | `ALVIE_DUMP_PROGRAMS` | A directory where the simulator writes every program it builds, with its configuration: the input of `tt_asm_golden record` |
 | `OCAMLRUNPARAM` | Garbage collector settings; when it is set, `learn.exe` does not apply its own |
 
@@ -206,7 +207,7 @@ For an unexpected failure, rerun with `--debug` and file a [bug report](https://
 ## 2. `fa.exe` — Find flow-analysis (NI) violations between two models
 
 **Purpose:** Takes two interrupt-enabled `.dot` Mealy machines and optionally their two no-interrupt counterparts.
-It uses mCRL2 model checking to find distinguishing traces.
+It checks the inclusion of the traces that the attacker sees, in both directions, to find distinguishing traces.
 Supplying the no-interrupt models removes witnesses that already exist without interrupt scheduling.
 
 ### Flags
@@ -218,7 +219,7 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 | `--m1-nint <file>` | optional | secret=0 no-interrupt model (`.dot`) |
 | `--m2-nint <file>` | optional | secret=1 no-interrupt model (`.dot`) |
 | `--witness-file-basename <base>` | _(required)_ | Output path prefix; produces `<base>_int.dot` |
-| `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files |
+| `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files (only with `ALVIE_MCRL2=1`) |
 | `--cex-limit <int>` | unlimited | Stops the search after the round that finds this many witnesses, in each of the two directions. One round can find several witnesses, so the result can have more. |
 | `--secrets <s1>,<s2>` | from the model names | The values of the secret in the first and the second model. By default they are read from the names `<commit>-<attacker>-<enclave>-<secret>-<eps>-<delta>[-int\|-nint].dot`. The comparison ignores them in the victim's code, so that the two runs of a witness run "the same code". |
 | `--debug` | false | Enable debug-level logging |
@@ -350,6 +351,6 @@ _build/default/bin/pbt.exe \
 | Executable | Purpose | Needs simulator | Needs mCRL2 | Output |
 |------------|---------|-----------------|-------------|--------|
 | `learn.exe` | Learn Mealy machine via L# | Yes | No | `.dot` model |
-| `fa.exe` | Find NI violations between two models | No | Yes | `.dot` witness graph |
+| `fa.exe` | Find NI violations between two models | No | No | `.dot` witness graph |
 | `exec.exe` | Replay an input trace (debug) | Yes | No | stdout trace |
 | `pbt.exe` | Random NI testing (no model) | Yes | No | QCheck report |

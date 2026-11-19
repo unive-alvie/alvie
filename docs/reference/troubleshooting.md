@@ -32,7 +32,7 @@ ALVIE tools use these exit codes:
 | `dune build` fails on a missing library | The dependencies are not installed. | Run `opam install . --deps-only --with-test` in `alvie/code`. |
 | A simulator run fails, and `which msp430-gcc` prints nothing. | The MSP430 toolchain is not installed or not on the `PATH`. ALVIE also needs `msp430-as` and `msp430-ld`. | Install the toolchain from [Getting Started](/alvie/getting-started/). |
 | A simulator run fails, and `verilator --version` fails or shows another version. | Verilator is missing or has another version. | The Docker image uses version 5.002. Use the image, or follow the native installation steps. |
-| `fa.exe` fails, and `which ltscompare` prints nothing. | mCRL2 is not installed. `fa.exe` needs `ltscompare` and `tracepp`. | Install mCRL2. |
+| `alvie property formula` fails, and `which lts2pbes` prints nothing. | mCRL2 is not installed. Formulas need `lts2pbes` and `pbes2bool` (and `ALVIE_MCRL2=1` needs `ltscompare` and `tracepp`). | Install mCRL2. |
 | `dot: command not found` | Graphviz is not installed. | Install it. The current Docker image has it. Older images do not. |
 | The directory `sancus-core-gap` is empty | The git submodule is not downloaded. | Run `git submodule update --init` in the repository root. |
 

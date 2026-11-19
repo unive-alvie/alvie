@@ -6,7 +6,7 @@
 # (counterexamples/) unchanged:
 #
 #   witnesses  compares the checked-in models again with fa.exe and checks that the witness graphs
-#              and the witness counts are the recorded ones. Needs mCRL2. A few minutes.
+#              and the witness counts are the recorded ones. A few seconds.
 #   learning   learns every checked-in model again (learn_all.sh and the Getting Started example),
 #              checks that the models are identical to the checked-in ones, then runs the witnesses
 #              check on the new models. Needs the simulator toolchain and sancus-core-gap. About
@@ -139,7 +139,6 @@ check_witnesses() {
 
 run_witnesses() {
   echo "=== Witnesses of the checked-in models"
-  require_tool ltscompare "Install mCRL2 or use the Docker image."
   local sub=regression/witnesses
   rm -rf "results/$sub"
   mkdir -p "results/$sub"
@@ -151,7 +150,6 @@ run_witnesses() {
 
 run_learning() {
   echo "=== Learning again every checked-in model"
-  require_tool ltscompare "Install mCRL2 or use the Docker image."
   require_tool verilator "Install Verilator or use the Docker image."
   if [ ! -f sancus-core-gap/README.md ]; then
     echo "Regression incomplete: sancus-core-gap is missing. Run: git submodule update --init sancus-core-gap" >&2

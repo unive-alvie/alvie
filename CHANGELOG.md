@@ -227,6 +227,17 @@ the documentation lists what users must do.
   noninterference with an optional baseline, inclusion and equivalence of
   models with a distinguishing trace, and mCRL2 modal mu-calculus formulas
   on one model. New suite `tt_properties` (needs mCRL2; run in CI).
+- Comparisons no longer need mCRL2: ALVIE checks the inclusion of weak
+  traces itself (`Ltscompare.Weak_trace`) and finds the counterexample that
+  `ltscompare --preorder=weak-trace-ac --strategy=b` found. `fa.exe`,
+  `alvie compare`, `alvie property inclusion|equivalence` and the fixtures
+  give the same results (witness regression: no differences; the 577
+  counterexamples of the regression and 960 inclusions between the
+  checked-in models are the same as mCRL2's), and the witness regression
+  takes 3.7 s instead of 5.7 s. Only `alvie property formula` needs mCRL2.
+  `ALVIE_MCRL2=1` compares with mCRL2 as before, and `ALVIE_MCRL2=check`
+  uses both and warns when their counterexamples differ. New suite
+  `test/weak_trace` (in CI).
 
 ### Backends
 
