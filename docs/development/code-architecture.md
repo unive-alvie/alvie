@@ -21,6 +21,19 @@ The code in `alvie/code` is split into three opam packages, defined in `dune-pro
 | `alvie-sancus` | `lib/sancus/`, `plugins/sancus/`, `bin/`, `test/` | `sancus` | The Sancus backend, its plugin files, the executables and the test suites. |
 
 `alvie-core` does not depend on the other two packages: CI builds it on its own with `dune build -p alvie-core`, which fails if a library of `alvie-core` uses one of `alvie-sancus` or `alvie-rtl-util`.
+
+### The portable part of ALVIE/Core
+
+A browser build of ALVIE needs Core without C code and without running programs. Two virtual libraries of dune hold what Core needs of them, each with a default implementation that the native executables link without asking:
+
+| Virtual library | What it does | Native (default) | Without C code |
+| --- | --- | --- | --- |
+| `alvie_yaml` (`lib/core/yaml`) | The events of a YAML text, for the plugin files (`Yaml_tree`) | `alvie-core.yaml-libyaml`: libyaml | `alvie-core.yaml-table`: the events of the YAML files of `plugins/`, read with libyaml when ALVIE is built; it reads no other file |
+| `alvie_mcrl2` (`lib/core/mcrl2`) | The tools of mCRL2: formulas, and `ALVIE_MCRL2` | `alvie-core.mcrl2-native`: runs them | `alvie-core.mcrl2-none`: says that mCRL2 is not available |
+
+The commands of Core (`alvie_cli`) use files and directories through `Alvie_cli.Fs`, which uses the standard library only.
+`test/portable` builds the learner, the plugin files, the input generator, the backend contract, the comparison, the commands of Core and Tiny with the implementations without C code, and runs the fixtures of Tiny with them.
+Its `forbidden_libraries` make the build fail if one of these libraries starts to depend on `core_unix`, `shexp.process`, `yaml` or `ctypes`.
 `dune build` builds all three, and the executables keep their paths (`_build/default/bin/learn.exe` and so on).
 
 The comparison engine (`Ltscompare.Cexfinder.Make`) does not know what the inputs and outputs of a model mean.

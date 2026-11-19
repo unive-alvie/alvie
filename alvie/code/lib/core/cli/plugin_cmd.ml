@@ -52,7 +52,7 @@ let command ~(default : (Plugin.t, Diag.t list) Result.t Lazy.t) =
                 if not valid then Errors.fail "%S is not a name for a plugin: use lowercase letters, digits and -, starting with a letter (e.g. my-chip)." name;
                 if List.mem [ "sancus"; "tiny"; "core"; "plugin" ] name ~equal:String.equal then Errors.fail "%s is taken: choose another name." name;
                 let root = Errors.require_directory ~option:"--root" root in
-                if not (Sys_unix.file_exists_exn (Filename.concat root "dune-project")) then
+                if not (Fs.exists (Filename.concat root "dune-project")) then
                   Errors.fail "%s is not the directory alvie/code of ALVIE (it has no dune-project): run from there, or give it with --root." root;
                 let types yaml_files =
                   let dir = Filename.concat "plugins" name in
@@ -62,10 +62,10 @@ let command ~(default : (Plugin.t, Diag.t list) Result.t Lazy.t) =
                   | Error ds -> failwithf "the template does not load (a bug):\n%s" (Diag.list_to_string ds) () in
                 let files = Plugin_template.files ~external_ ~name ~types () in
                 List.iter [ Filename.concat "plugins" name; Filename.concat "lib/plugins" name ] ~f:(fun d ->
-                    if Sys_unix.file_exists_exn (Filename.concat root d) then Errors.fail "%s exists already: choose another name, or remove it." (Filename.concat root d));
+                    if Fs.exists (Filename.concat root d) then Errors.fail "%s exists already: choose another name, or remove it." (Filename.concat root d));
                 List.iter files ~f:(fun (path, text) ->
                     let path = Filename.concat root path in
-                    Core_unix.mkdir_p (Filename.dirname path);
+                    Fs.mkdir_p (Filename.dirname path);
                     Out_channel.write_all path ~data:text;
                     printf "wrote %s\n" path);
                 if external_ then
@@ -82,7 +82,7 @@ let command ~(default : (Plugin.t, Diag.t list) Result.t Lazy.t) =
          (let%map_open.Command out = anon ("OUT" %: string) and dir = flag "--plugin" (optional string) ~doc:"dir the plugin (default: the one this program was built with)" in
           fun () ->
             let p = load ~default dir in
-            Core_unix.mkdir_p out;
+            Fs.mkdir_p out;
             let write name json =
               let path = Filename.concat out name in
               Out_channel.write_all path ~data:(Yojson.Safe.pretty_to_string json ^ "\n");

@@ -1,4 +1,0 @@
-(library
- (name alvie_yaml_none)
- (public_name alvie-core.yaml-none)
- (implements alvie_yaml))

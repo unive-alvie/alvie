@@ -463,7 +463,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
        | Some f ->
          (* relative to the plugin's directory (plugins/<name> for a plugin built into a program) *)
          let d = Filename.concat (plugin ()).dir f in
-         if Sys_unix.is_directory_exn d then d
+         if Fs.is_directory d then d
          else Errors.fail "the fixtures of plugin %s are in %s, which is not a directory here: run from the directory alvie/code, or give --dir." m.name d)
 
   type verdict = { fixture : string; passed : bool; summary : string }
@@ -502,14 +502,14 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
       ~readme:(fun () -> "A fixture is a spec with the verdict of noninterference it must give (see the Plugin Files Reference). The options of the backend apply to every fixture, and a fixture's config: overrides them. Exit status: 0 when every fixture gives its verdict, 4 when one does not, 2 for a mistake in the command or the files.")
       (let%map_open.Command names = anon (sequence ("NAME" %: string))
        and dir = flag "--dir" (optional string) ~doc:"dir the directory of the fixtures (default: the plugin's)"
-       and out = flag "--out" (optional_with_default "/tmp/alvie/fixtures" string) ~doc:"dir where to write the models, the witnesses and the files of mCRL2 (default: /tmp/alvie/fixtures)"
+       and out = flag "--out" (optional_with_default "/tmp/alvie/fixtures" string) ~doc:"dir where to write the models and the witnesses (default: /tmp/alvie/fixtures)"
        and oracle = oracle_param and base = Config.param (manifest ()) and debug = debug_flag in
        fun () ->
          let ok = Errors.protect ~debug (fun () ->
              Errors.setup_logs ~debug;
              let oracle = oracle () in
              let dir = fixtures_dir dir in
-             let all = Sys_unix.ls_dir dir |> List.filter ~f:(String.is_suffix ~suffix:".yaml") |> List.sort ~compare:String.compare in
+             let all = Fs.ls_dir dir |> List.filter ~f:(String.is_suffix ~suffix:".yaml") |> List.sort ~compare:String.compare in
              let chosen = match names with
                | [] -> all
                | _ -> List.map names ~f:(fun n ->

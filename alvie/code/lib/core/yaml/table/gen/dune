@@ -1,0 +1,4 @@
+; Writes the events of YAML files (read with libyaml) as an OCaml table, for alvie-core.yaml-table
+(executable
+ (name yaml_table_gen)
+ (libraries alvie_yaml))
