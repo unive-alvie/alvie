@@ -21,6 +21,12 @@ let make ~config ~variant =
   let port = match List.Assoc.find config ~equal:String.equal "fpga-port" with
     | Some p -> p
     | None -> failwith "Sancus-FPGA: no value for fpga-port" in
-  Sancus.Native.make_with ~target:(Fpga.target ~port) ~config ~variant ()
+  let commit = match List.Assoc.find config ~equal:String.equal "commit" with
+    | Some c -> c
+    | None -> failwith "Sancus-FPGA: no value for commit" in
+  let sancus = match List.Assoc.find config ~equal:String.equal "sancus" with
+    | Some s -> s
+    | None -> failwith "Sancus-FPGA: no value for sancus" in
+  Sancus.Native.make_with ~target:(Fpga.target ~port ~sancus ~commit) ~config ~variant ()
 
 module Codec = Sancus.Native.Codec

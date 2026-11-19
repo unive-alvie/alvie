@@ -379,9 +379,10 @@ let toolchain_prefix = lazy (if Sys_unix.command "command -v msp430-gcc >/dev/nu
 (*
   Same as scripts/build_pmem --no-mem once its setup has been done in cfg.tmpdir (and outside of debug
   mode, where the scripts also produce assembly listings): assemble, link and convert the program by
-  running the tools directly, instead of through two shell scripts.
+  running the tools directly, instead of through two shell scripts. Without ~ihex, the program is not converted to
+  IHEX (only the simulator loads it).
 *)
-let build_pmem (cfg : cfg_t) =
+let build_pmem ?(ihex = true) (cfg : cfg_t) =
   let setup_done = Sys_unix.file_exists_exn (cfg.tmpdir ^ "/.build_pmem_setup_done") in
   match Logs.level () with
   | Some Logs.Debug -> Sys_unix.command (Format.sprintf "%s \"%s\" %s --no-mem %s" cfg.pmem_script cfg.tmpdir cfg.basename (dbg_str ()))
@@ -393,7 +394,7 @@ let build_pmem (cfg : cfg_t) =
     (* As in asm2ihex.sh, failures of the single tools do not make the build fail *)
     ignore (run_process (pfx ^ "-as") [ "-I"; "../../src/gap-attacks"; "-I"; t; "--defsym"; "__SECRET=" ^ secret; t ^ "/pmem.s43"; "-o"; t ^ "/pmem.o" ]);
     ignore (run_process (pfx ^ "-ld") [ "-T"; t ^ "/pmem.x"; t ^ "/pmem.o"; "-o"; t ^ "/pmem.elf" ]);
-    ignore (run_process (pfx ^ "-objcopy") [ "-O"; "ihex"; t ^ "/pmem.elf"; t ^ "/pmem.ihex" ]);
+    if ihex then ignore (run_process (pfx ^ "-objcopy") [ "-O"; "ihex"; t ^ "/pmem.elf"; t ^ "/pmem.ihex" ]);
     0
 
 (* Same as scripts/simulate, running the simulator directly: 0 on success, 1 if the stimulus did not
@@ -440,7 +441,7 @@ let build_program (cfg : cfg_t) =
   (* build_pmem does not fail when the assembler or the linker does: without the old ELF file, a failed build is
      not taken for the program of the step *)
   (try Core_unix.unlink cfg.pmem_elf with Core_unix.Unix_error _ -> ());
-  let res = Prof.time "sul.build_pmem" (fun () -> build_pmem cfg) in
+  let res = Prof.time "sul.build_pmem" (fun () -> build_pmem ~ihex:false cfg) in
   if res <> 0 then failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res);
   if not (Sys_unix.file_exists_exn cfg.pmem_elf) then
     failwith (Format.sprintf "Could not assemble or link the program of the step (%s): --debug shows the assembler and linker output." cfg.filledfile)

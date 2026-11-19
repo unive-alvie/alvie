@@ -101,7 +101,10 @@ struct
     (ot : IIOObservationTree.t)
     (sul : S.t)
     (hyp : IIOMealy.t) : [> `Cex of IIOObservationTree.t * I.t list | `Equivalent ] =
-    let cloner obj = Obj.obj (Obj.dup (Obj.repr obj)) in
+    (* Each branch of the search runs on its own copy of the SUL: a deep copy (S.clone), since a copy of the record
+       only (Obj.dup) shares the backend's state between the branches, and a branch then starts from the state that
+       another one left (e.g., after a reset) *)
+    let cloner = S.clone in
     let do_reset sul = S.post sul; S.pre sul in
     oracle.stats.equivquery_cnt <- oracle.stats.equivquery_cnt + 1;
     Logs.debug (fun m -> m "(Pre) equiv_query started");

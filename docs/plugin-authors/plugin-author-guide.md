@@ -97,7 +97,7 @@ The backend implements the contract between Core and a platform: `Alvie_backend.
 | `pre` | Starts a test from the initial state of the platform. |
 | `step` | Runs one input and returns its observations (values of `observations.yaml`) and its bookkeeping. |
 | `restore` | A dry step: Core already knows the observations; update the state as if the step ran. |
-| `clone` | An independent copy, for learning in parallel. |
+| `clone` | An independent copy, for learning in parallel and for the exhaustive oracle, which explores the branches of a test from copies. |
 | `post` | Ends a test. |
 
 For each step, Core gives the input's section, its position in the section's run, its atom, and the programs of all the sections (the code each runs in this test): a backend that compiles code, as Sancus does, generates it from them.

@@ -99,6 +99,8 @@ A path ends when the system gives an illegal output.
 
 The number of input sequences grows quickly with the length and the alphabet size.
 Use this oracle only for a small alphabet, for example in a test of a new action.
+It runs each branch on a copy of the backend, so the backend must support `clone` (the plugins of ALVIE do).
+It has no length bound: with a spec whose tests can go on forever (e.g. B3, whose `cleanup` re-enters the enclave again and again), it does not end.
 
 ## Measured examples
 
