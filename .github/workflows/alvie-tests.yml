@@ -38,7 +38,9 @@ permissions:
 jobs:
   isolated-tests:
     name: Run isolated ALVIE tests
-    runs-on: ubuntu-latest
+    # OCaml 4.13.1 is built from source here. The GCC of ubuntu-latest (C23 by default) no longer compiles it
+    # (caml/prims.h: too many arguments to function), so the job stays on Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4

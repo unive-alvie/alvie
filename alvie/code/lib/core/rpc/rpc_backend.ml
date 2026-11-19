@@ -95,7 +95,7 @@ let call ?timeout:t conn ~meth (params : Yojson.Safe.t) : Yojson.Safe.t =
        | [] -> failf "the recording %s (session %d) has no request %d: %s" r.file conn.session id (Yojson.Safe.to_string request))
     | Process p ->
       let stopped what =
-        let how = match Proc.status p with Some s -> Proc.describe_status s | None -> "it closed its standard output" in
+        let how = match Proc.status_within p ~grace:1.0 with Some s -> Proc.describe_status s | None -> "it closed its standard output" in
         failf "plugin %s stopped %s (%s).%s" conn.plugin what how (tail_of conn.transport) in
       (match Proc.send p (Yojson.Safe.to_string request) with
        | Error _ -> stopped (sprintf "before %s" meth)
