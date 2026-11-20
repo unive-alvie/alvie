@@ -71,3 +71,19 @@ there is not learned again ("Done before"). The IDE runs the commands one after 
 which takes hours.
 
 `Ctrl-C` stops a command. Each command runs in its own Web Worker, so the page stays responsive.
+
+## In VS Code for the Web
+
+The same ALVIE runs in VS Code for the Web (Code - OSS), as the extension `web/vscode`:
+
+| Part | What it does |
+| --- | --- |
+| Explorer | The files of the IDE are the folder `alvie:/`, kept in your browser. New files, folders, renames and uploads (drag them in) are files of ALVIE; a model that a command learns appears at once. |
+| Editor | The editor of VS Code, with the languages of the specs (TestDL for `.atdl`, `.etdl`, `.spec`; VTDL for `.vtdl`) and of models (`.dot`). |
+| Problems | The mistakes that ALVIE's own parsers find in the open specs, as you type. |
+| Terminal | An ALVIE terminal: the commands, programs and scripts of this page (`+` in the panel opens another; terminals run their commands in parallel). |
+| Preview | `Preview Model` (on a `.dot`, in the title bar of the editor or in the Explorer) draws a model; `Preview Model Next to Another` draws two. `view A [B] --inputs ...` in a terminal follows inputs on them. |
+
+`ALVIE: Reset the Files to Those of a First Visit` (in the Command Palette) brings back the files of a first visit.
+The site is static: `web/vscode/build-workbench.sh` builds VS Code for the Web from the sources of Code - OSS, and
+`web/vscode/make-site.sh` puts it together with the extension. CI makes the site (the artifact `alvie-vscode-site`).

@@ -13,7 +13,8 @@ function openDb() {
 }
 
 export class Files {
-  constructor() { this.files = new Map(); this.listeners = []; this.db = null; }
+  // base: the URL of the directory that has files/ (the defaults)
+  constructor({ base = '' } = {}) { this.base = base; this.files = new Map(); this.listeners = []; this.db = null; }
 
   async load() {
     try {
@@ -33,8 +34,8 @@ export class Files {
 
   async reset() {
     this.files.clear();
-    const index = await (await fetch('files/index.json')).json();
-    await Promise.all(index.map(async (p) => this.files.set(p, await (await fetch(`files${p}`)).text())));
+    const index = await (await fetch(`${this.base}files/index.json`)).json();
+    await Promise.all(index.map(async (p) => this.files.set(p, await (await fetch(`${this.base}files${p}`)).text())));
     await this.persistAll();
     this.changed();
   }

@@ -1,0 +1,68 @@
+{
+  "name": "vtdl",
+  "scopeName": "source.vtdl",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#code"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "begin": "\\(\\*",
+      "end": "\\*\\)",
+      "name": "comment.block",
+      "patterns": [
+        {
+          "include": "#comment"
+        }
+      ]
+    },
+    "code": {
+      "patterns": [
+        {
+          "match": "\"(?:[^\"\\\\]|\\\\.)*\"",
+          "name": "string.quoted.double"
+        },
+        {
+          "match": "#-?(?:0x[0-9a-fA-F]+|\\d+)\\b",
+          "name": "constant.numeric"
+        },
+        {
+          "match": "(?<![\\w-])-?(?:0x[0-9a-fA-F]+|\\d+)\\b",
+          "name": "constant.numeric"
+        },
+        {
+          "match": "&[A-Za-z_]\\w*",
+          "name": "variable.other.constant"
+        },
+        {
+          "match": "\\?",
+          "name": "constant.language"
+        },
+        {
+          "match": "->|[|;*]",
+          "name": "keyword.operator"
+        },
+        {
+          "match": "\\b(?:values|inputs|observe|session)\\b",
+          "name": "keyword.control"
+        },
+        {
+          "match": "\\b(?:eps|_)\\b(?!-)",
+          "name": "support.function"
+        },
+        {
+          "match": "\\br\\d+\\b",
+          "name": "variable.language"
+        },
+        {
+          "match": "\\b[A-Z][A-Z0-9_]*\\b",
+          "name": "entity.name.type"
+        }
+      ]
+    }
+  }
+}
