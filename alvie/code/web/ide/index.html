@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ALVIE IDE</title>
+  <link rel="stylesheet" href="./src/style.css">
+  <!-- ?demo=1 (test.py): an image that the test server sends when the IDE says it is ready, which holds back the load
+       event, and so the screenshot of headless Chromium -->
+  <script>if (location.search.includes('demo')) document.write('<img src="hold" alt="" style="display:none">');</script>
+</head>
+<body>
+  <div id="app">
+    <aside id="files-panel">
+      <header>
+        <span class="title">Files</span>
+        <span class="actions">
+          <button id="new-file" title="New file">+</button>
+          <button id="upload" title="Upload files">&#8593;</button>
+          <button id="download" title="Download the open file">&#8595;</button>
+          <input id="upload-input" type="file" multiple hidden>
+        </span>
+      </header>
+      <div id="tree"></div>
+    </aside>
+    <main id="center">
+      <header id="editor-header"><span id="editor-file">no file</span><span id="editor-status"></span></header>
+      <div id="editor"></div>
+      <div id="splitter"></div>
+      <div id="terminal"></div>
+    </main>
+    <section id="viewer-panel">
+      <header><span class="title" id="viewer-title">Viewer</span><span class="actions"><button id="viewer-close" title="Close the second model">&#215;</button></span></header>
+      <div id="viewer"></div>
+    </section>
+  </div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

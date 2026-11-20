@@ -224,13 +224,18 @@ jobs:
         working-directory: alvie/code
         run: |
           opam install -y . --deps-only
-          opam install -y --assume-depexts wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx
+          # The versions that alvie-web is checked with (see docs/development/alvie-in-the-browser.md)
+          opam install -y --assume-depexts wasm_of_ocaml-compiler.6.3.2 js_of_ocaml.6.3.2 js_of_ocaml-ppx.6.3.2
       - name: Build alvie-web
         working-directory: alvie/code
         run: opam exec -- bash web/build.sh /tmp/alvie-web
-      - name: Build the simulators of the fixtures (bf89c0b, ef753b6)
+      - name: Build the simulators of the 8 commits of the experiments
         working-directory: alvie/code
-        run: for c in bf89c0b ef753b6; do bash web/sim/build-sim.sh ../../sancus-core-gap "$c" /tmp/alvie-web/sim; done
+        run: for c in ef753b6 e8cf011 3170d5d 6475709 3636536 d54f031 264f135 bf89c0b; do bash web/sim/build-sim.sh ../../sancus-core-gap "$c" /tmp/alvie-web/sim; done
+      - name: Set up Node 22 (WebAssembly GC)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Run the fixtures of Tiny and Sancus with alvie-web in Node
         working-directory: alvie/code
         run: |
@@ -241,3 +246,23 @@ jobs:
           node /tmp/alvie-web/alvie-web-node.cjs vaultlink learn --spec ../../spec-lib/vaultlink/vault.vtdl --service firmware --res /tmp/vl-firmware.dot
           status=0; node /tmp/alvie-web/alvie-web-node.cjs vaultlink compare /tmp/vl-reference.dot /tmp/vl-firmware.dot || status=$?
           test "$status" -eq 1
+      - name: Build the IDE
+        working-directory: alvie/code/web/ide
+        run: |
+          bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Run the self-test of the IDE in Chrome
+        working-directory: alvie/code/web/ide
+        run: ALVIE_SMOKE_BROWSER=google-chrome python3 test.py dist /tmp/alvie-ide-test
+      - name: Upload the IDE (a static site)
+        uses: actions/upload-artifact@v4
+        with:
+          name: alvie-ide
+          path: alvie/code/web/ide/dist
+      - name: Upload the screenshots of the IDE
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alvie-ide-test
+          path: /tmp/alvie-ide-test

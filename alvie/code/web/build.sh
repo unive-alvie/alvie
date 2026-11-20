@@ -9,6 +9,7 @@ if [ "$#" -ne 1 ]; then echo "Usage: $0 OUT_DIR" >&2; exit 2; fi
 here=$(dirname "$(readlink -f "$0")"); code=$(readlink -f "$here/..")
 out=$(mkdir -p "$1" && readlink -f "$1")
 (cd "$code" && dune build --build-dir _build-web web/alvie_web.bc)
+echo "wasm_of_ocaml $(wasm_of_ocaml --version), $(wasm-opt --version)"
 wasm_of_ocaml compile "$here"/runtime/*.wat "$code/_build-web/default/web/alvie_web.bc" -o "$out/alvie-web.js"
 cp "$here/node/alvie-web.cjs" "$out/alvie-web-node.cjs"
 echo "alvie-web: $out/alvie-web.js ($(du -sh "$out/alvie-web.assets" | cut -f1) of WebAssembly); run it with node $out/alvie-web-node.cjs"
