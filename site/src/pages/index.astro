@@ -5,6 +5,8 @@ import { docsVersion, otherVersions, versionLabel, versionUrl } from '../version
 const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
 const gettingStartedUrl = `${baseUrl}/getting-started/`;
 const documentationUrl = `${baseUrl}/guides/concepts/`;
+// ALVIE in the browser, at the root of the site whatever the version (see .github/workflows/pages.yml)
+const playUrl = `${process.env.ALVIE_DOCS_ROOT ?? '/alvie'}/play/`;
 // The page each documentation version opens from the dropdown; 2026.09 as released predates "How ALVIE Works"
 const entryPage = (version) => (version === '2026.09' ? 'guides/walkthrough-repro/' : 'guides/concepts/');
 // With versioned documentation, the Documentation button lists the versions, the current one first
@@ -32,6 +34,7 @@ const docVersions = docsVersion ? [docsVersion, ...otherVersions()] : [];
         </p>
         <div class="alvie-actions">
           <a class="alvie-button alvie-primary" href={gettingStartedUrl}>Getting started</a>
+          <a class="alvie-button" href={playUrl}>Try it in your browser</a>
           {docVersions.length > 0 ? (
             <details class="alvie-paper">
               <summary class="alvie-button">Documentation</summary>
