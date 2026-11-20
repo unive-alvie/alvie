@@ -2,6 +2,22 @@
    that the host gives (Host: host.jsoo.ml) *)
 module Sancus_web = Alvie_cli.Runner.Make_codec (Sancus_core.Wasm_target.Native) (Sancus_core.Wasm_target.Native.Codec)
 
+(* learn.exe, fa.exe and exec.exe of the guides (alvie learn | compare | exec), on the simulators in WebAssembly *)
+module Learn = Sancus_cmd.Learn_cmd.Make (Sancus_core.Wasm_target.Native) (struct let native = false end)
+module Fa = Sancus_cmd.Fa_cmd.Make (Sancus_core.Wasm_target.Native)
+module Exec = Sancus_cmd.Exec_cmd.Make (struct
+    let native = false
+
+    let make_sul ~spec ~sancus:_ ~sancus_master_key ~commit ~tmpdir ~ignore_interrupts =
+      if not (String.equal sancus_master_key "cafe") then failwith "Sancus: the simulators in WebAssembly are built with the key cafe";
+      Sancus_core.Step_sul.S.make
+        ~backend:(Sancus_core.Wasm_target.make_step ~commit ~tmpdir ~ignore_interrupts ~collapse_reentries:true)
+        ~gen:(Alvie_inputgen.Generator.make (Lazy.force Sancus_core.Generic_inputgen.plugin) spec)
+
+    (* The trace of each step is tmpdir/tb_openMSP430.vcd already *)
+    let link_dump _ ~tmpdir:_ = ()
+  end)
+
 (* alvie-web check FILE...: the problems of spec files, for the editor of the IDE, one JSON object per line:
    {"file", "line", "col", "severity", "message"}. A .vtdl file is checked as VTDL; .atdl, .etdl and .spec files as
    specs of ALVIE/Sancus, alone: only the problems in the file are given (a file may hold some of the sections). *)
@@ -35,7 +51,10 @@ let () =
   Host.write_files ();
   let commands =
     Core.Command.group ~summary:"ALVIE in the browser"
-      [ ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
+      [ ("learn", Learn.command);
+        ("compare", Fa.command);
+        ("exec", Exec.command);
+        ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
         (* with the codec of ALVIE/Sancus, as learn.exe and alvie sancus-fpga: the models of Sancus, in their format *)
         ("sancus", Alvie_cli.Runner.group (module Sancus_web));
         (* the services in memory only: a browser opens no connection *)

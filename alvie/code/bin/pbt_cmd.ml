@@ -67,7 +67,7 @@ let command =
         ~doc:"count Deprecated alias for --test-count"
     in
     fun () ->
-        Cli_diagnostics.protect ~debug:dbg (fun () ->
+        Sancus_cmd.Cli_diagnostics.protect ~debug:dbg (fun () ->
         (* Random.self_init (); *)
         Learninglib.Rng.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
@@ -78,25 +78,25 @@ let command =
 
         let cwd = Sys_unix.getcwd () in
         (* Logs.debug (fun m -> m "Current directory: %s" cwd); *)
-        let tmpdir = Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
-        ignore (Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
+        let tmpdir = Sancus_cmd.Cli_diagnostics.prepare_directory ~option:"--tmpdir" tmpdir in
+        ignore (Sancus_cmd.Cli_diagnostics.require_directory ~option:"--sancus" sancus_core_gap_dir);
         let test_count =
           match test_count, legacy_step_limit with
           | Some _, Some _ ->
-            Cli_diagnostics.fail "Use either --test-count or deprecated --step-limit, not both."
+            Sancus_cmd.Cli_diagnostics.fail "Use either --test-count or deprecated --step-limit, not both."
           | Some count, None -> count
           | None, Some count ->
             eprintf "Warning: --step-limit is deprecated; use --test-count.\n";
             count
           | None, None -> 500
         in
-        Cli_diagnostics.validate_positive ~option:"--test-count" test_count;
+        Sancus_cmd.Cli_diagnostics.validate_positive ~option:"--test-count" test_count;
         (* (1) load the spec *)
-        let enclave_spec_str = Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
-        let attacker_spec1_str = Cli_diagnostics.read_file ~option:"--att-spec1" attacker_spec1_fn in
-        let attacker_spec2_str = Cli_diagnostics.read_file ~option:"--att-spec2" attacker_spec2_fn in
-        let complete_spec1 = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec1_str in
-        let complete_spec2 = Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec2_str in
+        let enclave_spec_str = Sancus_cmd.Cli_diagnostics.read_file ~option:"--encl-spec" enclave_spec_fn in
+        let attacker_spec1_str = Sancus_cmd.Cli_diagnostics.read_file ~option:"--att-spec1" attacker_spec1_fn in
+        let attacker_spec2_str = Sancus_cmd.Cli_diagnostics.read_file ~option:"--att-spec2" attacker_spec2_fn in
+        let complete_spec1 = Sancus_cmd.Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec1_str in
+        let complete_spec2 = Sancus_cmd.Cli_diagnostics.parse_spec ~enclave_spec:enclave_spec_str ~attacker_spec:attacker_spec2_str in
         (* let (Enclave enclave1, ISR isr1, Prepare prepare1, Cleanup cleanup1) = complete_spec1 in
         let (Enclave enclave2, ISR isr2, Prepare prepare2, Cleanup cleanup2) = complete_spec2 in *)
         let spec_dfa1 = Inputgen.build_spec_dfa complete_spec1 in

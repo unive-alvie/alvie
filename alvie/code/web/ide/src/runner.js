@@ -8,12 +8,20 @@ export function knownCommits() {
   return commitsPromise;
 }
 
-// The argv as alvie-web takes it: without a leading "alvie", and, for sancus, with the parameters that a browser does
-// not use (the checkout of sancus-core-gap, the temporary directory) when they are missing
+// The programs of the guides, as commands of alvie-web: learn.exe is alvie learn, fa.exe alvie compare, exec.exe alvie
+// exec, alvie.exe alvie (also as _build/default/bin/..., or ./...)
+const PROGRAMS = { 'learn.exe': ['learn'], 'fa.exe': ['compare'], 'exec.exe': ['exec'], 'alvie.exe': [], alvie: [] };
+export const programOf = (word) => PROGRAMS[word.split('/').pop()];
+
+// The argv as alvie-web takes it: without a leading "alvie" (or learn.exe ...), and, for the commands of Sancus, with
+// the parameters that a browser does not use (the checkout of sancus-core-gap, the temporary directory) when they are
+// missing
 export function prepareArgv(args) {
-  const argv = args[0] === 'alvie' ? args.slice(1) : [...args];
-  if (argv[0] === 'sancus' && argv.length > 1 && !argv.includes('-help') && !argv.includes('help')) {
-    if (!argv.includes('--sancus')) argv.push('--sancus', 'none');
+  const program = programOf(args[0]);
+  const argv = program ? [...program, ...args.slice(1)] : [...args];
+  const sancus = ['sancus', 'learn', 'compare', 'exec'].includes(argv[0]);
+  if (sancus && argv.length > 1 && !argv.includes('-help') && !argv.includes('help')) {
+    if (!argv.includes('--sancus') && argv[0] !== 'compare') argv.push('--sancus', 'none');
     if (!argv.includes('--tmpdir')) argv.push('--tmpdir', '/tmp/alvie');
   }
   return argv;
@@ -30,7 +38,8 @@ export class Runner {
     const known = await knownCommits();
     // The simulators: the commit of --commit, or all (e.g. for the fixtures, whose commits are in their files)
     const i = argv.indexOf('--commit');
-    const commits = argv[0] !== 'sancus' ? [] : i >= 0 ? [argv[i + 1]].filter((c) => known.includes(c)) : known;
+    const usesSimulator = ['sancus', 'learn', 'exec'].includes(argv[0]);
+    const commits = !usesSimulator ? [] : i >= 0 ? [argv[i + 1]].filter((c) => known.includes(c)) : ['learn', 'exec'].includes(argv[0]) ? ['ef753b6'] : known;
     return new Promise((resolve) => {
       const worker = new Worker('alvie/runner.js');
       this.worker = worker;
