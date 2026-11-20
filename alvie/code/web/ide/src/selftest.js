@@ -20,6 +20,16 @@ export async function selftest(ide) {
   check('vaultlink learn writes both models', ide.files.has('/models/reference.dot') && ide.files.has('/models/firmware.dot'));
   await ide.run('vaultlink compare models/reference.dot models/firmware.dot');
   check('vaultlink compare finds the difference', lines.some((l) => l.includes('1 distinguishing sequence')));
+  // The programs and the scripts of the guides
+  const example1 = '/results/example/bf89c0b-attacker-enclave-1-0.01-0.01.dot', before = ide.files.read(example1);
+  ide.files.remove(example1);
+  await ide.run('./learn_example.sh');
+  check('learn_example learns the missing model, as in results/example', lines.some((l) => l.includes('bf89c0b-attacker-enclave-0-0.01-0.01 ... [OK - Done before]'))
+    && ide.files.read(example1) === before && ide.files.has('/logs/example/learn-bf89c0b-attacker-enclave-1-0.01-0.01.log'));
+  await ide.run('check_example');
+  check('check_example writes its log', lines.some((l) => l.includes('bf89c0b-attacker ... [OK - logs/example/compare-bf89c0b-attacker.log]')));
+  await ide.run('_build/default/bin/fa.exe --witness-file-basename models/fa --m1-int results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot --m2-int results/example/bf89c0b-attacker-enclave-1-0.01-0.01.dot');
+  check('fa.exe runs as alvie compare', !lines[lines.length - 1].includes('exit'));
   // Live errors: a mistake in a spec opened in the editor is underlined
   ide.files.write('/models/bad.atdl', 'isr {\n  timer_enable 1;\n  retx\n};\n');
   ide.editor.open('/models/bad.atdl');
@@ -31,6 +41,7 @@ export async function selftest(ide) {
   const heads = [...document.querySelectorAll('.viewer-pane-head')].map((h) => h.textContent);
   check('the inputs are followed on both models', heads.length === 2 && heads.every((h) => h.includes('followed 5 inputs')));
   const result = { checks, lines, ms: Math.round(performance.now() - t0), userAgent: navigator.userAgent,
-    model: ide.files.read('/models/example-0.dot') };
+    model: ide.files.read('/models/example-0.dot'),
+    logs: Object.fromEntries(Object.entries(ide.files.all()).filter(([k]) => k.startsWith('/logs/'))) };
   await fetch('/result', { method: 'POST', body: JSON.stringify(result) });
 }

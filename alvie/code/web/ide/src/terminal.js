@@ -4,6 +4,8 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { resolvePath } from './files.js';
+import { programOf } from './runner.js';
+import { scriptOf, scriptJobs } from './scripts.js';
 
 // Splits a command line as a shell does with quotes ('...' and "...") and backslashes
 export function splitArgs(line) {
@@ -25,14 +27,18 @@ const HELP = `The commands of ALVIE run here, in your browser:
   alvie sancus compare -help          alvie sancus fixtures          alvie tiny learn -help
   alvie vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot
   alvie vaultlink compare models/reference.dot models/firmware.dot
-("alvie" may be left out; sancus gets --sancus none --tmpdir /tmp/alvie when they are missing.)
+("alvie" may be left out; the commands of Sancus get --sancus none --tmpdir /tmp/alvie when they are missing.)
+The programs of the guides work too: learn.exe (alvie learn), fa.exe (alvie compare), exec.exe (alvie exec),
+alvie.exe, also as _build/default/bin/learn.exe ...
+The scripts of the guides: learn_example, learn_one, learn_one_nospecial, learn_all, check_example, check_one,
+check_all (also as ./learn_one.sh ...). They run their commands one after the other; the logs go to logs/.
 
 Files:  ls [dir]   cd [dir]   pwd   cat FILE   edit FILE   cp A B   mv A B   rm PATH
         view MODEL [MODEL2] [--inputs I1,I2,...]  (draw one or two models; follow the inputs on them)
         download FILE   reset-files (back to the files of a first visit)   clear   history   help
 Keys:   Ctrl-C stops a command, Tab completes a path, Up/Down walk the history.`;
 
-const ALVIE = new Set(['alvie', 'sancus', 'tiny', 'vaultlink']);
+const ALVIE = new Set(['alvie', 'sancus', 'tiny', 'vaultlink', 'learn', 'compare', 'exec', 'check']);
 
 export class Shell {
   constructor(element, { files, runner, openEditor, openViewer, download }) {
@@ -103,7 +109,8 @@ export class Shell {
     const args = splitArgs(trimmed);
     try {
       if (args.length === 0) {}
-      else if (ALVIE.has(args[0])) await this.alvie(args);
+      else if (scriptOf(args)) await this.script(scriptOf(args));
+      else if (ALVIE.has(args[0]) || programOf(args[0])) await this.alvie(args);
       else this.builtin(args);
     } catch (e) { this.print(String(e.message || e), 'stderr'); }
     this.prompt();
@@ -112,6 +119,39 @@ export class Shell {
   async alvie(args) {
     const { exit, ms, cancelled } = await this.runner.run(args, { cwd: this.cwd, onOutput: (stream, l) => this.print(l, stream) });
     if (!cancelled) this.print(`\x1b[2m(${(ms / 1000).toFixed(1)} s${exit !== null && exit !== 0 ? `, exit ${exit}` : ''})\x1b[0m`);
+  }
+
+  // A script of the guides: its jobs, one after the other, each with its output in its log, and the messages of the
+  // script. Returns the exit status of the script
+  async script(sc) {
+    const { usage, jobs = [], errors = [], exitIfMissing } = scriptJobs(this.files, sc);
+    if (usage) { this.print(usage, 'stderr'); return 2; }
+    if (exitIfMissing) { errors.forEach((e) => this.print(e, 'stderr')); return exitIfMissing; }
+    const learning = sc.name.startsWith('learn');
+    const logs = jobs.length ? jobs[0].log.slice(0, jobs[0].log.lastIndexOf('/')) : '';
+    this.print(`\n${learning ? 'Learning' : 'Comparison'} started: refer to files in ${logs.slice(1)} for details`);
+    let failed = false;
+    const t0 = performance.now();
+    for (const [k, job] of jobs.entries()) {
+      if (job.res && this.files.has(job.res)) { this.print(`${job.name} ... [OK - Done before]`); continue; }
+      this.print(`\x1b[2m[${k + 1}/${jobs.length}]\x1b[0m ${job.argv.map((a) => (a.startsWith('/') ? a.slice(1) : a)).join(' ')}`);
+      // The directories of the model and of the counterexamples, as the scripts have them (mkdir -p)
+      for (const flag of ['--res', '--witness-file-basename']) {
+        const i = job.argv.indexOf(flag), dir = i >= 0 ? job.argv[i + 1].slice(0, job.argv[i + 1].lastIndexOf('/')) : '';
+        if (dir && !this.files.isDir(dir)) this.files.write(`${dir}/.keep`, '');
+      }
+      const out = [];
+      const { exit, cancelled } = await this.runner.run(job.argv, { cwd: '/', onOutput: (_, l) => out.push(l) });
+      this.files.write(job.log, out.join('\n') + '\n');
+      if (cancelled) { this.print(`Stopped: ${jobs.length - k} commands not run.`, 'stderr'); return 130; }
+      if (exit === 0 || exit === null) this.print(`${job.name} ... [OK - ${job.log.slice(1)}]`);
+      else { failed = true; this.print(`${job.name} ... [KO - ${job.log.slice(1)}]`, 'stderr'); }
+    }
+    errors.forEach((e) => this.print(e, 'stderr'));
+    this.print(`\x1b[2m(${((performance.now() - t0) / 1000).toFixed(1)} s)\x1b[0m`);
+    if (errors.length) { this.print(`Comparison incomplete: required models are missing. See results/${{ check_one: sc.params[1], check_all: sc.params[0] }[sc.name] ?? 'example'}.`, 'stderr'); return 2; }
+    if (failed) { this.print(`${learning ? 'Learning' : 'Comparison'} incomplete: one or more ${learning ? 'models' : 'comparisons'} failed. See ${logs.slice(1)}.`, 'stderr'); return 1; }
+    return 0;
   }
 
   builtin([cmd, ...rest]) {

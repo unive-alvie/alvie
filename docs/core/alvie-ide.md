@@ -53,4 +53,21 @@ transitions taken are blue, and a state where an input has no transition is red.
 sequence that `compare` printed. The [ALVIE/VaultLink Reference](/alvie/vaultlink/vaultlink-reference/) describes
 the services in memory.
 
+## The guides
+
+The programs and the scripts of the guides work as they are written there, from the root of the files of the IDE:
+
+```text
+_build/default/bin/learn.exe --report --att-spec spec-lib/b3.atdl --encl-spec spec-lib/enclave-complete.etdl --res results/b3/m.dot --commit 6475709 --secret 0 --epsilon 0.01 --delta 0.01 --oracle pac
+./learn_one.sh 6475709 b3 mine
+./check_one.sh b3 mine
+```
+
+`learn.exe` is `alvie learn`, `fa.exe` is `alvie compare` and `exec.exe` is `alvie exec`; the path before them and
+`--sancus` may be left out. The scripts `learn_example`, `learn_one`, `learn_one_nospecial`, `learn_all`,
+`check_example`, `check_one` and `check_all` give the same commands as the scripts of the repository, with the same
+models (`results/<subdir>/`), counterexamples (`counterexamples/<subdir>/`) and logs (`logs/<subdir>/`). A model that is
+there is not learned again ("Done before"). The IDE runs the commands one after the other: `learn_all` learns 96 models,
+which takes hours.
+
 `Ctrl-C` stops a command. Each command runs in its own Web Worker, so the page stays responsive.
