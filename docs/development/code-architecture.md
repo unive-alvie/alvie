@@ -18,7 +18,7 @@ The code in `alvie/code` is split into three opam packages, defined in `dune-pro
 | --- | --- | --- | --- |
 | `alvie-core` | `lib/core/`, `plugins/tiny/`, `sdk/` | `learninglib`, `prof`, `interop`, `ltscompare`, `alvie_plugin`, `alvie_inputgen`, `alvie_backend`, `alvie_cli`, `alvie_rpc`, `alvie_tiny` | The L# learner and its oracles, the profiler, reading and writing `.dot` models, the comparison engine, the plugin files and spec language, the input generator, the backend contract and its protocol, the commands of Core, external plugins, and Tiny, the reference platform. It has no Sancus code. |
 | `alvie-rtl-util` | `lib/rtl-util/` | `vcd` | Helpers for backends that simulate RTL designs: the VCD parser. It is not part of Core. |
-| `alvie-sancus` | `lib/sancus/`, `plugins/sancus/`, `bin/`, `test/` | `sancus` | The Sancus backend, its plugin files, the executables and the test suites. |
+| `alvie-sancus` | `lib/sancus-core/`, `lib/sancus/`, `plugins/sancus/`, `bin/`, `test/` | `sancus_core`, `sancus` | The Sancus backend, its plugin files, the executables and the test suites. `sancus_core` is the part without the Unix library: inputs and outputs, TestDL, the input generators, the assembler, the analysis of a trace and the step of the backend (`Step`), whatever runs the program. `sancus` adds the simulator on Verilator (`Simulator` includes `Step`), and its module `Sancus` includes `Sancus_core`, so that `Sancus.Input` and the others keep their names. |
 
 `alvie-core` does not depend on the other two packages: CI builds it on its own with `dune build -p alvie-core`, which fails if a library of `alvie-core` uses one of `alvie-sancus` or `alvie-rtl-util`.
 

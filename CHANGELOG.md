@@ -433,6 +433,12 @@ the documentation lists what users must do.
   `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
   executables, their options and their outputs do not change, and
   `regression.sh all` finds the same models, witness graphs and counts.
+- ALVIE/Sancus is split in two libraries: `sancus_core` (inputs and
+  outputs, TestDL, the input generators, the assembler, the analysis of a
+  trace and `Step`, the step of the backend whatever runs the program), which
+  needs no Unix library, and `sancus` (the simulator on Verilator:
+  `Simulator` includes `Step`). The module `Sancus` includes `Sancus_core`,
+  so the names do not change; `test/portable` checks `sancus_core` too.
 - The part of Core that a browser build needs runs without C code and
   without running programs. The plugin files are read through the virtual
   library `alvie_yaml` (default: libyaml; `alvie-core.yaml-table` knows the

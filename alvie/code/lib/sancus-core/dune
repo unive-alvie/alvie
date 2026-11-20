@@ -1,0 +1,18 @@
+; The portable part of ALVIE/Sancus: its inputs and outputs, TestDL, the input generators, the assembler, the
+; analysis of a trace and the step of the backend (Step), whatever runs the program. It needs no Unix library and
+; runs no program, so that a browser build of ALVIE can use it with the simulator compiled to WebAssembly.
+(library
+ (name sancus_core)
+ (public_name alvie-sancus.core)
+ (modules input output_internal testdl enclave common inputgen attacker step_analysis msp430_asm atom_value
+  sancus_plugin_files generic_inputgen step)
+ (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_deriving.fold ppx_sexp_conv ppx_hash ppx_let))
+ (libraries prof learninglib alvie_plugin alvie_inputgen alvie_backend core logs angstrom vcd ocamlgraph str))
+
+; The plugin files of plugins/sancus, embedded in the executables (Generic_inputgen.plugin)
+(rule
+ (targets sancus_plugin_files.ml)
+ (deps (glob_files %{project_root}/plugins/sancus/*.yaml))
+ (action
+  (with-stdout-to %{targets}
+   (system "printf '(* Generated from plugins/sancus by lib/sancus-core/dune *)\nlet files = [\n'; for f in %{deps}; do printf '  (\"%s\", {alvie_yaml|' \"$(basename $f)\"; cat $f; printf '|alvie_yaml});\n'; done; printf ']\n'"))))
