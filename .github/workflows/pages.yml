@@ -6,9 +6,16 @@ on:
     # A new release adds its documentation to the site
     tags: ['[0-9][0-9][0-9][0-9].[0-9][0-9]*']
   workflow_dispatch:
+  # ALVIE in the browser (/alvie/play/) is the site that the tests build (the artifact alvie-vscode-site): publish it
+  # again when they pass on the branches that have it
+  workflow_run:
+    workflows: [Test ALVIE]
+    types: [completed]
+    branches: [alvie-ng, feat/browser-tutorials]
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -21,6 +28,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -50,6 +58,25 @@ jobs:
           publish_branch: gh-pages
           publish_dir: site/dist
           force_orphan: true
+      - name: Add ALVIE in the browser
+        # The newest site of a successful run of the tests, from the first branch that has one; only the project site
+        # gets it (the home page links to /alvie/play/). An artifact lasts 90 days: a run of the tests makes a new one
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for branch in main alvie-ng feat/browser-tutorials; do
+            for run in $(gh run list --repo "$GITHUB_REPOSITORY" --workflow alvie-tests.yml --branch "$branch" --status success --limit 10 --json databaseId --jq '.[].databaseId'); do
+              rm -rf /tmp/alvie-play
+              # Only a site made to be published: without the tutorials that are not published yet
+              if gh run download "$run" --repo "$GITHUB_REPOSITORY" --name alvie-vscode-site --dir /tmp/alvie-play 2>/dev/null \
+                  && [ -f /tmp/alvie-play/alvie/bundle/publishable ]; then
+                rm -rf site/dist/play && mv /tmp/alvie-play site/dist/play
+                echo "ALVIE in the browser: the site of run $run ($branch)"
+                exit 0
+              fi
+            done
+          done
+          echo "::warning::No site of ALVIE in the browser was found; /alvie/play/ is not published"
       - name: Configure project Pages
         uses: actions/configure-pages@v5
         with:

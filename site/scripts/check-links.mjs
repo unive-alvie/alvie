@@ -21,7 +21,8 @@ function localTarget(source, link) {
       /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//')) return null;
 
   if (target.startsWith('/')) {
-    if (!target.startsWith(siteBase) || target.startsWith('/alvie/_astro/')) return null;
+    // ALVIE in the browser (/alvie/play/) is published next to the documentation by the website workflow
+    if (!target.startsWith(siteBase) || target.startsWith('/alvie/_astro/') || target.startsWith('/alvie/play/')) return null;
     return path.join(dist, target.slice(siteBase.length));
   }
   return path.resolve(path.dirname(source), target);
