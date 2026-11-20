@@ -21,8 +21,19 @@ export async function run() {
   check('sancus learn writes the model, as in results/example', model === api.files.read('/results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot'), out.slice(-500));
   out = await api.run('check_example');
   check('check_example', out.includes('bf89c0b-attacker ... [OK'), out.slice(-500));
-  await api.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference.dot');
-  await api.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot');
+  // Two commands at once (as in two terminals): each keeps what the other wrote
+  await Promise.all([
+    api.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference.dot'),
+    api.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot'),
+  ]);
+  // A file changed while a command runs keeps the change
+  api.files.write('/models/note.txt', 'v1');
+  const running = api.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference-2.dot');
+  await new Promise((r) => setTimeout(r, 50));
+  api.files.write('/models/note.txt', 'v2');
+  await running;
+  check('a file changed while a command runs keeps the change', api.files.read('/models/note.txt') === 'v2' && api.files.has('/models/reference-2.dot'));
+  check('two commands at once keep both models', api.files.has('/models/reference.dot') && api.files.has('/models/firmware.dot'));
   out = await api.run('vaultlink compare models/reference.dot models/firmware.dot');
   check('vaultlink compare finds the difference', out.includes('1 distinguishing sequence'), out.slice(-500));
 

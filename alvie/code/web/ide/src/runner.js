@@ -45,6 +45,7 @@ export class Runner {
     const usesSimulator = ['sancus', 'learn', 'exec'].includes(argv[0]);
     const commits = !usesSimulator ? [] : i >= 0 ? [argv[i + 1]].filter((c) => known.includes(c)) : ['learn', 'exec'].includes(argv[0]) ? ['ef753b6'] : known;
     const worker = await this.newWorker();
+    const sent = this.files.all();
     return new Promise((resolve) => {
       this.worker = worker;
       const t0 = performance.now();
@@ -59,10 +60,14 @@ export class Runner {
         if (ended) return;
         if (m.type === 'done') ended = true;
         if (m.type === 'output') onOutput(m.stream, m.line);
-        else if (m.type === 'done') { this.files.merge(m.files); this.finish({ exit: m.exit }); }
+        else if (m.type === 'done') {
+          // Only the files that the command wrote: another command (in another terminal) may have changed the others
+          this.files.merge(Object.fromEntries(Object.entries(m.files).filter(([p, t]) => sent[p] !== t)));
+          this.finish({ exit: m.exit });
+        }
       };
       worker.onerror = (e) => { onOutput('stderr', `error: ${e.message}`); this.finish?.({ exit: null }); };
-      worker.postMessage({ argv, env, cwd, files: this.files.all(), commits, base: this.base ? `${this.base}alvie/` : undefined });
+      worker.postMessage({ argv, env, cwd, files: sent, commits, base: this.base ? `${this.base}alvie/` : undefined });
     });
   }
 
