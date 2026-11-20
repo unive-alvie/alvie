@@ -2,7 +2,8 @@
 # prepare.sh WEB_DIR SIM_DIR: what the IDE serves, in public/ (then: npm ci && npm run build, into dist/).
 #   public/alvie/   alvie-web (WEB_DIR: the output of web/build.sh), the shim of Node (web/browser/node-shim.js), and
 #                   the simulators of SIM_DIR (web/sim/build-sim.sh; one directory per commit), with sim/index.json
-#   public/files/   the files of a first visit: spec-lib/, the models of results/example/, and an empty models/, with
+#   public/files/   the files of a first visit: spec-lib/, the models of results/example/, the fixtures of the plugins
+#                   (plugins/<name>/fixtures), and an empty models/, with
 #                   files/index.json
 # runner.js (public/alvie) is a source file; everything else in public/ is made here.
 set -euo pipefail
@@ -25,6 +26,8 @@ cp -r "$root/spec-lib" "$pub/files/spec-lib"
 mkdir -p "$pub/files/results/example" "$pub/files/models"
 cp "$root"/results/example/*.dot "$pub/files/results/example/"
 : > "$pub/files/models/.keep"
+# The fixtures of the plugins, where alvie <plugin> fixtures looks for them (plugins/<name>/fixtures, from /)
+for p in sancus tiny; do mkdir -p "$pub/files/plugins/$p"; cp -r "$root/alvie/code/plugins/$p/fixtures" "$pub/files/plugins/$p/"; done
 (cd "$pub/files" && find . -type f ! -name index.json | sed 's|^\.||' | sort | python3 -c 'import json,sys; print(json.dumps([l.strip() for l in sys.stdin]))') > "$pub/index.json.tmp"
 mv "$pub/index.json.tmp" "$pub/files/index.json"
 echo "public/: alvie-web, ${#commits[@]} simulators, $(python3 -c "import json; print(len(json.load(open('$pub/files/index.json'))))" ) files"

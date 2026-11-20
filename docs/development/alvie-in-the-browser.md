@@ -13,7 +13,7 @@ ALVIE can run without installing anything: its OCaml code compiles to WebAssembl
 testbench of ALVIE/Sancus compiles to WebAssembly with Verilator and Emscripten.
 The result, `alvie-web`, runs the commands of ALVIE/Core for Tiny and for ALVIE/Sancus, and `alvie vaultlink` on the
 services in memory, and learns the same models as the native ALVIE.
-It runs in Node and in a Web Worker of a browser (Chromium and Firefox); the IDE that will run it in a page is the next step.
+It runs in Node, in a Web Worker of a browser (Chromium and Firefox), and in the [ALVIE IDE](/alvie/core/alvie-ide/).
 
 ## What runs where
 
@@ -89,8 +89,27 @@ ALVIE_SMOKE_BROWSER=firefox python3 web/browser/smoke.py /tmp/alvie-web /tmp/alv
 `alvieCollect` (files to read back) and `alvieDone` (called when the command ends); `alvieSancus` is the host of the
 simulators.
 
-The `web` job of CI builds `alvie-web` and the simulators of `bf89c0b` and `ef753b6`, and runs the fixtures of Tiny and
-of ALVIE/Sancus with it.
+### The IDE
+
+`web/ide` is the IDE (see [The ALVIE IDE](/alvie/core/alvie-ide/)), a static site built by Vite around `alvie-web`:
+CodeMirror 6 (the editor), xterm.js (the terminal), Graphviz in WebAssembly (`@viz-js/viz`, the viewer).
+The page keeps the files (IndexedDB) and runs each command in a new Web Worker (`public/alvie/runner.js`), which
+gets the files, runs `alvie-web` and gives back the files it changed.
+The live errors of the editor come from `alvie-web check FILE`, which prints the problems of a spec as JSON lines.
+
+```bash
+cd alvie/code/web/ide
+bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim    # alvie-web, the simulators and the files of a first visit, in public/
+npm ci && npm run build                             # the site, in dist/
+python3 test.py dist /tmp/alvie-ide-test            # its self-test in headless Chromium, and screenshots
+```
+
+`index.html?selftest=1` runs the self-test (`src/selftest.js`); `?demo=1` and `?demo=vault` are the pages of the
+screenshots. The site uses relative paths, so it can be served from any directory.
+
+The `web` job of CI builds `alvie-web` and the simulators of the 8 commits, runs the fixtures of Tiny and of ALVIE/Sancus
+and ALVIE/VaultLink with it in Node, builds the IDE, runs its self-test in Chrome, and uploads the site (`alvie-ide`)
+and the screenshots as artifacts.
 
 ## How it compares with the native ALVIE
 

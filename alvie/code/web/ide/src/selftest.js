@@ -11,6 +11,10 @@ export async function selftest(ide) {
   check('ls lists spec-lib', lines.some((l) => l.includes('a.atdl')));
   await ide.run('alvie sancus learn --spec spec-lib/example/attacker.atdl --spec spec-lib/example/enclave.etdl --secret 0 --commit bf89c0b --res models/example-0.dot');
   check('sancus learn writes the model', ide.files.has('/models/example-0.dot'));
+  await ide.run('alvie tiny fixtures --out models/tiny-fixtures');
+  check('tiny fixtures pass', lines.some((l) => l.includes('5 fixtures, 0 failed')));
+  await ide.run('alvie sancus fixtures --out models/sancus-fixtures');
+  check('sancus fixtures pass', lines.some((l) => l.includes('4 fixtures, 0 failed')));
   await ide.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference.dot');
   await ide.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot');
   check('vaultlink learn writes both models', ide.files.has('/models/reference.dot') && ide.files.has('/models/firmware.dot'));

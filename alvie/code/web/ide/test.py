@@ -30,7 +30,8 @@ Handler.extensions_map[".js"] = "text/javascript"
 server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 base = f"http://127.0.0.1:{server.server_address[1]}/index.html"
-browser = os.environ.get("ALVIE_SMOKE_BROWSER") or shutil.which("chromium") or shutil.which("chromium-browser")
+browser = os.environ.get("ALVIE_SMOKE_BROWSER") or shutil.which("chromium") or shutil.which("chromium-browser") or shutil.which("google-chrome")
+browser = shutil.which(browser) or browser
 firefox = "firefox" in os.path.basename(browser)
 
 def run(url, extra, wait=None):
