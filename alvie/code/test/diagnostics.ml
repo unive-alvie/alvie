@@ -1,5 +1,5 @@
 let incomplete_simulator_failure () =
-  match Cli_diagnostics.classify_failure "Simulator: Stimulus did not complete!" with
+  match Sancus_cmd.Cli_diagnostics.classify_failure "Simulator: Stimulus did not complete!" with
   | Some (heading, message, status) ->
     Alcotest.(check string) "heading" "ALVIE incomplete" heading;
     Alcotest.(check string)

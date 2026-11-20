@@ -11,7 +11,7 @@ let prepare_directory = Alvie_cli.Errors.prepare_directory
 let read_file = Alvie_cli.Errors.read_file
 
 let parse_spec ~enclave_spec ~attacker_spec =
-  match Sancus.Testdl.Parser.parse_spec (enclave_spec ^ " " ^ attacker_spec) with
+  match Sancus_core.Testdl.Parser.parse_spec (enclave_spec ^ " " ^ attacker_spec) with
   | Ok spec -> spec
   | Error message ->
     fail "Could not parse the TestDL specifications: %s. Check --encl-spec and --att-spec." message
@@ -21,12 +21,12 @@ let parse_spec ~enclave_spec ~attacker_spec =
   blocks, and gives them as well in the form of testdl.ml, for the simulator.
 *)
 let parse_spec_files ~enclave_spec_file ~attacker_spec_file =
-  let plugin = Lazy.force Sancus.Generic_inputgen.plugin in
+  let plugin = Lazy.force Sancus_core.Generic_inputgen.plugin in
   match Alvie_plugin.Spec.parse_files plugin [ enclave_spec_file; attacker_spec_file ] with
   | Error diags ->
     fail "Could not parse the TestDL specifications (--encl-spec and --att-spec):\n%s" (Alvie_plugin.Diag.list_to_string diags)
   | Ok spec ->
-    (match Sancus.Atom_value.to_test_spec spec with
+    (match Sancus_core.Atom_value.to_test_spec spec with
      | Ok old -> (spec, old)
      | Error m -> fail "The specifications use something that the simulator does not support: %s." m)
 
@@ -57,7 +57,7 @@ let validate_learning_options ~oracle ~epsilon ~delta ~step_limit ~reset_probabi
   Option.iter max_tests ~f:(validate_positive ~option:"--max-tests")
 
 let require_secret_if_needed enclave secret =
-  if Option.is_none secret && Sancus.Enclave.Enclave.has_secret enclave then
+  if Option.is_none secret && Sancus_core.Enclave.Enclave.has_secret enclave then
     fail "The enclave specification uses ?. Supply --secret <value>."
 
 let require_optional_pair ~first_option first ~second_option second =

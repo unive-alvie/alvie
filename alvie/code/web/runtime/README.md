@@ -11,6 +11,7 @@ files are those sources, given to `wasm_of_ocaml compile` by `../build.sh`:
 | `ocaml_intrinsics_kernel.wat` | `janestreet/ocaml_intrinsics_kernel`, `src/runtime.wat`, commit 12979a2e7dec | none |
 | `time_now.wat` | `janestreet/time_now`, `src/runtime.wat`, commit 3538b27739f7 | none |
 | `bin_prot.wat` | `janestreet/bin_prot`, `src/runtime.wat`, commit 13a8eb43ed2e | none |
+| `bigstringaf.wat` | ALVIE (bigstringaf is not Jane Street's): its two blits, forwarded to the runtime of `wasm_of_ocaml` | new |
 
 In Base v0.17 the state of the internal hash is an OCaml `int` (an `i31` in WebAssembly); in the sources it is a boxed
 `int32`, so their `base_internalhash_types.wat` fails with "illegal cast". The version here keeps the state as an
