@@ -13,7 +13,8 @@ they run in the page.
 It needs a browser with WebAssembly GC; it is tested in Chromium and Firefox. Chromium is the fastest: there, ALVIE
 learns as fast as the native ALVIE; Firefox takes about three times as long.
 
-The first page lists the tutorials and an empty session; both open VS Code for the Web.
+Open it at [/alvie/play/](/alvie/play/). The first page lists the tutorials and an empty session; both open VS Code
+for the Web.
 
 ## The tutorials
 
@@ -88,3 +89,16 @@ longer (`spec-lib/fast` has smaller specifications of the same attacks: `learn_a
 
 `Ctrl-C` (in a terminal) or ■ (in a cell) stops a command. Each command runs in its own Web Worker, so the page stays
 responsive.
+
+## What needs the native ALVIE
+
+ALVIE in the browser learns the same models as the native ALVIE, but some parts need a computer:
+
+- formulas (`alvie property formula`), which need mCRL2, and `pbt.exe`;
+- Sancus at other commits, or with another key, than the eight simulators that come with the site, and the FPGA board
+  ([Sancus on the FPGA](/alvie/sancus/fpga/));
+- ALVIE/VaultLink over TCP (`--target`, `serve`): a page cannot open connections;
+- long experiments: a script runs at most four commands at once, and the page must stay open.
+
+The [Executables Reference](/alvie/reference/executables-reference/#in-the-browser) lists what runs where, and
+[Getting Started](/alvie/getting-started/) installs ALVIE on a computer.

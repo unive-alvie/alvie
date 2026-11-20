@@ -16,6 +16,8 @@ The [How ALVIE Works](/alvie/core/concepts/) page explains how the terms fit tog
 - **ALVIE/Sancus**: The plugin of ALVIE for the Sancus processor.
 - **alvie-ui**: A graphical interface for ALVIE.
   It is a separate project.
+- **ALVIE in the browser**: ALVIE compiled to WebAssembly, with the simulators of Sancus, in VS Code for the Web: tutorials and a session with the files of the experiments, with nothing to install.
+  See [ALVIE in Your Browser](/alvie/core/alvie-ide/).
 - **System under learning (SUL)**: The system that ALVIE tests.
   In ALVIE/Sancus, it is a simulation of the Sancus processor.
 - **ALVIE/Core**: The part of ALVIE that does not depend on a platform: learning, input generation, comparison, and the spec language.

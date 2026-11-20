@@ -6,6 +6,7 @@ sidebar:
 ---
 
 All executables are built with `dune build` from inside `alvie/code/` and run from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
+[ALVIE in your browser](/alvie/play/) runs most of them with nothing to install: see [In the browser](#in-the-browser).
 
 ## The `alvie` command
 
@@ -346,6 +347,21 @@ _build/default/bin/pbt.exe \
 ```
 
 ---
+
+## In the browser
+
+[ALVIE in your browser](/alvie/play/) runs the commands of this page in its terminals and tutorials, with the same options and outputs, from the root of its files (the repository root):
+
+| Available | Not available |
+| --- | --- |
+| `learn.exe`, `fa.exe`, `exec.exe` (also as `_build/default/bin/...`), and `alvie learn`, `compare`, `exec` | `pbt.exe` |
+| `alvie sancus ...` on the simulators of the eight commits of the experiments (`ef753b6`, `e8cf011`, `3170d5d`, `6475709`, `3636536`, `d54f031`, `264f135`, `bf89c0b`), built with the key `cafe`; `--sancus` and `--tmpdir` may be left out | Other commits or keys of Sancus, and the FPGA board (`alvie sancus-fpga`) |
+| `alvie tiny ...` | `alvie property formula`: it needs mCRL2 |
+| `alvie vaultlink ...` on the services in memory (`--service`) | `--target host:port` and `serve`: a page cannot open TCP connections |
+| The scripts `learn_example.sh`, `learn_one.sh`, `learn_one_nospecial.sh`, `learn_all.sh`, `check_example.sh`, `check_one.sh`, `check_all.sh` | Environment variables such as `ALVIE_JOBS`: a script runs up to four commands at once |
+
+The models are the same as those of the native ALVIE: learning is deterministic, and CI checks it.
+See [ALVIE in Your Browser](/alvie/core/alvie-ide/).
 
 ## Summary table
 

@@ -11,6 +11,11 @@ We use a reduced fast profile while reading the languages, then reproduce the re
 V-B1 is used as the second case study because it is a published vulnerability whose checked-in models let a new user reproduce and inspect a genuine witness without waiting for full learning.
 
 The complete syntax and semantics are in the [TestDL Action Reference](/alvie/sancus/testdl-action-reference/).
+
+:::tip[In your browser]
+The *Empty session* of [ALVIE in your browser](/alvie/play/) has the specifications of this page in `spec-lib/`, highlights TestDL and underlines its mistakes as you type, and runs the commands of this tutorial (`learn.exe`, `fa.exe`) on the commits of the experiments.
+:::
+
 We use that page when we need details.
 This tutorial focuses on where to start and what each part is doing.
 

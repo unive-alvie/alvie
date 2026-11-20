@@ -9,6 +9,10 @@ isNew: true
 This page explains what ALVIE does and why it works in this way.
 Read it before your first experiment, or after the [Getting Started](/alvie/getting-started/) tutorial.
 It does not contain commands.
+
+:::tip[See it work]
+The tutorials of [ALVIE in your browser](/alvie/play/) show each idea of this page on a real run, with nothing to install.
+:::
 The [Glossary](/alvie/reference/glossary/) defines every term in short form.
 
 ## The question ALVIE answers

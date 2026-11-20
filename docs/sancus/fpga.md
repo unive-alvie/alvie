@@ -7,6 +7,7 @@ sidebar:
 
 ALVIE/Sancus-FPGA is the plugin of Sancus on an FPGA board: it runs the programs of ALVIE/Sancus on the board instead of the Verilator simulator.
 Its commands are `alvie sancus-fpga learn`, `compare`, `property`, `exec`, `conformance` and `fixtures`.
+They need the native ALVIE and the board: [ALVIE in your browser](/alvie/play/) has the simulators only.
 It takes the same specs as ALVIE/Sancus, and its models have the inputs and outputs of the simulator's: `alvie sancus-fpga compare` finds their witnesses, and `alvie-model-compare` compares a model of the board with one of the simulator.
 A step takes 15 to 30 ms on the board, against about a second in the simulator.
 
