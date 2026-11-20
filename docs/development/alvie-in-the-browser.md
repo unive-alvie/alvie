@@ -100,7 +100,7 @@ Learning is deterministic for a seed, and `alvie-web` makes the same random choi
 | Check | Result |
 | --- | --- |
 | The checked-in models (`results/`), learned by `alvie-web` in Node | all 98 identical |
-| The 320 learnings of the benchmark (8 commits, 10 specs, 2 secrets, with and without interrupts), by `learn.exe` and by `alvie-web` | VALIDATION_BENCH |
+| The 320 learnings of the benchmark (8 commits, 10 specs, 2 secrets, with and without interrupts), by `learn.exe` and by `alvie-web` | all 320 identical |
 | The fixtures of Tiny and of ALVIE/Sancus | the same verdicts and witness counts |
 | The Getting Started example and full-A on `bf89c0b`, learned in Chromium 157 and Firefox 160 | identical |
 
@@ -115,6 +115,10 @@ Speed, on full-A on `bf89c0b` (605 steps on the simulator, 3561 queries), on the
 
 The native ALVIE starts a simulator for each step; `alvie-web` calls the module it loaded once, which is why it can
 be faster.
+
+Firefox runs the OCaml code compiled by `wasm_of_ocaml` (WebAssembly GC) more slowly than Chromium: with
+`ALVIE_PROFILE=1`, reading the VCD trace of a step takes 225 ms in Firefox and 10 ms in Chromium, the simulator (C++,
+Emscripten) 55 ms and 16 ms. A build with `js_of_ocaml` for Firefox could close the gap.
 The simulator alone, in one process, runs a step in 7.8 ms natively and 9.2 ms in WebAssembly (1.19 times as long).
 The WebAssembly module of `alvie-web` is 1.3 MB; a simulator is about 320 KB.
 
