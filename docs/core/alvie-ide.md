@@ -24,11 +24,12 @@ all of them with *Run All*; its output shows below it, and `view` draws models i
 | --- | --- | --- |
 | Getting started | Learn two models of a Sancus enclave, compare them, read the witness; the scripts of the guides | less than a minute |
 | Tiny | A timing leak, a leak that only interrupts reveal, and a mitigation, on a small processor | seconds |
-| Reproduce an attack on Sancus | The four models of B6 (`learn_one`, `check_one`), and the models of the paper | a few minutes |
+| Reproduce an attack on Sancus | The twelve models of B6 (`learn_one`, `check_one`), the witness, and a check that they are the models of the paper | a few minutes |
 | VaultLink | Learn two network services, compare them, follow the sequence that tells them apart | seconds |
 
 The first time you open a tutorial, VS Code asks whether you trust the authors of the notebook: the tutorials come
 with the site, and their cells run only commands of ALVIE.
+Everything is computed in your browser as the cells run: the tutorials learn every model they show.
 A cell stops at the first command that fails; `alvie tiny compare` and `alvie vaultlink compare` "fail" when they find a
 difference, as the tutorials say.
 A tutorial is a file of the session (`tutorials/`): you can change it, add cells, or write your own (`.alvienb`).
@@ -39,7 +40,7 @@ VS Code with the files of ALVIE:
 
 | Part | What it does |
 | --- | --- |
-| Explorer | The files are the folder `alvie:/`, kept in your browser: `spec-lib/` (the specifications of the experiments and of VaultLink), `results/` (the models of the paper), `tutorials/`, `models/`. New files, folders, renames and uploads (drag them in) are files of ALVIE; a model that a command learns appears at once. To save a file on your computer, right-click it and choose *Download*. |
+| Explorer | The files are the folder `alvie:/`, kept in your browser: `spec-lib/` (the specifications of the experiments and of VaultLink), `results/` (the models of the paper, learned by the native ALVIE), `tutorials/`, `models/`. New files, folders, renames and uploads (drag them in) are files of ALVIE; a model that a command learns appears at once. To save a file on your computer, right-click it and choose *Download*. |
 | Editor | The languages of the specifications (TestDL for `.atdl`, `.etdl`, `.spec`; VTDL for `.vtdl`) and of models (`.dot`). |
 | Problems | The mistakes that ALVIE's own parsers find in the open specifications, as you type. |
 | Terminal | An ALVIE terminal (`+` in the panel opens another; terminals run their commands in parallel). Type `help`. |
@@ -82,8 +83,9 @@ _build/default/bin/learn.exe --report --att-spec spec-lib/b3.atdl --encl-spec sp
 `--sancus` may be left out. The scripts `learn_example`, `learn_one`, `learn_one_nospecial`, `learn_all`,
 `check_example`, `check_one` and `check_all` give the same commands as the scripts of the repository, with the same
 models (`results/<subdir>/`), counterexamples (`counterexamples/<subdir>/`) and logs (`logs/<subdir>/`). A model that is
-there is not learned again ("Done before"). The commands of a script run one after the other: `learn_all` learns 96
-models, which takes hours (minutes with `spec-lib/fast`: `learn_all fast`).
+there is not learned again ("Done before"). The commands of a script run in parallel, up to four at once (half of the
+cores of the computer): `learn_one` learns its twelve models in a few minutes; `learn_all` learns 96, which takes much
+longer (`spec-lib/fast` has smaller specifications of the same attacks: `learn_all fast`).
 
 `Ctrl-C` (in a terminal) or ■ (in a cell) stops a command. Each command runs in its own Web Worker, so the page stays
 responsive.

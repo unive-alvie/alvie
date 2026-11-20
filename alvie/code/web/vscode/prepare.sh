@@ -3,8 +3,8 @@
 #   bundle/alvie/   alvie-web (WEB_DIR: the output of web/build.sh), the shim of Node (web/browser/node-shim.js), the
 #                   runner of commands (runtime/runner.js), and the simulators of SIM_DIR (web/sim/build-sim.sh; one
 #                   directory per commit), with sim/index.json
-#   bundle/files/   the files of a first visit, with files/index.json: spec-lib/, the checked-in models of results/
-#                   (results/*.dot and results/example/), the tutorials (tutorials/*.alvienb), the fixtures of the
+#   bundle/files/   the files of a first visit, with files/index.json: spec-lib/, the models of the paper
+#                   (results/*.dot; not results/example/, which the tutorials learn), the tutorials (tutorials/*.alvienb), the fixtures of the
 #                   plugins (plugins/<name>/fixtures), and an empty models/
 set -euo pipefail
 if [ "$#" -ne 2 ]; then echo "Usage: $0 WEB_DIR SIM_DIR" >&2; exit 2; fi
@@ -23,9 +23,8 @@ done
 (IFS=,; echo "[${commits[*]}]") > "$out/alvie/sim/index.json"
 f=$out/files
 cp -r "$root/spec-lib" "$f/spec-lib"
-mkdir -p "$f/results/example" "$f/models" "$f/tutorials"
+mkdir -p "$f/results" "$f/models" "$f/tutorials"
 cp "$root"/results/*.dot "$f/results/"
-cp "$root"/results/example/*.dot "$f/results/example/"
 cp "$here"/tutorials/* "$f/tutorials/"
 : > "$f/models/.keep"
 # The fixtures of the plugins, where alvie <plugin> fixtures looks for them (plugins/<name>/fixtures, from /)

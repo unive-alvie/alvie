@@ -60,7 +60,7 @@ export async function activate(context) {
             .then(() => term.writeln('Right-click the file in the Explorer and choose Download...')),
         });
       },
-      close: () => shell?.runner.cancel(),
+      close: () => shell?.cancel(),
       handleInput: (data) => shell?.input(data),
     };
   };

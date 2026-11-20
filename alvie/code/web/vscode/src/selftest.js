@@ -18,7 +18,10 @@ export async function run() {
 
   let out = await api.run('alvie sancus learn --spec spec-lib/example/attacker.atdl --spec spec-lib/example/enclave.etdl --secret 0 --commit bf89c0b --res models/example-0.dot');
   const model = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri('/models/example-0.dot')));
-  check('sancus learn writes the model, as in results/example', model === api.files.read('/results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot'), out.slice(-500));
+  const native = JSON.parse(NATIVE_EXAMPLE); // the models of results/example, learned by the native ALVIE (build.mjs)
+  check('sancus learn writes the model of the native ALVIE', model === native[0], out.slice(-500));
+  out = await api.run('learn_example');
+  check('learn_example learns the models of the native ALVIE', [0, 1].every((s) => api.files.read(`/results/example/bf89c0b-attacker-enclave-${s}-0.01-0.01.dot`) === native[s]), out.slice(-500));
   out = await api.run('check_example');
   check('check_example', out.includes('bf89c0b-attacker ... [OK'), out.slice(-500));
   // Two commands at once (as in two terminals): each keeps what the other wrote

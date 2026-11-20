@@ -113,6 +113,11 @@ bash build-workbench.sh /tmp/vscode-web             # VS Code for the Web from C
 bash make-site.sh /tmp/vscode-web /tmp/alvie-site   # the site: index.html (tutorials), code.html (VS Code)
 ```
 
+The site is static: any static host serves it (GitHub Pages, a bucket, `python3 -m http.server`), from any
+directory, with no code on the server and no special headers. It needs HTTPS (or `localhost`): the webviews of VS Code
+(the preview of models) and the files use APIs of the browser that only secure pages have. It is about 240 MB, most of
+it VS Code for the Web; a visit downloads about 30 MB of it.
+
 Serve the site with compression: a first visit downloads about 27 MB of VS Code, which gzip makes about 7 MB.
 GitHub Pages and most static hosts compress on their own; `serve.py SITE [PORT]` is a small server that does it, with
 caching headers (VS Code for the Web is kept for a day; the rest is checked at each visit).

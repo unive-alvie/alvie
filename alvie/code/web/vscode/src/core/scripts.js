@@ -4,8 +4,8 @@
 // and logs (logs/<subdir>/). The files of the IDE are the root of the repository: spec-lib/, results/, ...
 //
 // A script gives { jobs, errors, exitIfMissing }: jobs = [{ name, argv, log, res }], where res, if set, is the model
-// that the job makes (a job whose model is there is "Done before", as in the scripts). The IDE runs the jobs one after
-// the other (the scripts run them in parallel).
+// that the job makes (a job whose model is there is "Done before", as in the scripts). The shell runs the jobs in
+// parallel, as the scripts do (see Shell.script).
 
 const EPS = '0.01', DELTA = '0.01';
 

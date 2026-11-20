@@ -88,7 +88,7 @@ export function controller({ files, base, newWorker, openEditor }) {
         const models = paths.map((p) => ({ path: p, text: files.has(p) ? files.read(p) : null }));
         outputs.push(new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.json({ models, inputs }, MODELS_MIME)]));
       };
-      const cancel = run.token.onCancellationRequested(() => { ok = false; shell.runner.cancel(); });
+      const cancel = run.token.onCancellationRequested(() => { ok = false; shell.cancel(); });
       for (const line of cell.document.getText().split('\n')) {
         if (run.token.isCancellationRequested) break;
         const l = line.trim();
@@ -102,7 +102,7 @@ export function controller({ files, base, newWorker, openEditor }) {
       run.end(ok, Date.now());
     }
   };
-  c.interruptHandler = (notebook) => shells.get(notebook.uri.toString())?.shell.runner.cancel();
+  c.interruptHandler = (notebook) => shells.get(notebook.uri.toString())?.shell.cancel();
   // The controller of every tutorial, so that ▷ runs a cell without asking for a kernel
   const prefer = (nb) => { if (nb.notebookType === NOTEBOOK) c.updateNotebookAffinity(nb, vscode.NotebookControllerAffinity.Preferred); };
   vscode.workspace.notebookDocuments.forEach(prefer);
