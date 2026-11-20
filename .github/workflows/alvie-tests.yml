@@ -266,3 +266,66 @@ jobs:
         with:
           name: alvie-ide-test
           path: /tmp/alvie-ide-test
+      - name: Build the extension of VS Code for the Web
+        working-directory: alvie/code/web/vscode
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Run the self-test of the extension in VS Code for the Web
+        working-directory: alvie/code/web/vscode
+        run: |
+          npx playwright install --with-deps chromium
+          bash test.sh
+      - name: Upload the extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: alvie-vscode-extension
+          path: |
+            alvie/code/web/vscode/package.json
+            alvie/code/web/vscode/language-configuration.json
+            alvie/code/web/vscode/syntaxes
+            alvie/code/web/vscode/out
+            alvie/code/web/vscode/ide
+            alvie/code/web/vscode/site
+            alvie/code/web/vscode/make-site.sh
+
+  vscode-web:
+    name: Build ALVIE in VS Code for the Web (Code - OSS)
+    needs: web
+    runs-on: ubuntu-24.04
+    env:
+      VSCODE_TAG: 1.146.0
+    steps:
+      - name: Restore VS Code for the Web
+        id: workbench
+        uses: actions/cache@v4
+        with:
+          path: /tmp/vscode-web
+          key: vscode-web-${{ env.VSCODE_TAG }}
+      - name: Checkout
+        if: steps.workbench.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          path: alvie-src
+      - name: Set up Node.js for Code - OSS
+        if: steps.workbench.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+      - name: Build VS Code for the Web from Code - OSS
+        if: steps.workbench.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y libkrb5-dev libxkbfile-dev libsecret-1-dev
+          bash alvie-src/alvie/code/web/vscode/build-workbench.sh /tmp/vscode-web /tmp/vscode-src
+      - name: Download the extension
+        uses: actions/download-artifact@v4
+        with:
+          name: alvie-vscode-extension
+          path: /tmp/alvie-vscode
+      - name: Make the site
+        run: bash /tmp/alvie-vscode/make-site.sh /tmp/vscode-web /tmp/alvie-vscode-site
+      - name: Upload the site
+        uses: actions/upload-artifact@v4
+        with:
+          name: alvie-vscode-site
+          path: /tmp/alvie-vscode-site
