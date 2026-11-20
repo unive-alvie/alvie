@@ -2,7 +2,7 @@
 // page: alvie-web and the simulators of Sancus in WebAssembly, in a Web Worker for each command.
 import { Files } from './files.js';
 import { Runner } from './runner.js';
-import { Shell } from './terminal.js';
+import { xtermShell } from './xterm-shell.js';
 import { Editor } from './editor.js';
 import { Viewer } from './viewer.js';
 import { Tree } from './tree.js';
@@ -33,7 +33,7 @@ function download(path) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-const shell = new Shell($('terminal'), {
+const shell = xtermShell($('terminal'), {
   files, runner,
   openEditor: (p) => { editor.open(p); tree.select(p); },
   openViewer: (ps, inputs) => viewer.show(ps, inputs),

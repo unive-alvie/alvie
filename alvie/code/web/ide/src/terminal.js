@@ -1,8 +1,6 @@
-// The terminal of the IDE: a line editor on xterm.js, with built-in commands on the files of the IDE and the commands
-// of alvie-web (alvie ..., or sancus/tiny/vaultlink ...), which run in a Web Worker. Ctrl-C stops a running command.
-import { Terminal } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import '@xterm/xterm/css/xterm.css';
+// The shell of the IDE: a line editor on a terminal (xterm.js in the IDE, a Pseudoterminal in VS Code), with built-in
+// commands on the files of the IDE, the scripts of the guides, and the commands of alvie-web (alvie ..., or
+// sancus/tiny/vaultlink ...), which run in a Web Worker. Ctrl-C stops a running command.
 import { resolvePath } from './files.js';
 import { programOf } from './runner.js';
 import { scriptOf, scriptJobs } from './scripts.js';
@@ -41,19 +39,13 @@ Keys:   Ctrl-C stops a command, Tab completes a path, Up/Down walk the history.`
 const ALVIE = new Set(['alvie', 'sancus', 'tiny', 'vaultlink', 'learn', 'compare', 'exec', 'check']);
 
 export class Shell {
-  constructor(element, { files, runner, openEditor, openViewer, download }) {
-    Object.assign(this, { files, runner, openEditor, openViewer, download });
+  // term: { write(text), writeln(text), clear() }; the terminal gives its input to input(data)
+  constructor(term, { files, runner, openEditor, openViewer, download, storage = globalThis.localStorage }) {
+    Object.assign(this, { term, files, runner, openEditor, openViewer, download, storage });
     this.cwd = '/';
     this.line = ''; this.cursor = 0;
-    this.history = JSON.parse(localStorage.getItem('alvie-ide-history') || '[]'); this.hpos = this.history.length;
-    this.term = new Terminal({ fontFamily: 'ui-monospace, Menlo, Consolas, monospace', fontSize: 13, convertEol: true, cursorBlink: true,
-      theme: { background: '#1e1e1e' } });
-    this.fit = new FitAddon();
-    this.term.loadAddon(this.fit);
-    this.term.open(element);
-    this.fit.fit();
-    new ResizeObserver(() => this.fit.fit()).observe(element);
-    this.term.onData((d) => this.input(d));
+    try { this.history = JSON.parse(storage?.getItem('alvie-ide-history') || '[]'); } catch { this.history = []; }
+    this.hpos = this.history.length;
     this.term.writeln('ALVIE in your browser. Type help.');
     this.prompt();
   }
@@ -104,7 +96,7 @@ export class Shell {
     if (trimmed) {
       if (this.history[this.history.length - 1] !== trimmed) this.history.push(trimmed);
       this.history = this.history.slice(-200); this.hpos = this.history.length;
-      try { localStorage.setItem('alvie-ide-history', JSON.stringify(this.history)); } catch {}
+      try { this.storage?.setItem('alvie-ide-history', JSON.stringify(this.history)); } catch {}
     }
     const args = splitArgs(trimmed);
     try {
@@ -191,3 +183,4 @@ export class Shell {
     }
   }
 }
+

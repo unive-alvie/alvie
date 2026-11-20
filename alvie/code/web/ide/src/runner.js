@@ -3,8 +3,8 @@
 
 // The commits of sancus-core-gap that have a simulator (public/alvie/sim/index.json)
 let commitsPromise = null;
-export function knownCommits() {
-  commitsPromise ??= fetch('alvie/sim/index.json').then((r) => (r.ok ? r.json() : [])).catch(() => []);
+export function knownCommits(base = '') {
+  commitsPromise ??= fetch(`${base}alvie/sim/index.json`).then((r) => (r.ok ? r.json() : [])).catch(() => []);
   return commitsPromise;
 }
 
@@ -28,20 +28,24 @@ export function prepareArgv(args) {
 }
 
 export class Runner {
-  constructor(files) { this.files = files; this.worker = null; this.finish = null; }
+  // base: the URL of the directory that has alvie/; newWorker makes the worker of alvie/runner.js (VS Code makes it
+  // from a blob, since its extension host has another origin)
+  constructor(files, { base = '', newWorker = () => new Worker(`${base}alvie/runner.js`) } = {}) {
+    Object.assign(this, { files, base, newWorker }); this.worker = null; this.finish = null;
+  }
 
   get running() { return this.worker !== null; }
 
   async run(args, { cwd = '/', env = {}, onOutput }) {
     if (this.worker) throw new Error('a command is running');
     const argv = prepareArgv(args);
-    const known = await knownCommits();
+    const known = await knownCommits(this.base);
     // The simulators: the commit of --commit, or all (e.g. for the fixtures, whose commits are in their files)
     const i = argv.indexOf('--commit');
     const usesSimulator = ['sancus', 'learn', 'exec'].includes(argv[0]);
     const commits = !usesSimulator ? [] : i >= 0 ? [argv[i + 1]].filter((c) => known.includes(c)) : ['learn', 'exec'].includes(argv[0]) ? ['ef753b6'] : known;
+    const worker = await this.newWorker();
     return new Promise((resolve) => {
-      const worker = new Worker('alvie/runner.js');
       this.worker = worker;
       const t0 = performance.now();
       this.finish = (result) => {
@@ -58,7 +62,7 @@ export class Runner {
         else if (m.type === 'done') { this.files.merge(m.files); this.finish({ exit: m.exit }); }
       };
       worker.onerror = (e) => { onOutput('stderr', `error: ${e.message}`); this.finish?.({ exit: null }); };
-      worker.postMessage({ argv, env, cwd, files: this.files.all(), commits });
+      worker.postMessage({ argv, env, cwd, files: this.files.all(), commits, base: this.base ? `${this.base}alvie/` : undefined });
     });
   }
 

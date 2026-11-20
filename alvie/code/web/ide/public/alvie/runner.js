@@ -2,12 +2,14 @@
 // once). The page posts { argv, env, cwd, files, commits }: files is an object from absolute path to text, commits the
 // commits of sancus-core-gap whose simulators the command needs. The worker posts { type: 'output', stream, line } as
 // alvie-web prints, then { type: 'done', exit, files }: the exit code (null if it did not call exit) and every file of
-// the file system except /tmp, as an object from path to text.
+// the file system except /tmp, as an object from path to text. base, if given, is the URL of this directory (for a
+// worker made from a blob, as VS Code's extension host makes it).
 'use strict';
 const SIM_FILES = ['generic_template.s43', 'pmem_defs.asm', 'pmem.sh', 'pmem.x', 'sancus_macros.asm'];
 
 self.onmessage = async (event) => {
   const { argv, env, cwd, files, commits } = event.data;
+  const base = event.data.base || new URL('.', self.location.href).href, at = (p) => new URL(p, base).href;
   const output = (stream) => (line) => postMessage({ type: 'output', stream, line });
   let vfs = null, finished = false;
   const finish = () => {
@@ -22,12 +24,12 @@ self.onmessage = async (event) => {
     // The simulators first: Emscripten chooses its environment when it makes a module, and must not see the shim
     const sims = {}, simFiles = {};
     for (const commit of commits || []) {
-      importScripts(`sim/${commit}/sim.js`);
-      sims[commit] = await createSancusSim({ locateFile: (p) => `sim/${commit}/${p}` });
-      simFiles[commit] = await Promise.all(SIM_FILES.map(async (n) => [n, await (await fetch(`sim/${commit}/files/${n}`)).text()]));
+      importScripts(at(`sim/${commit}/sim.js`));
+      sims[commit] = await createSancusSim({ locateFile: (p) => at(`sim/${commit}/${p}`) });
+      simFiles[commit] = await Promise.all(SIM_FILES.map(async (n) => [n, await (await fetch(at(`sim/${commit}/files/${n}`))).text()]));
     }
-    importScripts('node-shim.js');
-    vfs = AlvieNodeShim.install({ argv, env, base: './', stdout: (l) => { if (!finished) output('stdout')(l); },
+    importScripts(at('node-shim.js'));
+    vfs = AlvieNodeShim.install({ argv, env, base, stdout: (l) => { if (!finished) output('stdout')(l); },
       stderr: (l) => { if (!finished) output('stderr')(l); }, onExit: () => finish() });
     for (const [path, text] of Object.entries(files || {})) vfs.writeFile(path, text);
     if (cwd) { vfs.fs.mkdirSync(cwd, { recursive: true }); process.chdir(cwd); }
@@ -47,7 +49,7 @@ self.onmessage = async (event) => {
       if (e.reason?.alvieExit === undefined) output('stderr')(`error: ${e.reason}`);
       e.preventDefault(); finish();
     });
-    importScripts('alvie-web.js');
+    importScripts(at('alvie-web.js'));
   } catch (e) {
     if (e?.alvieExit === undefined) output('stderr')(`error: ${e} ${e?.stack || ''}`);
     finish();
