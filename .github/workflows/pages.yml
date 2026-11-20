@@ -11,7 +11,7 @@ on:
   workflow_run:
     workflows: [Test ALVIE]
     types: [completed]
-    branches: [alvie-ng, feat/browser-tutorials]
+    branches: [main, alvie-ng, feat/browser-tutorials]
 
 permissions:
   contents: read
