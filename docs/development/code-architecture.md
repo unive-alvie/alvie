@@ -32,6 +32,7 @@ A browser build of ALVIE needs Core without C code and without running programs.
 | `alvie_mcrl2` (`lib/core/mcrl2`) | The tools of mCRL2: formulas, and `ALVIE_MCRL2` | `alvie-core.mcrl2-native`: runs them | `alvie-core.mcrl2-none`: says that mCRL2 is not available |
 
 The commands of Core (`alvie_cli`) use files and directories through `Alvie_cli.Fs`, which uses the standard library only.
+ALVIE/VaultLink (`lib/vaultlink`, in `alvie-core`) is portable too: its system under learning (`Vaultlink.Service`) reaches a service through a transport, which is TCP in `lib/vaultlink-unix` (`alvie-core.vaultlink-unix`) and a service in memory in `Vaultlink.Memory_service`.
 `test/portable` builds the learner, the plugin files, the input generator, the backend contract, the comparison, the commands of Core and Tiny with the implementations without C code, and runs the fixtures of Tiny with them.
 Its `forbidden_libraries` make the build fail if one of these libraries starts to depend on `core_unix`, `shexp.process`, `yaml` or `ctypes`.
 `dune build` builds all three, and the executables keep their paths (`_build/default/bin/learn.exe` and so on).

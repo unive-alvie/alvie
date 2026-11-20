@@ -10,5 +10,7 @@ let () =
     Core.Command.group ~summary:"ALVIE in the browser"
       [ ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
         (* with the codec of ALVIE/Sancus, as learn.exe and alvie sancus-fpga: the models of Sancus, in their format *)
-        ("sancus", Alvie_cli.Runner.group (module Sancus_web)) ] in
+        ("sancus", Alvie_cli.Runner.group (module Sancus_web));
+        (* the services in memory only: a browser opens no connection *)
+        ("vaultlink", Vaultlink.Commands.group ()) ] in
   try Command_web.run ~argv:(Host.argv ()) commands with Stdlib.Exit -> ()

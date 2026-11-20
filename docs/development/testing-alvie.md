@@ -27,6 +27,7 @@ Run `dune build` first.
 | Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Tiny and the commands of Core | `dune exec tt_tiny -- --color=never` | Nothing outside OCaml. | Under 1 second. |
 | The portable part of Core | `dune test test/portable` | Nothing outside OCaml. | A few seconds. |
+| ALVIE/VaultLink | `dune test test/vaultlink` | Nothing outside OCaml. | A few seconds. |
 | The plugin templates | `bash test/plugin_new.sh` | Python 3 for the external template. | Under a minute. |
 | External plugins | `bash test/rpc.sh` | Python 3. | About 30 seconds. |
 | Fixtures of Tiny | `_build/default/bin/alvie.exe tiny fixtures` | Nothing more. | A few seconds. |
@@ -213,7 +214,7 @@ It runs these steps:
 6. `dune exec tt_asm_golden -- check`
 7. `dune exec tt_plugin -- test --color=never`
 8. `dune exec tt_tiny -- --color=never`
-9. `dune test test/wmethod`, `dune test test/weak_trace`, `dune test test/rng` and `dune test test/portable`
+9. `dune test test/wmethod`, `dune test test/weak_trace`, `dune test test/rng`, `dune test test/vaultlink` and `dune test test/portable`
 10. `bash test/plugin_new.sh`
 11. `bash test/rpc.sh`
 

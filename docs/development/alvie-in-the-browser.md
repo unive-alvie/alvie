@@ -11,8 +11,8 @@ isNew: true
 
 ALVIE can run without installing anything: its OCaml code compiles to WebAssembly with `wasm_of_ocaml`, and the
 testbench of ALVIE/Sancus compiles to WebAssembly with Verilator and Emscripten.
-The result, `alvie-web`, runs the commands of ALVIE/Core for Tiny and for ALVIE/Sancus, and learns the same models as
-the native ALVIE.
+The result, `alvie-web`, runs the commands of ALVIE/Core for Tiny and for ALVIE/Sancus, and `alvie vaultlink` on the
+services in memory, and learns the same models as the native ALVIE.
 It runs in Node and in a Web Worker of a browser (Chromium and Firefox); the IDE that will run it in a page is the next step.
 
 ## What runs where

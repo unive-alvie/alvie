@@ -433,6 +433,17 @@ the documentation lists what users must do.
   `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
   executables, their options and their outputs do not change, and
   `regression.sh all` finds the same models, witness graphs and counts.
+- ALVIE/VaultLink is part of ALVIE (formerly the branch `variant/vaultlink`):
+  `alvie vaultlink learn|compare|replay` (formerly `vl_learn`, `vl_compare`,
+  `vl_replay`) and `serve`. The system under learning reaches a service
+  through a transport: TCP (`--target`, the library `vaultlink-unix`) or a
+  service in memory (`--service reference|firmware`), which runs in
+  `alvie-web` too. The models are those of `vl_learn` (W-method, on the
+  services in memory served over TCP). A test of PAC now ends, where the
+  session may end, with the probability of `--reset-probability`: `vl_learn`
+  did not end on a session such as `(HELLO | READ)*`. New
+  `spec-lib/vaultlink/vault.vtdl`, the ALVIE/VaultLink Reference, and the
+  suite `test/vaultlink` (in CI).
 - ALVIE in WebAssembly (`alvie/code/web`, see "ALVIE in the Browser" in
   the documentation): `alvie-web` runs the commands of Core for Tiny and for
   ALVIE/Sancus, compiled by `wasm_of_ocaml` (OCaml 5), on the testbench of

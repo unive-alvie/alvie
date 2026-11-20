@@ -55,5 +55,7 @@ let () =
                            ~summary:"The commands of ALVIE/Core on Sancus-FPGA: Sancus on an openMSP430/Sancus board, with the specs of ALVIE/Sancus (see docs/sancus/fpga.md)"
                            (module Sancus_runner.Fpga_r));
          ("tiny", Alvie_cli.Runner.commands (module Alvie_tiny.Tiny.Native));
+         ("vaultlink", Vaultlink.Commands.group ~tcp:(fun ~host ~port -> Vaultlink_unix.Tcp.transport ~host ~port ())
+                        ~serve:(fun ~port kind -> Vaultlink_unix.Tcp.serve ~port kind) ());
          ("external", external_command ());
          ("plugin", Alvie_cli.Plugin_cmd.command ~default:(lazy (Ok (Lazy.force Sancus.Generic_inputgen.plugin)))) ])
