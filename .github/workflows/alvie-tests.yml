@@ -38,22 +38,22 @@ permissions:
 jobs:
   isolated-tests:
     name: Run isolated ALVIE tests
-    # OCaml 4.13.1 is built from source here. The GCC of ubuntu-latest (C23 by default) no longer compiles it
-    # (caml/prims.h: too many arguments to function), so the job stays on Ubuntu 24.04.
-    runs-on: ubuntu-24.04
+    # OCaml 5 here, 4.13.1 in the published Docker image of the simulator jobs: both learn the same models
+    # (Learninglib.Rng; test/rng)
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "4.13.1"
+          ocaml-compiler: "5.4.1"
           dune-cache: true
       - name: Restore OCaml dependency cache
         uses: actions/cache@v4
         with:
-          path: ~/.opam/4.13.1
-          key: ${{ runner.os }}-ocaml-4.13.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/*.opam') }}
+          path: ~/.opam/5.4.1
+          key: ${{ runner.os }}-ocaml-5.4.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/*.opam') }}
       - name: Install OCaml dependencies
         working-directory: alvie/code
         run: opam install -y . --deps-only --with-test
@@ -91,6 +91,9 @@ jobs:
       - name: Run the weak trace inclusion suite
         working-directory: alvie/code
         run: opam exec -- dune test test/weak_trace
+      - name: Check the random numbers against those of OCaml 4.13
+        working-directory: alvie/code
+        run: opam exec -- dune test test/rng
       - name: Check the portable part of Core (no C code, no programs)
         working-directory: alvie/code
         run: opam exec -- dune test test/portable
@@ -173,3 +176,60 @@ jobs:
         run: |
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
             'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune build && _build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim --out /tmp/alvie-sancus-fixtures'
+
+  web:
+    name: Build ALVIE for the browser and run its fixtures in Node
+    # alvie-web (alvie/code/web) needs OCaml 5 and wasm_of_ocaml; the simulators in WebAssembly need Verilator and
+    # Emscripten (see web/sim/build-sim.sh)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      # Verilator 5.002, as the published image of ALVIE: the runtime of Verilator 5.020 (Ubuntu 24.04) does not
+      # compile with the libc++ of Emscripten
+      - name: Restore Verilator 5.002
+        id: verilator-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/verilator-5.002
+          key: ${{ runner.os }}-verilator-5.002
+      - name: Build Verilator 5.002
+        if: steps.verilator-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf flex bison help2man libfl-dev
+          git clone --depth 1 --branch v5.002 https://github.com/verilator/verilator /tmp/verilator
+          cd /tmp/verilator && autoconf && ./configure --prefix="$HOME/verilator-5.002" && make -j "$(nproc)" && make install
+      - name: Install Binaryen
+        run: |
+          echo "$HOME/verilator-5.002/bin" >> "$GITHUB_PATH"
+          curl -sSL https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz | tar xz -C "$HOME"
+          echo "$HOME/binaryen-version_133/bin" >> "$GITHUB_PATH"
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.20
+      - name: Set up OCaml 5
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.1"
+          dune-cache: true
+      - name: Install OCaml dependencies and wasm_of_ocaml
+        working-directory: alvie/code
+        run: |
+          opam install -y . --deps-only
+          opam install -y --assume-depexts wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx
+      - name: Build alvie-web
+        working-directory: alvie/code
+        run: opam exec -- bash web/build.sh /tmp/alvie-web
+      - name: Build the simulators of the fixtures (bf89c0b, ef753b6)
+        working-directory: alvie/code
+        run: for c in bf89c0b ef753b6; do bash web/sim/build-sim.sh ../../sancus-core-gap "$c" /tmp/alvie-web/sim; done
+      - name: Run the fixtures of Tiny and Sancus with alvie-web in Node
+        working-directory: alvie/code
+        run: |
+          node /tmp/alvie-web/alvie-web-node.cjs tiny fixtures --out /tmp/alvie-web-tiny
+          node /tmp/alvie-web/alvie-web-node.cjs sancus fixtures --sancus none --tmpdir /tmp/alvie-web-tmp --out /tmp/alvie-web-sancus

@@ -433,6 +433,24 @@ the documentation lists what users must do.
   `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
   executables, their options and their outputs do not change, and
   `regression.sh all` finds the same models, witness graphs and counts.
+- ALVIE in WebAssembly (`alvie/code/web`, see "ALVIE in the Browser" in
+  the documentation): `alvie-web` runs the commands of Core for Tiny and for
+  ALVIE/Sancus, compiled by `wasm_of_ocaml` (OCaml 5), on the testbench of
+  sancus-core-gap compiled by Verilator and Emscripten (`web/sim`). It
+  learns the models of the native ALVIE, byte for byte, at about its speed
+  (full-A on `bf89c0b`: 13.8 s against 13.2 s). It runs in Node; CI builds it
+  and runs the fixtures of Tiny and Sancus with it.
+- ALVIE builds with OCaml 5 (5.4.1, Core v0.17) as with 4.13.1: the field
+  `effect` of the rules becomes `effect_` (a keyword since OCaml 5.3), and
+  `Learninglib.Rng`, the generator of random numbers of OCaml 4.13, replaces
+  `Random`, whose generator OCaml 5 changed: with OCaml 5.4.1,
+  `regression.sh all` finds no differences. New test `test/rng` (in CI).
+- ALVIE/Sancus is split in two libraries: `sancus_core` (inputs and
+  outputs, TestDL, the input generators, the assembler, the analysis of a
+  trace and `Step`, the step of the backend whatever runs the program), which
+  needs no Unix library, and `sancus` (the simulator on Verilator:
+  `Simulator` includes `Step`). The module `Sancus` includes `Sancus_core`,
+  so the names do not change; `test/portable` checks `sancus_core` too.
 - The part of Core that a browser build needs runs without C code and
   without running programs. The plugin files are read through the virtual
   library `alvie_yaml` (default: libyaml; `alvie-core.yaml-table` knows the

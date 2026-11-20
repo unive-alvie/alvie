@@ -1,11 +1,11 @@
 ; The part of ALVIE that a browser build needs (the learner, the plugin files, the input generator, the backends'
-; contract, the comparison, the commands of Core and Tiny), built with the implementations without C code of the
-; virtual libraries: it must not depend on the libraries below, which need C code or run programs. The test runs
-; the fixtures of Tiny with it.
+; contract, the comparison, the commands of Core, Tiny, and the portable part of ALVIE/Sancus), built with the
+; implementations without C code of the virtual libraries: it must not depend on the libraries below, which need C
+; code or run programs. The test runs the fixtures of Tiny with it.
 (test
  (name portable_check)
  (package alvie-core)
- (libraries alvie_tiny alvie_cli ltscompare interop learninglib alvie_plugin alvie_inputgen alvie_backend
+ (libraries sancus_core alvie_tiny alvie_cli ltscompare interop learninglib alvie_plugin alvie_inputgen alvie_backend
   alvie_yaml_table alvie_mcrl2_none core)
  (forbidden_libraries core_unix shexp.process yaml ctypes alvie_yaml_libyaml alvie_mcrl2_native)
  (deps (source_tree %{project_root}/plugins/tiny))

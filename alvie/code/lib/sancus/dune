@@ -1,17 +1,12 @@
 (include_subdirs unqualified)
 
+; ALVIE/Sancus: its portable part (alvie-sancus.core, included in the module Sancus) and the simulator on Verilator,
+; which needs the Unix library.
 (library
  (name sancus)
   (public_name alvie-sancus.sancus)
-  (modules input output_internal testdl enclave common inputgen attacker step_analysis msp430_asm simulator verilog atom_value sancus_plugin_files generic_inputgen native)
+  (modules sancus simulator verilog native)
+  (flags (:standard -open Sancus_core))
   (preprocess (pps ppx_deriving.show ppx_deriving.ord ppx_deriving.eq ppx_deriving.make ppx_deriving.fold ppx_sexp_conv ppx_hash ppx_let))
-  (libraries prof alvie_plugin alvie_inputgen alvie_backend core logs angstrom core_unix.sys_unix core_unix vcd shexp.process ocamlgraph str)
+  (libraries sancus_core prof learninglib alvie_plugin alvie_inputgen alvie_backend core logs core_unix.sys_unix core_unix vcd shexp.process str)
 )
-
-; The plugin files of plugins/sancus, embedded in the executables (Generic_inputgen.plugin)
-(rule
- (targets sancus_plugin_files.ml)
- (deps (glob_files %{project_root}/plugins/sancus/*.yaml))
- (action
-  (with-stdout-to %{targets}
-   (system "printf '(* Generated from plugins/sancus by lib/sancus/dune *)\nlet files = [\n'; for f in %{deps}; do printf '  (\"%s\", {alvie_yaml|' \"$(basename $f)\"; cat $f; printf '|alvie_yaml});\n'; done; printf ']\n'"))))

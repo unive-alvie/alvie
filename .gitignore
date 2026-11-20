@@ -10,6 +10,8 @@ old
 # ocamlbuild working directory
 **/_build/
 **/_build-alvie-*/
+**/_build-web/
+**/_build-5.*/
 
 # ocamlbuild targets
 *.byte

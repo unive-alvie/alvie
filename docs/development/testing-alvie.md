@@ -213,7 +213,7 @@ It runs these steps:
 6. `dune exec tt_asm_golden -- check`
 7. `dune exec tt_plugin -- test --color=never`
 8. `dune exec tt_tiny -- --color=never`
-9. `dune test test/wmethod`, `dune test test/weak_trace` and `dune test test/portable`
+9. `dune test test/wmethod`, `dune test test/weak_trace`, `dune test test/rng` and `dune test test/portable`
 10. `bash test/plugin_new.sh`
 11. `bash test/rpc.sh`
 
@@ -221,6 +221,7 @@ A second job runs the suites that need the simulator toolchain or mCRL2 in the p
 `./regression.sh all`, `tt_attack`, `tt_properties`, `property_cmd.sh`, the fixtures of Tiny, and `plugin_new.sh` with the template's fixtures.
 A third job, beside it, runs the fixtures of Sancus, which learn twelve models on the simulator.
 It first installs into the image the OCaml libraries that the checkout needs and the image may not have yet.
+A fourth job, `web`, builds `alvie-web` with OCaml 5 and the simulators of `bf89c0b` and `ef753b6` in WebAssembly, and runs the fixtures of Tiny and of Sancus with them in Node (see [ALVIE in the Browser](/alvie/development/alvie-in-the-browser/)).
 
 The workflow `docs.yml` runs on pull requests that change `docs/`, `site/`, or the Dockerfile.
 It copies `docs/` into the site, builds the site, and checks every internal link.
