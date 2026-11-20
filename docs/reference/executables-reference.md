@@ -165,6 +165,8 @@ This is the main experiment driver.
 | `ALVIE_PROFILE` | With `1`, print on stderr, at the end of the run, the time spent in each part of the learner and of the simulator; `SIGUSR1` prints it during the run |
 | `ALVIE_CHECK_APART` | With `1`, check every answer of the learner's caches against a computation from scratch, and stop at the first difference. Very slow: for testing changes to the learner |
 | `ALVIE_FULL_TRACE` | With `1`, the simulator dumps every signal instead of the top level of the testbench (useful to inspect the VCD files); used when the simulator is compiled |
+| `ALVIE_ASM` | With `toolchain`, the programs of the steps are built by `msp430-as` and `msp430-ld`, as before; by default ALVIE's assembler builds them (the first build of a `--tmpdir` still uses the toolchain, which prepares it) |
+| `ALVIE_DUMP_PROGRAMS` | A directory where the simulator writes every program it builds, with its configuration: the input of `tt_asm_golden record` |
 | `OCAMLRUNPARAM` | Garbage collector settings; when it is set, `learn.exe` does not apply its own |
 
 ### Output

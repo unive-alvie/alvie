@@ -73,6 +73,12 @@ let connect ~port =
     fd
 
 (* The sections .text and .vectors of an ELF file of the MSP430, with their 16-bit words in big-endian order *)
+(* The bytes of a section as the board takes them: each 16-bit word big-endian *)
+let swap_bytes s =
+  String.init (String.length s + (String.length s % 2)) ~f:(fun i ->
+    let j = i lxor 1 in
+    if j < String.length s then s.[j] else '\000')
+
 let elf_sections elf =
   let b = In_channel.read_all elf in
   let u8 o = Char.to_int b.[o] in
@@ -88,10 +94,6 @@ let elf_sections elf =
     match List.find (List.init shnum ~f:Fn.id) ~f:(fun k -> String.equal (name_at (names + u32 (header k))) name) with
     | None -> failwithf "Fpga: %s has no section %s" elf name ()
     | Some k -> String.sub b ~pos:(u32 (header k + 16)) ~len:(u32 (header k + 20)) in
-  let swap_bytes s =
-    String.init (String.length s + (String.length s % 2)) ~f:(fun i ->
-      let j = i lxor 1 in
-      if j < String.length s then s.[j] else '\000') in
   swap_bytes (section ".text"), swap_bytes (section ".vectors")
 
 (* The command (0xff: run, '?': identify the image), then the program memory, the vectors and the breakpoint, each
@@ -348,7 +350,11 @@ let target ~port ~sancus ~commit : Sancus.Simulator.cfg_t Sancus.Simulator.targe
     run = (fun (cfg : Sancus.Simulator.cfg_t) ->
       Sancus.Simulator.build_program cfg;
       (* the program of the step, read once for all its queries *)
-      let fd = connect ~port and pmem, vectors = elf_sections cfg.pmem_elf in
+      (* the program of Msp430_asm (see Simulator.assemble_native), or of the toolchain *)
+      let pmem, vectors = match Sancus.Simulator.native_sections cfg with
+        | Some (text, vectors) -> (swap_bytes text, swap_bytes vectors)
+        | None -> elf_sections cfg.pmem_elf in
+      let fd = connect ~port in
       let diverges, trace = run fd ~pmem ~vectors ~first_instruction ~last_inst_number:cfg.last_inst_number in
       let trace = ref trace in
       let analyse labels =

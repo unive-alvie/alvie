@@ -23,6 +23,7 @@ Run `dune build` first.
 | Diagnostics | `dune exec test/diagnostics.exe -- --color=never` | Nothing outside OCaml. | Under 1 second. |
 | CLI diagnostics | `bash test/cli_diagnostics.sh` | Nothing outside OCaml, except `git`. | A few seconds. |
 | Input generation corpus | `dune exec tt_inputgen_golden -- check` | Nothing outside OCaml. | About 1 second. |
+| Assembler corpus | `dune exec tt_asm_golden -- check` | Nothing outside OCaml. | Under 1 second. |
 | Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Tiny and the commands of Core | `dune exec tt_tiny -- --color=never` | Nothing outside OCaml. | Under 1 second. |
 | The plugin templates | `bash test/plugin_new.sh` | Python 3 for the external template (mCRL2 for the templates' fixtures). | Under a minute. |
@@ -99,6 +100,26 @@ When it is on purpose, regenerate the corpus, look at the difference, and explai
 dune exec tt_inputgen_golden -- generate
 git diff --stat test/golden/inputgen.sexp
 ```
+
+### Assembler corpus (`tt_asm_golden`)
+
+ALVIE/Sancus builds the program of each step with its own assembler (`lib/sancus/msp430_asm.ml`) instead of
+`msp430-as` and `msp430-ld`. This suite checks that it gives what the toolchain gives.
+The corpus `test/asm/corpus` holds programs (`programs/`), the configuration they are built with (`configs/`: the
+includes, `pmem.x`, `pmem.sh`) and, for each program, the words and the symbols that the toolchain gave (`expected/`).
+The programs are 120 programs of learning runs on the specifications of `spec-lib/fast` and `spec-lib/example`, and a
+synthetic program (`synthetic-all.s43`) that uses every instruction, addressing mode, constant and directive that the
+assembler supports.
+
+`check` assembles every program and prints each difference; it exits with code 1 when it finds one.
+To add programs, collect them from learning runs with `ALVIE_DUMP_PROGRAMS=DIR`, then record them with the toolchain:
+
+```bash
+ALVIE_DUMP_PROGRAMS=/tmp/dump _build/default/bin/learn.exe ...
+dune exec tt_asm_golden -- record test/asm/corpus /tmp/dump
+```
+
+`dir DIR...` compares the build directories of the simulator (a `--tmpdir` of ALVIE after a build with the toolchain).
 
 ### Simulator regression (`tt_attack`)
 
@@ -188,10 +209,11 @@ It runs these steps:
 3. `dune exec tt_features -- test --color=never`
 4. `bash test/cli_diagnostics.sh`
 5. `dune exec tt_inputgen_golden -- check`
-6. `dune exec tt_plugin -- test --color=never`
-7. `dune exec tt_tiny -- --color=never`
-8. `bash test/plugin_new.sh`
-9. `bash test/rpc.sh`
+6. `dune exec tt_asm_golden -- check`
+7. `dune exec tt_plugin -- test --color=never`
+8. `dune exec tt_tiny -- --color=never`
+9. `bash test/plugin_new.sh`
+10. `bash test/rpc.sh`
 
 A second job runs the suites that need the simulator toolchain or mCRL2 in the published Docker image:
 `./regression.sh all`, `tt_attack`, `tt_properties`, `property_cmd.sh`, the fixtures of Tiny, and `plugin_new.sh` with the template's fixtures.

@@ -253,7 +253,10 @@ let addr_of_label_script cfg l =
 *)
 let symtab : (string * int list String.Table.t) option ref = ref None
 
-let invalidate_symtab () = symtab := None
+(* Whether symtab comes from Msp430_asm: there is then no ELF file of the step to fall back to *)
+let symtab_native = ref false
+
+let invalidate_symtab () = symtab := None; symtab_native := false
 
 (*
   The symbols nm would list for a 32-bit little-endian ELF file, i.e., defined symbols that are
@@ -294,6 +297,7 @@ let addr_of_label cfg l =
     | _ -> let tbl = Prof.time "sul.load_symtab" (fun () -> load_symtab cfg.pmem_elf) in symtab := Some (cfg.pmem_elf, tbl); tbl in
   match Hashtbl.find tbl l with
   | Some [ addr ] -> addr
+  | _ when !symtab_native -> failwithf "addr_of_label: the program has no label %s" l ()
   (* Missing or ambiguous symbols: fall back to the original lookup, to preserve its exact behaviour *)
   | _ -> addr_of_label_script cfg l
 
@@ -410,16 +414,63 @@ let simulate (cfg : cfg_t) =
        else 3)
     else 0
 
+(*
+  The program of the step built by Msp430_asm instead of the toolchain (unless ALVIE_ASM=toolchain): once build_pmem
+  has prepared the tmpdir (its first build, with the toolchain, writes pmem_defs.asm and pmem.x), each program is
+  assembled in microseconds. The symbols of the program become symtab, and the image is kept for the targets that load
+  it themselves (native_sections). A program that Msp430_asm does not accept is built by the toolchain, with a warning.
+*)
+let native_asm () = match Sys.getenv "ALVIE_ASM" with Some "toolchain" -> false | _ -> true
+
+let text_origins : int String.Table.t = String.Table.create ()
+
+(* The origin of .text in the tmpdir's pmem.x (the program memory) *)
+let text_origin (cfg : cfg_t) =
+  Hashtbl.find_or_add text_origins cfg.tmpdir ~default:(fun () ->
+      let x = In_channel.read_all (cfg.tmpdir ^ "/pmem.x") in
+      let re = Str.regexp "text[ \t]*(rx)[ \t]*:[ \t]*ORIGIN[ \t]*=[ \t]*\\([0-9a-fA-Fx]+\\)" in
+      ignore (Str.search_forward re x 0);
+      Int.of_string (Str.matched_group 1 x))
+
+let last_image : (string * Msp430_asm.image) option ref = ref None
+
+let assemble_native (cfg : cfg_t) : Msp430_asm.image option =
+  if not (native_asm ()) || not (Sys_unix.file_exists_exn (cfg.tmpdir ^ "/.build_pmem_setup_done")) then None
+  else
+    match Prof.time "sul.msp430_asm" (fun () ->
+        Msp430_asm.assemble ~read_include:(fun f -> In_channel.read_all (cfg.tmpdir ^ "/" ^ f))
+          ~text_origin:(text_origin cfg) ~vectors_origin:0xffe0 (In_channel.read_all cfg.filledfile)) with
+    | img ->
+      let tbl = String.Table.create () in
+      List.iter img.symbols ~f:(fun (name, value) -> Hashtbl.add_multi tbl ~key:name ~data:value);
+      symtab := Some (cfg.pmem_elf, tbl);
+      symtab_native := true;
+      last_image := Some (cfg.tmpdir, img);
+      Some img
+    | exception Msp430_asm.Error m ->
+      Logs.warn (fun p -> p "The assembler of ALVIE does not accept the program of the step (%s): it is built by the toolchain." m);
+      last_image := None;
+      None
+
+(* The program memory and the vectors of the last program built for cfg by Msp430_asm, as their bytes (little-endian) *)
+let native_sections (cfg : cfg_t) =
+  match !last_image with
+  | Some (dir, img) when String.equal dir cfg.tmpdir -> Some (Msp430_asm.section_bytes img ".text", Msp430_asm.section_bytes img ".vectors")
+  | _ -> None
+
 let run_simulator (cfg : cfg_t) =
   (* Call build_pmem to compile and link the code *)
   invalidate_symtab ();
-  let res = Prof.time "sul.build_pmem" (fun () -> build_pmem cfg) in
+  let native = assemble_native cfg in
+  let res = match native with Some _ -> 0 | None -> Prof.time "sul.build_pmem" (fun () -> build_pmem cfg) in
   if res <> 0 then
     failwith (Format.sprintf "Error: %s returned %d." cfg.pmem_script res)
   else (
     Prof.time "sul.ihex2mem" (fun () ->
       let mem = cfg.tmpdir ^ "/" ^ cfg.basename ^ ".mem" in
-      ihex2mem ~ihex:(cfg.tmpdir ^ "/pmem.ihex") ~out:mem ~mem_size:(pmem_size cfg);
+      (match native with
+       | Some img -> Out_channel.write_all mem ~data:(Msp430_asm.mem_file ~mem_size:(pmem_size cfg) img)
+       | None -> ihex2mem ~ihex:(cfg.tmpdir ^ "/pmem.ihex") ~out:mem ~mem_size:(pmem_size cfg));
       (* The simulator loads pmem.mem (scripts/simulate copies it) *)
       Out_channel.write_all (cfg.tmpdir ^ "/pmem.mem") ~data:(In_channel.read_all mem));
     (* Invoke the simulator *)
@@ -436,8 +487,11 @@ let run_simulator (cfg : cfg_t) =
       Result.Ok (res = 2, Prof.time "sul.vcd_parse" (fun () -> Vcd.vcd ~signals:analysed_signals cfg.dumpfile)))
 
 (* Builds the program of the step (cfg.filledfile) into cfg.pmem_elf, for another target than the simulator *)
-let build_program (cfg : cfg_t) =
+let rec build_program (cfg : cfg_t) =
   invalidate_symtab ();
+  if Option.is_none (assemble_native cfg) then build_program_toolchain cfg
+
+and build_program_toolchain (cfg : cfg_t) =
   (* build_pmem does not fail when the assembler or the linker does: without the old ELF file, a failed build is
      not taken for the program of the step *)
   (try Core_unix.unlink cfg.pmem_elf with Core_unix.Unix_error _ -> ());
@@ -704,6 +758,28 @@ let finish cfg (cfg' : cfg_t) (step : Alvie_backend.Backend.step) (out : output_
   (* A reset starts the test again: the simulation restarts from the initial state *)
   if List.mem (fst3 out) OReset ~equal:Output_internal.equal_element_t then pre cfg
 
+(*
+  With ALVIE_DUMP_PROGRAMS=dir, every program built goes to dir/programs/<md5>.s43 (once), with the configuration it is
+  built with (its includes, pmem.x and pmem.sh) in dir/configs/<md5>/: the corpus of test/asm (tt_asm_golden record).
+  The first line of a program names its configuration.
+*)
+let dump_program (cfg : cfg_t) code =
+  match Sys.getenv "ALVIE_DUMP_PROGRAMS" with
+  | None | Some "" -> ()
+  | Some dir ->
+    let files = [ "pmem_defs.asm"; "sancus_macros.asm"; "pmem.x"; "pmem.sh" ] in
+    if List.for_all files ~f:(fun f -> Sys_unix.file_exists_exn (cfg.tmpdir ^ "/" ^ f)) then (
+      let contents = List.map files ~f:(fun f -> (f, In_channel.read_all (cfg.tmpdir ^ "/" ^ f))) in
+      let config = Md5.to_hex (Md5.digest_string (String.concat (List.map contents ~f:snd))) in
+      let cdir = dir ^ "/configs/" ^ config in
+      if not (Sys_unix.file_exists_exn cdir) then (
+        Core_unix.mkdir_p cdir;
+        List.iter contents ~f:(fun (f, c) -> Out_channel.write_all (cdir ^ "/" ^ f) ~data:c));
+      let data = sprintf "; config %s\n%s" config code in
+      Core_unix.mkdir_p (dir ^ "/programs");
+      let file = dir ^ "/programs/" ^ Md5.to_hex (Md5.digest_string data) ^ ".s43" in
+      if not (Sys_unix.file_exists_exn file) then Out_channel.write_all file ~data)
+
 let run cfg (step : Alvie_backend.Backend.step) : output_t =
   Prof.time "sul.step(real)" @@ fun () ->
   let i = input_of_step step in
@@ -714,6 +790,7 @@ let run cfg (step : Alvie_backend.Backend.step) : output_t =
   let labels, code = Prof.time "sul.fill_template" (fun () -> fill_template template_code cfg' step) in
   Logs.debug (fun m -> m "filledfile: %s" cfg'.filledfile);
   Out_channel.write_all cfg'.filledfile ~data:code;
+  dump_program cfg' code;
   (* Run the program on the target: the result finds the instructions of given labels in the trace *)
   let trace = match cfg'.target with
     | Verilator -> Result.map (run_simulator cfg') ~f:(fun (diverges, d) labels -> analyse_dump diverges cfg' labels d)
