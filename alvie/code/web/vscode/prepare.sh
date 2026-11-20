@@ -26,6 +26,11 @@ cp -r "$root/spec-lib" "$f/spec-lib"
 mkdir -p "$f/results" "$f/models" "$f/tutorials"
 cp "$root"/results/*.dot "$f/results/"
 cp "$here"/tutorials/* "$f/tutorials/"
+rm -f "$f/tutorials/unpublished.txt"
+# The tutorials of tutorials/unpublished.txt are not published yet (ALVIE_ALL_TUTORIALS=1 keeps them)
+if [ "${ALVIE_ALL_TUTORIALS:-0}" != 1 ]; then
+  grep -v '^#' "$here/tutorials/unpublished.txt" | while read -r t; do [ -n "$t" ] && rm -f "$f/tutorials/$t"; done
+fi
 : > "$f/models/.keep"
 # The fixtures of the plugins, where alvie <plugin> fixtures looks for them (plugins/<name>/fixtures, from /)
 for p in sancus tiny; do mkdir -p "$f/plugins/$p"; cp -r "$root/alvie/code/plugins/$p/fixtures" "$f/plugins/$p/"; done
@@ -42,7 +47,7 @@ EOF
 mv "$out/index.json.tmp" "$f/index.json"
 # The list of the tutorials, for the first page of the site: the file, its title (its first heading) and its summary
 # (the first paragraph after the heading)
-python3 - "$here/tutorials" > "$out/tutorials.json" <<'EOF'
+python3 - "$f/tutorials" > "$out/tutorials.json" <<'EOF'
 import json, os, re, sys
 d = sys.argv[1]; out = []
 for name in sorted(os.listdir(d)):

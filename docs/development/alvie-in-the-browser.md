@@ -125,7 +125,8 @@ caching headers (VS Code for the Web is kept for a day; the rest is checked at e
 downloads them in the background while it is shown, so that a tutorial opens quickly.
 
 A tutorial is plain Markdown: write it in `tutorials/`, and `prepare.sh` adds it to the first page (its title is its
-first heading, its summary the paragraph after it). A user who opened the site before gets a new or changed tutorial at
+first heading, its summary the paragraph after it). A tutorial listed in `tutorials/unpublished.txt` stays out of the site
+(`ALVIE_ALL_TUTORIALS=1 bash prepare.sh ...` keeps it, for a local build). A user who opened the site before gets a new or changed tutorial at
 the next visit, unless they changed their copy.
 
 The `web` job of CI builds `alvie-web` and the simulators of the 8 commits, runs the fixtures of Tiny and of

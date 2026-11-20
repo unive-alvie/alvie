@@ -25,7 +25,6 @@ all of them with *Run All*; its output shows below it, and `view` draws models i
 | Getting started | Learn two models of a Sancus enclave, compare them, read the witness; the scripts of the guides | less than a minute |
 | Tiny | A timing leak, a leak that only interrupts reveal, and a mitigation, on a small processor | seconds |
 | Reproduce an attack on Sancus | The twelve models of B6 (`learn_one`, `check_one`), the witness, and a check that they are the models of the paper | a few minutes |
-| VaultLink | Learn two network services, compare them, follow the sequence that tells them apart | seconds |
 
 The first time you open a tutorial, VS Code asks whether you trust the authors of the notebook: the tutorials come
 with the site, and their cells run only commands of ALVIE.
