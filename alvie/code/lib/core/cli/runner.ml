@@ -226,11 +226,17 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     ALVIE/Sancus always did). ~dry skips the learning (a model with one state). The random choices depend only on
     ~seed: learning is deterministic.
   *)
-  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ?initial_ot ?(jobs = 1) ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
+  let learn ?bad_probability ?(dry = false) ?alphabet:alphabet_of ?(map_input = Fn.id) ?sul ?initial_ot ?(jobs = 1) ?record ?replay ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
     Random.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
-    let sul = match sul with Some s -> s | None -> Sul.make ~backend:(make_backend ~config ~variant) ~gen () in
+    (* ~record file: keep every answer of the system and save them in file at the end; ~replay file: answer from such
+       a file without the backend (the learner alone, as with an instantaneous system) *)
+    let sul = match sul with
+      | Some s -> s
+      | None ->
+        let replay = Option.map replay ~f:Sul.load_memo in
+        Sul.make ~memo:(Option.is_some record) ?replay ~backend:(make_backend ~config ~variant) ~gen () in
     (* ~alphabet and ~map_input: learning over a part of the alphabet (Intervals), each input the oracle draws mapped
        into it *)
     let alphabet = Option.value alphabet_of ~default:(alphabet spec) in
@@ -270,6 +276,11 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
         let m, t = if dry then (trivial (), None) else (let m, t = L_wm.lsharp_run_from ?initial_ot o sul alphabet in (m, Some t)) in
         (m, t, Wm.get_stats o) in
     let nanoseconds = Int63.(Time_now.nanoseconds_since_unix_epoch () - start) in
+    Option.iter record ~f:(Sul.save_memo sul);
+    if Option.is_some record || Option.is_some replay || Option.is_some (Sys.getenv "ALVIE_BACKEND_STEPS") then
+      eprintf "Backend steps: %d\n%!" (Sul.backend_steps sul);
+    if Option.is_some replay then
+      eprintf "Replay: %d steps not in the record (run on the backend)\n%!" (Sul.replay_misses sul);
     { model = legal_part model; seconds = Int63.to_float nanoseconds /. 1e9; nanoseconds;
       stats = { queries; equivalence_queries; resets; steps; dry_steps; avg_length; var_length }; tree }
 

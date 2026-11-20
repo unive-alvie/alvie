@@ -43,13 +43,30 @@ module Make (B : Backend.S) (C : CODEC with type bookkeeping = B.bookkeeping) = 
     mutable history : C.input list; (* the inputs of the current test, last first *)
     memo : (C.input list, C.output) Hashtbl.t option; (* the output of each history run, with ~memo *)
     backend_steps : int ref; (* the steps that ran the backend (not restored), shared by the clones *)
+    replay : bool; (* answer from memo without the backend, as if it were instantaneous (see make) *)
+    replay_misses : int ref; (* the steps that replay did not find in memo, and ran on the backend *)
   }
 
   (* ~memo: remember the output of every history, and restore the backend (a dry step) when a test repeats one, e.g.
      when learning starts again on the same system (Runner.learn_intervals). The backend must be deterministic. *)
-  let make ?(memo = false) ~backend ~gen () =
-    { backend; gen; st = G.initial gen; stopped = false; history = [];
-      memo = (if memo then Some (Hashtbl.Poly.create ()) else None); backend_steps = ref 0 }
+  (* ~replay: the outputs of a recorded run (save_memo), answered without the backend at all (no program, no run, no
+     restore), only following the spec: a measure of the learner alone, as with an instantaneous system. A step that
+     the record does not have runs on the backend (replay_misses). *)
+  let make ?(memo = false) ?replay ~backend ~gen () =
+    let memo = match replay with
+      | Some table -> Some table
+      | None -> if memo then Some (Hashtbl.Poly.create ()) else None in
+    { backend; gen; st = G.initial gen; stopped = false; history = []; memo; backend_steps = ref 0;
+      replay = Option.is_some replay; replay_misses = ref 0 }
+
+  (* The table as a list (a Core table holds its hash function, which Marshal cannot write) *)
+  let save_memo s file =
+    Option.iter s.memo ~f:(fun m ->
+        Out_channel.with_file file ~f:(fun oc -> Stdlib.Marshal.to_channel oc (Hashtbl.to_alist m : (C.input list * C.output) list) []))
+  let load_memo file : (C.input list, C.output) Hashtbl.t =
+    let (l : (C.input list * C.output) list) = In_channel.with_file file ~f:(fun ic -> Stdlib.Marshal.from_channel ic) in
+    Hashtbl.Poly.of_alist_exn l
+  let replay_misses s = !(s.replay_misses)
 
   let clone s = { s with backend = B.clone s.backend }
 
@@ -67,11 +84,26 @@ module Make (B : Backend.S) (C : CODEC with type bookkeeping = B.bookkeeping) = 
     let key = i :: s.history in
     s.history <- key;
     match s.memo with
+    | Some m when s.replay ->
+      (match Hashtbl.find m key with
+       | Some o -> follow s i o; o
+       | None -> incr s.replay_misses; let o = step_core ~silent ?dry_output s i in Hashtbl.set m ~key ~data:o; o)
     | Some m when Option.is_none dry_output ->
       let dry_output = Hashtbl.find m key in
       let o = step_core ~silent ?dry_output s i in
       Hashtbl.set m ~key ~data:o; o
     | _ -> step_core ~silent ?dry_output s i
+
+  (* A step answered without the backend: the generator follows the spec with the known output *)
+  and follow s (i : input_t) (o : output_t) =
+    if not s.stopped then
+      match C.input_to_core ~section:(G.current s.st) i with
+      | None -> s.stopped <- true
+      | Some ci when not (G.legal s.gen s.st ci) -> s.stopped <- true
+      | Some ci ->
+        let st' = G.input s.gen s.st ci in
+        s.st <- G.observe s.gen st' (fst (C.output_to_core o));
+        (match s.st.status with Running -> () | Finished | Invalid -> s.stopped <- true)
 
   and step_core ~silent ?dry_output s (i : input_t) : output_t =
     if s.stopped then C.illegal
