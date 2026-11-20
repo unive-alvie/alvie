@@ -134,7 +134,7 @@ let get_options t (il : Input.t list) (ol : Output_internal.t list) : [ `Stop | 
 
 (* As Inputgen.generate_next *)
 let generate_next
-    ?(choose = fun _ _ options -> if List.is_empty options then `Stop else List.random_element_exn options)
+    ?(choose = fun _ _ options -> if List.is_empty options then `Stop else Learninglib.Rng.random_element_exn options)
     t il ol : [ `Stop | `Next of Input.t ] =
   choose il ol (get_options t il ol)
 

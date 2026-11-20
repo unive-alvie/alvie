@@ -139,9 +139,9 @@ module RandomWalkOracle (I : EltType) (O : EltType) (S : SUL with type input_t =
       if Int.(>=) num_steps oracle.step_limit then `Equivalent
       else (
         (* Resets the SUL with probability reset_prob OR if the last observable is the default (which is usually the case on invalid configs!) *)
-        if Float.(<) (Random.float_range 0.0 1.0) oracle.reset_prob ||
+        if Float.(<) (Rng.float_range 0.0 1.0) oracle.reset_prob ||
           (Option.equal I.equal (List.last is) (Some I.default) && Option.equal O.equal (List.last os) (Some O.default)) then
-        (* if Float.(<=) (Random.float_range 0.0 1.0) oracle.reset_prob then *)
+        (* if Float.(<=) (Rng.float_range 0.0 1.0) oracle.reset_prob then *)
           (
             Logs.debug (fun m -> m "(RW) equiv_query: sul reset! (reset_probl: %f)" oracle.reset_prob);
             Format.printf "("; Out_channel.flush stdout;

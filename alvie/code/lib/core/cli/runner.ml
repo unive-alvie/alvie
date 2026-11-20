@@ -224,7 +224,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     ~seed: learning is deterministic.
   *)
   let learn ?bad_probability ?(dry = false) ~config ~variant ~(spec : Spec.t) ~oracle ~seed () : learned =
-    Random.init seed;
+    Learninglib.Rng.init seed;
     let gen = G.make (plugin ()) spec in
     let cache = Cache.create gen ~step:gen_step in
     let sul = Sul.make ~backend:(make_backend ~config ~variant) ~gen in
@@ -232,12 +232,12 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     if List.is_empty alphabet then Errors.fail "the spec has no atoms: there is nothing to learn.";
     let pick il ol =
       let bad = match bad_probability with
-        | Some p -> Float.(Random.float_range 0.0 1.0 <= p)
+        | Some p -> Float.(Learninglib.Rng.float_range 0.0 1.0 <= p)
         | None -> false in
-      if bad then `Next (List.random_element_exn alphabet)
+      if bad then `Next (Learninglib.Rng.random_element_exn alphabet)
       else match options cache il ol with
         | [] -> `Stop
-        | os -> (match List.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (input_of_core i)) in
+        | os -> (match Learninglib.Rng.random_element_exn os with `Stop -> `Stop | `Next i -> `Next (input_of_core i)) in
     let trivial () = IO.IIOMealy.make ~states:(IO.IIOMealy.SSet.singleton 0) ~s0:0 ~input_alphabet:IO.IIOMealy.ISet.empty ~transition:IO.IIOMealy.TransitionMap.empty in
     let start = Time_now.nanoseconds_since_unix_epoch () in
     let model, (queries, equivalence_queries, resets, steps, dry_steps, avg_length, var_length) = match oracle with
@@ -592,8 +592,8 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
     let fail c ~test msg = c.runs <- c.runs + 1; if Option.is_none c.failure then c.failure <- Some (sprintf "%s\n      test: %s" msg (show_test test)) in
     let pass c = c.runs <- c.runs + 1 in
     let compare c ~test a b = match first_difference a b with None -> pass c | Some d -> fail c ~test d in
-    Random.init seed;
-    let choose opts = List.random_element opts in
+    Learninglib.Rng.init seed;
+    let choose opts = Learninglib.Rng.random_element opts in
     let shared = make_backend ~config ~variant in
     let start = Time_now.nanoseconds_since_unix_epoch () in
     let steps = ref 0 in
@@ -632,7 +632,7 @@ module Make_codec (N : Native.S) (Codec : MODEL_CODEC with type bookkeeping = N.
           compare c_reset ~test:t fresh1 t;
           let again, _ = run_test shared gen ~given:(inputs t) ~length () in
           compare c_reset ~test:t fresh1 again;
-          let k = Random.int (List.length t) in
+          let k = Learninglib.Rng.int (List.length t) in
           let prefix = List.take t k in
           (* prefixes: the same beginning, then other choices *)
           let b, _ = run_test shared gen ~given:(inputs prefix) ~choose ~length () in
