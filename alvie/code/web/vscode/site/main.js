@@ -15,6 +15,10 @@ create(document.body, {
     },
   },
   additionalBuiltinExtensions: [URI.parse(new URL('alvie', here).href)],
-  productConfiguration: { nameShort: 'ALVIE', nameLong: 'ALVIE in your browser', applicationName: 'alvie', enableTelemetry: false },
+  productConfiguration: {
+    nameShort: 'ALVIE', nameLong: 'ALVIE in your browser', applicationName: 'alvie', enableTelemetry: false,
+    // The webviews (the preview of models) from this site, not from the CDN of Microsoft
+    webviewContentExternalBaseUrlTemplate: new URL('vscode/out/vs/workbench/contrib/webview/browser/pre/', here).href,
+  },
   windowIndicator: { label: '$(beaker) ALVIE', tooltip: 'ALVIE runs in your browser' },
 });

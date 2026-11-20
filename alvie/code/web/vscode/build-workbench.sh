@@ -17,5 +17,6 @@ export ELECTRON_SKIP_BINARY_DOWNLOAD=1 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 VSCODE
 if [ -f pnpm-lock.yaml ]; then corepack pnpm install --frozen-lockfile; else npm ci; fi
 npm run gulp vscode-web-min
 # The result is ../vscode-web, next to the sources
-rm -rf "$out"; mv ../vscode-web "$out"
+built=$(readlink -f ../vscode-web)
+if [ "$built" != "$out" ]; then rm -rf "$out"; mv "$built" "$out"; fi
 echo "VS Code for the Web $VSCODE_TAG: $out ($(du -sh "$out" | cut -f1))"
