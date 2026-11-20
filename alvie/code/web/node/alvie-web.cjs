@@ -1,7 +1,7 @@
 // alvie-web in Node: node alvie-web-node.cjs ARGS... runs alvie-web (alvie-web.js, next to this file) with ARGS,
 // for example: sancus learn --spec A.atdl --spec E.etdl --secret 0 --commit bf89c0b --res out.dot
 //
-// It is the host of the simulators in WebAssembly (see web/sancus_host.ml): ALVIE_WEB_SIM names the directory where
+// It is the host of the simulators in WebAssembly (see web/host.jsoo.ml): ALVIE_WEB_SIM names the directory where
 // web/sim/build-sim.sh wrote them (one directory per commit, with sim.js, sim.wasm and files/). The simulator of the
 // commit given with --commit is loaded before ALVIE starts (all of them without --commit), since ALVIE calls it
 // synchronously.

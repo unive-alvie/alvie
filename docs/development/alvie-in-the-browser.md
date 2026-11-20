@@ -38,7 +38,7 @@ Everything is in `alvie/code/web`:
 | --- | --- |
 | `alvie_web.ml` | `alvie-web`: `alvie-web tiny ...` and `alvie-web sancus ...`, the commands of Core (for Sancus with its codec, as `learn.exe`) |
 | `command_web.ml` | `Command_unix` without Unix: runs a command of Core from an argv given by the host |
-| `sancus_host.ml` | The host of the simulators (`Sancus_core.Wasm_target.host`): the JavaScript object `globalThis.alvieSancus` |
+| `host.jsoo.ml` | The host of `alvie-web` in JavaScript: the simulators (`Sancus_core.Wasm_target.host`, from `globalThis.alvieSancus`), the argv and the files of the page (`host.none.ml` without `js_of_ocaml`) |
 | `node/alvie-web.cjs` | That host in Node, and the runner of `alvie-web` |
 | `build.sh` | Compiles `alvie-web` to WebAssembly |
 | `runtime/` | The WebAssembly runtime of Jane Street's libraries, which their releases do not have yet (see its README) |
