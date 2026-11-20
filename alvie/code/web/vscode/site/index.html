@@ -40,6 +40,7 @@
     .note { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--border); padding-top: 20px; }
     .note a { color: var(--accent); }
     .error { color: #c0392b; }
+    .ready { color: var(--muted); font-size: .85rem; margin: -28px 0 28px; min-height: 1.3em; font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -47,6 +48,8 @@
     <h1>ALVIE in your browser</h1>
     <p class="lead">ALVIE learns models of processors and services and compares them to find timing side channels.
       Here it runs entirely in your browser: nothing to install, and your files and models stay on your computer.</p>
+
+    <p class="ready" id="ready" aria-live="polite"></p>
 
     <h2>Tutorials</h2>
     <ol class="cards" id="tutorials"><li class="note">Loading the tutorials…</li></ol>
@@ -84,6 +87,25 @@
         return li;
       }));
     }).catch(() => { list.innerHTML = '<li class="note error">The list of tutorials could not be loaded.</li>'; });
+
+    // VS Code on demand: nothing large loads with this page, but once it is shown, the large files of VS Code
+    // (manifest.json) download in the background into the cache of the browser, so that a tutorial opens quickly
+    const ready = document.getElementById('ready');
+    const prefetch = async () => {
+      try {
+        const files = await (await fetch('manifest.json')).json();
+        const total = files.reduce((s, f) => s + f.size, 0);
+        let got = 0;
+        const show = () => { ready.textContent = got >= total ? 'VS Code is ready.' : `Preparing VS Code in the background: ${Math.round((got / total) * 100)}%`; };
+        show();
+        await Promise.all(files.map(async (f) => {
+          const reader = (await fetch(f.path, { priority: 'low' })).body.getReader();
+          for (;;) { const { done, value } = await reader.read(); if (done) break; got += value.length; show(); }
+        }));
+        got = total; show();
+      } catch { ready.textContent = ''; }
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(prefetch, { timeout: 2000 }); else setTimeout(prefetch, 500);
   </script>
 </body>
 </html>

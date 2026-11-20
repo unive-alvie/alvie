@@ -14,5 +14,9 @@ cp -r "$wb" "$out/vscode"
 cp -r "$here/package.json" "$here"/language-configuration*.json "$here/syntaxes" "$here/out" "$here/bundle" "$out/alvie/"
 rm -f "$out/alvie/out/selftest.js"
 cp "$here/site/main.js" "$here/site/index.html" "$here/site/code.html" "$out/"
+# The large files of the workbench, which code.html downloads first with a progress bar (sizes before compression)
+(cd "$out" && python3 -c 'import json, os, sys; print(json.dumps([{"path": p, "size": os.path.getsize(p)} for p in sys.argv[1:]], indent=1))' \
+  vscode/out/vs/workbench/workbench.web.main.internal.js vscode/out/vs/workbench/workbench.web.main.internal.css \
+  vscode/out/nls.messages.js vscode/out/vs/workbench/api/worker/extensionHostWorkerMain.js) > "$out/manifest.json"
 python3 "$here/site/patch-webview.py" "$out/vscode/out/vs/workbench/contrib/webview/browser/pre/index.html"
 echo "The site: $out ($(du -sh "$out" | cut -f1))"

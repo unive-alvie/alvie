@@ -10,3 +10,4 @@ tutorials (notebooks of commands of ALVIE, `tutorials/*.alvienb`) and an empty s
     bash test.sh                                                # the self-test, in VS Code for the Web
     bash build-workbench.sh /tmp/vscode-web                     # VS Code for the Web from Code - OSS (once)
     bash make-site.sh /tmp/vscode-web /tmp/alvie-site           # the static site
+    python3 serve.py /tmp/alvie-site 8766                       # serve it, compressed

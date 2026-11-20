@@ -113,6 +113,12 @@ bash build-workbench.sh /tmp/vscode-web             # VS Code for the Web from C
 bash make-site.sh /tmp/vscode-web /tmp/alvie-site   # the site: index.html (tutorials), code.html (VS Code)
 ```
 
+Serve the site with compression: a first visit downloads about 27 MB of VS Code, which gzip makes about 7 MB.
+GitHub Pages and most static hosts compress on their own; `serve.py SITE [PORT]` is a small server that does it, with
+caching headers (VS Code for the Web is kept for a day; the rest is checked at each visit).
+`code.html` downloads the large files of VS Code first (`manifest.json`), with a progress bar, and the first page
+downloads them in the background while it is shown, so that a tutorial opens quickly.
+
 A tutorial is plain Markdown: write it in `tutorials/`, and `prepare.sh` adds it to the first page (its title is its
 first heading, its summary the paragraph after it). A user who opened the site before gets a new or changed tutorial at
 the next visit, unless they changed their copy.

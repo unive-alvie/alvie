@@ -1,5 +1,7 @@
 <!doctype html>
-<!-- ALVIE in VS Code for the Web (make-site.sh): the workbench (vscode/) with the extension (alvie/); index.html links here -->
+<!-- ALVIE in VS Code for the Web (make-site.sh): the workbench (vscode/) with the extension (alvie/); index.html links
+     here. It first downloads the large files of the workbench (manifest.json, made by make-site.sh) with a progress
+     bar, into the cache of the browser, and then starts the workbench (main.js), which takes them from the cache. -->
 <html>
 <head>
   <meta charset="utf-8">
@@ -8,10 +10,66 @@
   <link rel="icon" href="vscode/favicon.ico" type="image/x-icon">
   <link data-name="vs/workbench/workbench.web.main" rel="stylesheet" href="vscode/out/vs/workbench/workbench.web.main.internal.css">
   <style id="vscode-css-modules" type="text/css" media="screen"></style>
+  <style>
+    #alvie-loading { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; background: #1f1f1f;
+      color: #cccccc; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; transition: opacity .25s; }
+    #alvie-loading.done { opacity: 0; pointer-events: none; }
+    #alvie-loading .box { width: min(360px, calc(100vw - 32px)); }
+    #alvie-loading h1 { font-size: 18px; font-weight: 600; margin: 0 0 14px; color: #e6e6e6; }
+    #alvie-loading .bar { height: 6px; border-radius: 3px; background: #333; overflow: hidden; }
+    #alvie-loading .fill { height: 100%; width: 0; background: #3794ff; border-radius: 3px; transition: width .15s; }
+    #alvie-loading .fill.indeterminate { width: 30%; animation: alvie-slide 1.1s ease-in-out infinite; }
+    @keyframes alvie-slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+    #alvie-loading .status { margin-top: 10px; color: #9d9d9d; font-size: 13px; font-variant-numeric: tabular-nums; }
+  </style>
 </head>
 <body aria-label="">
-  <script>globalThis._VSCODE_FILE_ROOT = new URL('vscode/out/', window.location.href).toString();</script>
-  <script src="vscode/out/nls.messages.js"></script>
-  <script type="module" src="main.js"></script>
+  <div id="alvie-loading" role="progressbar" aria-label="Loading ALVIE" aria-valuemin="0" aria-valuemax="100">
+    <div class="box">
+      <h1>ALVIE</h1>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="status">Loading VS Code…</div>
+    </div>
+  </div>
+  <script>
+    globalThis._VSCODE_FILE_ROOT = new URL('vscode/out/', window.location.href).toString();
+    (async () => {
+      const box = document.getElementById('alvie-loading'), fill = box.querySelector('.fill'), status = box.querySelector('.status');
+      const mb = (n) => (n / 1e6).toFixed(1);
+      // 1. The large files of the workbench, with the bytes received so far
+      try {
+        const files = await (await fetch('manifest.json')).json();
+        const total = files.reduce((s, f) => s + f.size, 0);
+        let got = 0;
+        const show = () => {
+          const pct = Math.min(100, Math.round((got / total) * 100));
+          fill.style.width = `${pct}%`; box.setAttribute('aria-valuenow', String(pct));
+          status.textContent = `Loading VS Code… ${mb(got)} / ${mb(total)} MB`;
+        };
+        await Promise.all(files.map(async (f) => {
+          const r = await fetch(f.path);
+          const reader = r.body.getReader();
+          for (;;) { const { done, value } = await reader.read(); if (done) break; got += value.length; show(); }
+        }));
+      } catch (e) { console.warn('ALVIE: no progress for the download of VS Code', e); }
+      // 2. The workbench, from the cache
+      fill.style.width = ''; fill.classList.add('indeterminate'); box.removeAttribute('aria-valuenow');
+      status.textContent = 'Starting VS Code and ALVIE…';
+      const nls = document.createElement('script'); nls.src = 'vscode/out/nls.messages.js';
+      await new Promise((resolve) => { nls.onload = nls.onerror = resolve; document.body.append(nls); });
+      const main = document.createElement('script'); main.type = 'module'; main.src = 'main.js';
+      document.body.append(main);
+      // 3. Away when the files of ALVIE are in the Explorer, a tutorial is open, or VS Code asks something (the trust of a
+      // notebook), at most after 20 s
+      const ready = () => document.querySelector('.explorer-folders-view .monaco-list-row, .notebook-editor, .monaco-dialog-box');
+      const t0 = Date.now();
+      await new Promise((resolve) => {
+        const check = () => (ready() || Date.now() - t0 > 20000 ? resolve() : setTimeout(check, 100));
+        check();
+      });
+      box.classList.add('done');
+      setTimeout(() => box.remove(), 400);
+    })();
+  </script>
 </body>
 </html>
