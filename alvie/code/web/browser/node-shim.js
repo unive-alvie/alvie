@@ -206,6 +206,16 @@
       writeBytes(p, bytes) { const path = resolve(p); fs.mkdirSync(dirname(path), { recursive: true }); const fd = fs.openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC); fs.writeSync(fd, bytes); fs.closeSync(fd); },
       exists: (p) => fs.existsSync(p),
       list(p = '/') { return fs.readdirSync(p); },
+      // Every file under dir, as absolute paths
+      walk(dir = '/') {
+        const out = [];
+        const go = (path, node) => {
+          if (node.dir) for (const [name, child] of node.dir) go(path === '/' ? `/${name}` : `${path}/${name}`, child);
+          else out.push(path);
+        };
+        go(resolve(dir), lookup(resolve(dir), 'scandir'));
+        return out.sort();
+      },
       flush: flushStd,
       get exitCode() { return state.exitCode; },
     };
