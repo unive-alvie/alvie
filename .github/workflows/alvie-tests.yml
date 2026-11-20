@@ -314,6 +314,9 @@ jobs:
           node-version: 24.22.1
       - name: Build VS Code for the Web from Code - OSS
         if: steps.workbench.outputs.cache-hit != 'true'
+        env:
+          # @vscode/ripgrep downloads its binary from GitHub: without a token, the runners get 403 (rate limit)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           sudo apt-get update && sudo apt-get install -y libkrb5-dev libxkbfile-dev libsecret-1-dev
           bash alvie-src/alvie/code/web/vscode/build-workbench.sh /tmp/vscode-web /tmp/vscode-src
