@@ -1,0 +1,9 @@
+(include_subdirs unqualified)
+
+(library
+ (name vcd)
+  (public_name alvie-rtl-util.vcd)
+  (modules vcd)
+  (preprocess (pps ppx_deriving.make))
+  (libraries core logs)
+)

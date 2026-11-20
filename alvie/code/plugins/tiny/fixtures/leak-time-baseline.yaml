@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: >-
+  The leak of bz is there without interrupts too: compared with that baseline, interrupts reveal nothing more
+spec: leak-time.spec
+secrets: [0, 1]
+baseline: no-interrupts
+expect: no-leak

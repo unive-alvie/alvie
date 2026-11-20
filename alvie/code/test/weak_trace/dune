@@ -1,0 +1,6 @@
+(test
+  (name weak_trace_tests)
+  (package alvie-core)
+  (libraries alcotest ltscompare core)
+  (preprocess (pps ppx_jane))
+)

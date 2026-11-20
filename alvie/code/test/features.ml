@@ -264,14 +264,20 @@ let test_observation_tree_access_and_apartness () =
     Alcotest.(check (list string)) "apartness witness"
       [Input.show reti] (List.map witness ~f:Input.show)
 
+(* What the attacker sees (plugins/sancus/view.yaml): timing in protected mode is silent, an interrupt handled is
+   the instruction's timing then the handling, whose input is the interrupt *)
 let test_observation_round_trip () =
-  let open Ltscomparator in
-  let observation = Obs.Obs.make
-    (Obs.InputExt.of_input (Input.IAttacker (Attacker.CTimerEnable 2)))
-    (Obs.OutputExt.of_output (OTime (payload PM))) in
-  Alcotest.(check bool) "serialized observation parses back" true
-    (Obs.Obs.equal observation (Obs.Obs.parse (Obs.Obs.show observation)));
-  Alcotest.(check bool) "privileged timing is silent" true (Obs.Obs.is_silent observation)
+  let view = Ltscompare.View.make (Lazy.force Generic_inputgen.plugin) in
+  let pm = Generic_inputgen.observation (OTime (payload PM)) in
+  Alcotest.(check bool) "privileged timing is silent" true (Ltscompare.View.is_hidden view pm);
+  Alcotest.(check bool) "unprotected timing is not" false (Ltscompare.View.is_hidden view (Generic_inputgen.observation (OTime (payload UM))));
+  let parts = Ltscompare.View.parts view (Generic_inputgen.observation (OTime_Handle (payload PM, payload UM))) in
+  Alcotest.(check (list string)) "an interrupt handled is two parts" [ "Time"; "Handle" ]
+    (List.map parts ~f:(fun (p, _) -> Option.value_exn (Alvie_plugin.Value.tag p)));
+  Alcotest.(check (list bool)) "the second one is the interrupt" [ false; true ] (List.map parts ~f:snd);
+  Alcotest.(check bool) "the cycle count does not matter" true
+    (Ltscompare.View.public_equal view (Generic_inputgen.observation (OTime (payload UM)))
+       (Generic_inputgen.observation (OTime { (payload UM) with k = 7 })))
 
 let test_input_sexp_round_trip () =
   let input = Input.IAttacker (Attacker.CCreateEncl ("enc_s", "enc_e", "data_s", "data_e")) in
@@ -295,6 +301,36 @@ let test_output_ignores_bookkeeping () =
   Alcotest.(check int) "nor hashed" (Output_internal.hash o) (Output_internal.hash o');
   Alcotest.(check bool) "observations are still compared" false
     (Output_internal.equal o ([ Output_internal.OTime (payload UM) ], [], 12))
+
+(* The exhaustive oracle explores the branches of a test from copies of the SUL (S.clone): a branch must not see
+   the state that another branch left. The SUL is a counter behind a ref, which a copy of the record only would
+   share: input 0 increments it, input 1 reads it. *)
+module Counter = struct
+  type t = { count : int ref }
+  type input_t = int
+  type output_t = int
+  let clone t = { count = ref !(t.count) }
+  let pre t = t.count := 0
+  let step ?silent:_ ?dry_output:_ t i = if i = 0 then (incr t.count; 0) else !(t.count)
+  let post _ = ()
+end
+
+module Exh = Learninglib.Exhaustiveoracle.ExhaustiveOracle
+  (Learninglib.Showableint.ShowableInt) (Learninglib.Showableint.ShowableInt) (Counter)
+
+let test_exhaustive_oracle_copies () =
+  (* The counter as a tree of depth 2: state s, after the inputs of s, has read count *)
+  let tr = [ (0, 0), (0, 1); (0, 1), (0, 2); (1, 0), (0, 3); (1, 1), (1, 4); (2, 0), (0, 5); (2, 1), (0, 6) ] in
+  let module M = Exh.IIOMealy in
+  let hyp = M.make ~states:(M.SSet.of_list (List.init 7 ~f:Fn.id)) ~s0:0 ~input_alphabet:(M.ISet.of_list [ 0; 1 ])
+      ~transition:(M.TransitionMap.of_alist_exn tr) in
+  let ot = Exh.IIOObservationTree.make ~states:(Exh.IIOObservationTree.SSet.singleton 0) ~s0:0
+      ~input_alphabet:(Exh.IIOObservationTree.ISet.of_list [ 0; 1 ]) ~transition:Exh.IIOObservationTree.TransitionMap.empty in
+  let oracle = Exh.make ~next_options:(fun is _ -> if List.length is < 2 then [ `Next 0; `Next 1 ] else [ `Stop ])
+      ~stop_cond:(fun _ is _ -> List.length is >= 2) () in
+  match Exh.equiv_query oracle ot { Counter.count = ref 0 } hyp with
+  | `Equivalent -> ()
+  | `Cex (_, is) -> Alcotest.failf "the oracle found a counterexample of a correct hypothesis: %s" (List.to_string is ~f:Int.to_string)
 
 let () =
   Alcotest.run "ALVIE isolated features" [
@@ -330,5 +366,6 @@ let () =
       Alcotest.test_case "round-trip inputs" `Quick test_input_sexp_round_trip;
       Alcotest.test_case "merge timing payloads" `Quick test_payload_merge;
       Alcotest.test_case "ignore labels and instruction numbers" `Quick test_output_ignores_bookkeeping;
+      Alcotest.test_case "explore branches on copies of the SUL" `Quick test_exhaustive_oracle_copies;
     ];
   ]

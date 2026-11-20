@@ -1,0 +1,178 @@
+{
+  "name": "alvie",
+  "displayName": "ALVIE",
+  "description": "ALVIE in the browser: the files of the experiments, terminals and tutorials for the commands of ALVIE, the languages of the specs and a preview of models",
+  "publisher": "unive-alvie",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "browser": "./out/extension.js",
+  "activationEvents": [
+    "onFileSystem:alvie",
+    "onStartupFinished"
+  ],
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "@vscode/test-web": "0.0.81",
+    "esbuild": "0.25.0"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "testdl",
+        "aliases": [
+          "TestDL (ALVIE/Sancus)"
+        ],
+        "extensions": [
+          ".atdl",
+          ".etdl",
+          ".spec"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "vtdl",
+        "aliases": [
+          "VTDL (ALVIE/VaultLink)"
+        ],
+        "extensions": [
+          ".vtdl"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "dot",
+        "aliases": [
+          "DOT (model)"
+        ],
+        "extensions": [
+          ".dot",
+          ".gv"
+        ]
+      },
+      {
+        "id": "alvie",
+        "aliases": [
+          "ALVIE commands"
+        ],
+        "configuration": "./language-configuration-alvie.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "testdl",
+        "scopeName": "source.testdl",
+        "path": "./syntaxes/testdl.tmLanguage.json"
+      },
+      {
+        "language": "vtdl",
+        "scopeName": "source.vtdl",
+        "path": "./syntaxes/vtdl.tmLanguage.json"
+      },
+      {
+        "language": "dot",
+        "scopeName": "source.dot",
+        "path": "./syntaxes/dot.tmLanguage.json"
+      },
+      {
+        "language": "alvie",
+        "scopeName": "source.alvie",
+        "path": "./syntaxes/alvie.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "alvie.terminal",
+        "title": "New ALVIE Terminal",
+        "category": "ALVIE"
+      },
+      {
+        "command": "alvie.preview",
+        "title": "Preview Model",
+        "category": "ALVIE",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "alvie.previewWith",
+        "title": "Preview Model Next to Another",
+        "category": "ALVIE"
+      },
+      {
+        "command": "alvie.resetFiles",
+        "title": "Reset the Files to Those of a First Visit",
+        "category": "ALVIE"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "alvie.preview",
+          "when": "resourceExtname == .dot",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "alvie.preview",
+          "when": "resourceExtname == .dot",
+          "group": "navigation"
+        },
+        {
+          "command": "alvie.previewWith",
+          "when": "resourceExtname == .dot",
+          "group": "navigation"
+        }
+      ]
+    },
+    "terminal": {
+      "profiles": [
+        {
+          "id": "alvie.terminal-profile",
+          "title": "ALVIE",
+          "icon": "terminal"
+        }
+      ]
+    },
+    "configurationDefaults": {
+      "workbench.startupEditor": "none",
+      "files.associations": {
+        "*.atdl": "testdl",
+        "*.etdl": "testdl"
+      },
+      "workbench.colorTheme": "Default Dark Modern"
+    },
+    "notebooks": [
+      {
+        "type": "alvie-tutorial",
+        "displayName": "ALVIE Tutorial",
+        "selector": [
+          {
+            "filenamePattern": "*.alvienb"
+          }
+        ]
+      }
+    ],
+    "notebookRenderer": [
+      {
+        "id": "alvie-models",
+        "displayName": "ALVIE models",
+        "entrypoint": "./out/renderer.js",
+        "mimeTypes": [
+          "application/vnd.alvie.models+json"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "@viz-js/viz": "3.31.0"
+  }
+}

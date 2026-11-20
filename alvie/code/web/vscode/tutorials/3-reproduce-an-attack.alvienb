@@ -1,0 +1,57 @@
+# Reproduce an attack on Sancus
+
+Reproduce B6, one of the attacks of the Mind the Gap paper on Sancus: learn the twelve models of the experiment, all in your browser, compare them, read the witness, and check that they are the models of the paper. It takes a few minutes.
+
+A standard experiment learns four models with the same attacker and enclave: secret 0 and secret 1, each with interrupts enabled (`int`) and ignored (`nint`). The comparison looks for runs that the attacker tells apart with interrupts, and drops those that it also tells apart without them: those are leaks of the enclave itself, not of the interrupts.
+
+## 1. The attack
+
+```alvie
+cat spec-lib/b6.atdl
+cat spec-lib/enclave-complete.etdl
+```
+
+These are the specifications of the paper: the attacker of B6, and the enclave that all the attacks use.
+
+## 2. Learn the models
+
+`learn_one COMMIT ATTACK SUBDIR` is the script of the guides: it learns the four models of `ATTACK` on the first commit of the experiments (`ef753b6`), on `COMMIT` (here `d54f031`, the commit that fixes B6) and on the last one (`bf89c0b`): twelve models. It runs up to four at a time, each in its own Web Worker, and takes a few minutes. You can stop it with the ■ of the cell; the models already learned stay, and running the cell again learns only the others.
+
+```alvie
+learn_one d54f031 b6 b6
+```
+
+The models are in `results/b6/`, the output of each learning in `logs/b6/`.
+
+## 3. Compare
+
+`check_one ATTACK SUBDIR` compares the four models of each commit, and writes the witnesses in `counterexamples/SUBDIR/ATTACK/`. The log of each comparison ends with the number of witnesses ("FA violations"):
+
+```alvie
+check_one b6 b6
+cat logs/b6/compare-d54f031-b6.log
+```
+
+```alvie
+ls counterexamples/b6/b6
+view counterexamples/b6/b6/d54f031-b6_int.dot
+```
+
+A witness is two runs, one for each secret, with the same inputs of the attacker, up to the first output that differs. Follow the inputs from the initial state, and look at the outputs of the last transition: there, the attacker sees a time or an interrupt that depends on the secret. Compare the number of witnesses of the three commits in their logs (`logs/b6/compare-*.log`).
+
+## 4. The models of the paper
+
+`results/` has the models of the paper, learned by the native ALVIE on a computer. Learning is deterministic: the models that your browser learned are the same files.
+
+```alvie
+cmp results/b6/d54f031-b6-enclave-complete-0-0.01-0.01-int.dot results/d54f031-b6-enclave-complete-0-0.01-0.01-int.dot
+cmp results/b6/d54f031-b6-enclave-complete-1-0.01-0.01-int.dot results/d54f031-b6-enclave-complete-1-0.01-0.01-int.dot
+cmp results/b6/d54f031-b6-enclave-complete-0-0.01-0.01-nint.dot results/d54f031-b6-enclave-complete-0-0.01-0.01-nint.dot
+cmp results/b6/d54f031-b6-enclave-complete-1-0.01-0.01-nint.dot results/d54f031-b6-enclave-complete-1-0.01-0.01-nint.dot
+```
+
+## Next
+
+- The other attacks: `learn_one 6475709 b3 b3`, `learn_one_nospecial b8 b8`, ... (the commit that fixes each attack is in the guide Reproducing the Experiments). `learn_all all` learns all of them, which takes a long time.
+- `spec-lib/fast/` has smaller specifications of the same attacks, which learn in seconds: `learn_one d54f031 b6 fast`.
+- `exec.exe` replays a run on the simulator, step by step: `exec.exe -help`.

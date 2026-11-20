@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/fixture.schema.json",
+  "title": "ALVIE plugin fixture",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "doc": { "type": "string", "description": "What the fixture checks" },
+    "spec": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ],
+      "description": "The spec: a file, or a list of files, relative to the fixture"
+    },
+    "secrets": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "The two values of the secret to compare"
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "The values of the configuration parameters of the backend"
+    },
+    "baseline": {
+      "type": "string",
+      "description": "A variant of the system (alvie-plugin.yaml) whose witnesses do not count"
+    },
+    "expect": {
+      "enum": [ "leak", "no-leak" ],
+      "description": "The verdict: leak (some witness) or no-leak (none)"
+    }
+  },
+  "required": [ "format", "spec", "secrets", "expect" ],
+  "additionalProperties": false
+}

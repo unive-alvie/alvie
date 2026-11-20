@@ -1,0 +1,15 @@
+; ALVIE in the browser: alvie-web, the commands of Core for Tiny and for ALVIE/Sancus on the simulator in WebAssembly,
+; compiled to bytecode here and to WebAssembly by build.sh (wasm_of_ocaml, OCaml 5). It uses only the portable part
+; of ALVIE (test/portable checks the same libraries). Its host is JavaScript (host.jsoo.ml) when js_of_ocaml is
+; installed, and nothing otherwise (host.none.ml), so that ALVIE builds without js_of_ocaml.
+(executable
+ (name alvie_web)
+ (modes byte)
+ (enabled_if (>= %{ocaml_version} 5.1))
+ (modules alvie_web command_web host)
+ (libraries sancus_core sancus_cmd alvie_inputgen alvie_tiny alvie_cli alvie_yaml_table alvie_mcrl2_none vaultlink yojson core
+  (select host.ml from
+   (js_of_ocaml -> host.jsoo.ml)
+   (-> host.none.ml)))
+ (forbidden_libraries core_unix shexp.process yaml ctypes alvie_yaml_libyaml alvie_mcrl2_native)
+ (preprocess (pps ppx_jane)))

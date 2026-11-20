@@ -1,0 +1,68 @@
+{
+  "name": "testdl",
+  "scopeName": "source.testdl",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#code"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "begin": "\\(\\*",
+      "end": "\\*\\)",
+      "name": "comment.block",
+      "patterns": [
+        {
+          "include": "#comment"
+        }
+      ]
+    },
+    "code": {
+      "patterns": [
+        {
+          "match": "\"(?:[^\"\\\\]|\\\\.)*\"",
+          "name": "string.quoted.double"
+        },
+        {
+          "match": "#-?(?:0x[0-9a-fA-F]+|\\d+)\\b",
+          "name": "constant.numeric"
+        },
+        {
+          "match": "(?<![\\w-])-?(?:0x[0-9a-fA-F]+|\\d+)\\b",
+          "name": "constant.numeric"
+        },
+        {
+          "match": "&[A-Za-z_]\\w*",
+          "name": "variable.other.constant"
+        },
+        {
+          "match": "\\?",
+          "name": "constant.language"
+        },
+        {
+          "match": "->|[|;*]",
+          "name": "keyword.operator"
+        },
+        {
+          "match": "\\b(?:isr|prepare|cleanup|enclave)\\b",
+          "name": "keyword.control"
+        },
+        {
+          "match": "\\b(?:eps|ifz|timer_enable|start_counting|create|jin|reti|rst|rstnz|ubr|nop|dint|mov|add|cmp|jmp|jz|jnz|push|enc_s|enc_e|data_s|data_e|unprot_mem)\\b(?!-)",
+          "name": "support.function"
+        },
+        {
+          "match": "\\br\\d+\\b",
+          "name": "variable.language"
+        },
+        {
+          "match": "\\b[A-Z][A-Z0-9_]*\\b",
+          "name": "entity.name.type"
+        }
+      ]
+    }
+  }
+}

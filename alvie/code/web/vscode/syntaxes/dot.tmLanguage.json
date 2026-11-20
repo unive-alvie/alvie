@@ -1,0 +1,35 @@
+{
+  "name": "dot",
+  "scopeName": "source.dot",
+  "patterns": [
+    {
+      "match": "//.*$",
+      "name": "comment.line"
+    },
+    {
+      "begin": "/\\*",
+      "end": "\\*/",
+      "name": "comment.block"
+    },
+    {
+      "match": "\"(?:[^\"\\\\]|\\\\.)*\"",
+      "name": "string.quoted.double"
+    },
+    {
+      "match": "\\b(?:digraph|graph|node|edge|subgraph|strict)\\b",
+      "name": "keyword.control"
+    },
+    {
+      "match": "-[->]",
+      "name": "keyword.operator"
+    },
+    {
+      "match": "\\b(?:label|shape|style|color|rankdir|fontname|fontsize)\\b(?=\\s*=)",
+      "name": "variable.parameter"
+    },
+    {
+      "match": "\\b\\d+\\b",
+      "name": "constant.numeric"
+    }
+  ]
+}

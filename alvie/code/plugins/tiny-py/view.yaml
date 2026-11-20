@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../schemas/view.schema.json
+# What the attacker of Tiny sees: when the enclave returns and how long it ran, and when an interrupt happens and
+# its latency; nothing of what the enclave does inside.
+#
+# An interrupt stands for two events: the instruction of the enclave ran, then the interrupt was handled, whose
+# input is the interrupt (the attacker chooses when it happens).
+format: 1
+rules:
+  - match: Irq
+    parts: [{ as: Run }, { field: self, as: Irq, input: interrupt }]
+  - { match: [Ok, Run], show: hidden }
+  - { match: [Enter, Resume, Done, Illegal], show: tag }
+  - { match: [Exit, Irq], show: all }

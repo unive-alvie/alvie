@@ -1,0 +1,5 @@
+(library
+ (name alvie_yaml_libyaml)
+ (public_name alvie-core.yaml-libyaml)
+ (implements alvie_yaml)
+ (libraries yaml))

@@ -2,8 +2,80 @@
 
 ## Unreleased
 
+ALVIE becomes a framework: ALVIE/Core learns and compares models for any
+platform that a plugin describes, and ALVIE/Sancus is its plugin for Sancus.
+Experiments on Sancus run as before, with the same specs, commands and model
+files; some results change, because 2026.10 got them wrong (see the Fixes,
+Input generation, Backends and Comparison sections). New: Tiny, the reference
+platform; the commands of Core for any plugin; conformance checks and
+fixtures; external plugins and the Python SDK. "Migrating from 2026.10" in
+the documentation lists what users must do.
+
+### One learning path
+
+- `learn.exe` and `fa.exe` (`alvie learn` and `alvie compare`) learn and
+  compare with the commands of ALVIE/Core (`Alvie_cli.Runner`), as every other
+  plugin does, through the codec of Sancus (`Sancus.Native.Codec`): their
+  options and output, and the models they learn, do not change (regression:
+  no differences), except for the defaults of PAC (below). The runner gains what Sancus needed: a codec of the
+  plugin's own (`Runner.Make_codec`), random inputs outside the spec
+  (`--bad-probability`), the exhaustive oracle, `--dry` and the statistics of
+  `--report`. `alvie sancus fixtures` writes models in the format of Sancus.
+- A file that is not a model, given to `fa.exe` or `alvie compare`, is a
+  mistake in the command (exit 2, `cannot read --m1-int ...`), no longer an
+  unexpected failure.
+- New oracle: the W-method (`--oracle wmethod`), from the VaultLink variant,
+  for `learn.exe` and for `alvie <plugin> learn`. It runs the test suite
+  P · Σ^≤k · W of the model, and the model is then exact if the system has
+  at most k more states than it (`--extra-states k`, default 1);
+  `--max-tests` limits each equivalence query and removes the guarantee.
+  `alvie <plugin> learn` says which guarantee applies. The oracle does not
+  copy the backend, so it works with every backend, the FPGA board too. Tests:
+  `test/wmethod`, and Tiny learns the same models with it as with PAC.
+- One set of defaults for the learner and its oracles
+  (`Learninglib.Defaults`), used by `learn.exe`, `alvie <plugin> learn` and
+  `fixtures`, and by the oracles themselves: PAC with ε = δ = 0.01 (the
+  values of the paper and of every script), a random walk of 500 steps with
+  reset probability 0.05, `--extra-states 1`, seed 0. Before, `learn.exe`
+  had ε = δ = 0.001, and `alvie <plugin> learn` a random walk of 10000 steps
+  with reset probability 0.09. `learn.exe --oracle` is now optional (`pac`).
+  `fixtures` now offers inputs outside the spec with the plugin's
+  `--bad-probability` (0.20 for Sancus), as `learn` does; it offered none.
+  "Migrating from 2026.10" says what changes for `learn.exe`.
+
+### Documentation
+
+- The documentation is grouped by reader: ALVIE/Core, ALVIE/Sancus, Writing
+  Plugins, Reference, and Developing ALVIE. The addresses of the pages that
+  moved lead to their new ones.
+- New pages: Migrating from 2026.10, Tutorial: Find a Leak on Tiny, Plugin
+  Author Guide, External Plugin Protocol, Making a Release; How ALVIE Works
+  explains ALVIE/Core and its plugins.
+- The version of ALVIE is set in one place (`dune-project`); `alvie
+  --version` gives it.
+
+
 ### Fixes
 
+- **The simulator stops a test after 500 µs (10000 cycles), not 100 µs
+  (2000 cycles).** ALVIE's testbench (`alvie/bench/verilog`) cut the longest
+  tests, and the analysis took the cut for a reset (`OReset`): in B1 on
+  `ef753b6`, tests with many interrupts ran longer than 100 µs. Found by
+  comparing with the FPGA board, which has no such limit. Results: the two
+  models of B1 with interrupts on `ef753b6` change, and **B1 on `ef753b6`
+  gives 25 witnesses instead of 31**; no other model or count changes
+  (regression). The value is that of the testbench of `sancus-core-gap`; only
+  a test that loops runs for longer in the simulator.
+- The cache of compiled simulators (`ALVIE_SIM_CACHE`) includes ALVIE's
+  testbench in its key: a change to it reused simulators compiled before.
+
+- `alvie <plugin> exec --inputs`: only a line that starts with `#` is a
+  comment. A `#` inside a line cut it, so the immediates of Sancus
+  (`mov #1, r4`) could not be given.
+- The simulator deletes its clone of Sancus (in `--tmpdir`) when the program
+  ends: each backend left one behind, and runs that make many backends filled
+  the disk (conformance: about 10 GB for 50 tests). The VCD dumps and the
+  programs stay in `--tmpdir`.
 - The simulator backend no longer fails with `Could not clone Sancus
   repository` when the temporary directory is on another file system than the
   `sancus-core-gap` checkout (for example `--tmpdir /tmp`, as in the direct
@@ -38,6 +110,385 @@
   no longer matched the earlier steps, and the simulator reported
   `OUnsupported`. The specifications of the attack catalogue have a single
   choice in `cleanup`, so their models and witnesses do not change.
+- The exhaustive oracle (`--oracle exhaustive`, and the incremental one)
+  explores the branches of a test from deep copies of the SUL (`clone`). It
+  copied the record of the SUL only, so all its branches shared the state of
+  the backend, and a branch started from the state that another one left.
+  E.g. in B3 on `bf89c0b`, the branch `ifz (rst; nop)` reset the state, and
+  the next branch (`reti` after `ifz (dint; nop)`) ran from the start of the
+  program. The simulator searches its whole dump and found the step anyway.
+  The FPGA board searches from the breakpoint, could not get past `protect`,
+  and gave `OUnsupported`. Found by comparing the board with the simulator.
+  The models of `results/` use the PAC oracle and do not change. A plugin
+  must declare `clone` for the exhaustive oracle. The oracle has no length
+  bound, and the shared state had cut some branches short: with a spec whose
+  tests can go on forever, such as B3, it now does not end (it did not end on
+  `ef753b6` before either).
+
+### Tests and CI
+
+- Adds `regression.sh`, which checks that a change leaves the checked-in
+  results unchanged: `witnesses` compares the checked-in models again and
+  checks every witness graph and count; `learning` learns every model again
+  and checks that it is identical to the checked-in one (learning is
+  deterministic), then checks its witnesses. It also records the learning
+  time of each model.
+- Adds `tt_inputgen_golden`, which checks the input generator against a
+  corpus of histories taken from the learned models
+  (`alvie/code/test/golden/inputgen.sexp`). It needs no external tool.
+- CI runs the corpus check with the fast checks, and runs `regression.sh all`
+  and `tt_attack` in the published Docker image.
+
+### Command line and files
+
+- One command, `alvie`, with the subcommands `learn`, `compare`, `exec`,
+  `pbt`, `property` and `plugin` (`check` and `schemas`, for plugin
+  authors). `alvie property` checks inclusion, equivalence or an mCRL2
+  formula on learned models, with exit status 4 when the property does not
+  hold. The
+  options of the backend are generated from the configuration parameters of
+  the plugin's manifest. `learn.exe`, `fa.exe`, `exec.exe` and `pbt.exe`
+  remain, as the same commands, for one release; their options and output
+  do not change, so alvie-ui, which runs `bin/learn.exe` and parses its
+  output, works as before.
+- Model files start with a line that gives their format, the plugin and the
+  version of Core (`// alvie-model format 1; plugin sancus 2026.10; core 1`).
+  Models without it read as before; a model of a later format is refused
+  with a message. The checked-in models get the line, and nothing else
+  changes in them.
+
+### External plugins
+
+- **The protocol of Core with external plugins**, version 1: JSON-RPC 2.0,
+  one message per line on the plugin's standard input and output, with a
+  handshake that checks versions and capabilities (see the External Plugin
+  Protocol reference, and `protocol.schema.json`).
+- `alvie external DIR ...` runs the commands of Core (`learn`, `compare`,
+  `property`, `exec`, `conformance`, `fixtures`) on the external plugin in
+  `DIR`. A plugin that crashes, hangs (`ALVIE_RPC_TIMEOUT`), writes on its
+  standard output or fails stops the command with a message and the end of
+  its log. `ALVIE_RPC_RECORD` and `ALVIE_RPC_REPLAY` record a run and replay
+  it without the plugin.
+- **The Python SDK** (`sdk/python/alvie_plugin.py`, standard library only),
+  `alvie plugin types` for the constructors of a plugin's observations, and
+  `alvie plugin new NAME --external`.
+- **Tiny in Python** (`plugins/tiny-py`) passes conformance and learns the
+  same models as Tiny. A call costs about 0.1 ms.
+
+### Plugins: the reference platform, conformance and fixtures
+
+- **Tiny** (`plugins/tiny`, `lib/core/tiny`): the reference platform of
+  ALVIE/Core, a small processor in pure OCaml with a timer that interrupts
+  its enclave and two planted timing leaks. Learning a model takes a
+  fraction of a second; the new tutorial "Find a Leak on Tiny" uses it.
+- **The commands of Core for any native plugin** (`Alvie_cli.Runner`):
+  `learn`, `compare` (noninterference, with a baseline variant),
+  `property`, `exec`, `conformance` and `fixtures`, with the options of the
+  manifest. `alvie tiny ...` runs them on Tiny; `alvie sancus conformance`,
+  `fixtures` and `exec` on Sancus. `compare`, `property`, `conformance` and
+  `fixtures` exit with 4 when the check does not pass.
+- **Conformance** checks that a backend keeps the contract of Core on
+  random tests of a spec: observations, phases, determinism, reset,
+  prefixes, restore and clone. Tiny and the Sancus simulator pass.
+- **Fixtures** (`fixtures/*.yaml` of a plugin): specs with the verdict of
+  noninterference the plugin must give. Tiny has five, Sancus four (the
+  Getting Started example, a safe variant of it, and attack A on ef753b6
+  and bf89c0b).
+- `alvie plugin new NAME` makes a native plugin from a template that works
+  from the start, with its own `alvie-NAME`; the Plugin Author Guide starts
+  from it.
+- Variants of the manifest (`--variant no-interrupts`) are now applied: the
+  backend gets the variant it runs.
+- Specs can have comments, from `//` to the end of the line.
+- The input generator simplifies the derivatives of spec bodies: a star in a
+  section no longer makes a test exponentially slower with every repetition.
+  The options it offers do not change (the corpus check has no difference).
+- A model of another plugin is refused with a message, by `alvie compare`
+  and `alvie property` too.
+
+### Comparison
+
+- Comparisons see what the attacker view declares (`plugins/sancus/view.yaml`),
+  and nothing in them is written for Sancus any more: the hooks of the
+  comparison engine are derived from the plugin files (hidden outputs and
+  public equality from the view, the end of a run from the phase rules, low
+  inputs and the victim's code from the roles of the sections, the victim's
+  code up to the secret from the expansions of the secret). The temporary
+  Sancus hooks (`lib/sancus-compare`) are removed.
+- The view can split an observation into parts (`parts:`): an interrupt
+  handled is the instruction then the handling, whose input is the
+  interrupt, as `fa.exe` did by hand.
+- mCRL2 compares what the attacker sees, not whole outputs: the cycle count
+  `k` no longer takes part. **B1 on `ef753b6` gives 31 witnesses instead of
+  29**; no other count changes. Witness graphs label the outputs that the
+  attacker does not see with `(hidden)`; their labels have a new form
+  (`ubr/Time(k = 2, ...)`), so all the graphs are generated again.
+- The catalogue of properties (`Ltscompare.Properties`, version 1):
+  noninterference with an optional baseline, inclusion and equivalence of
+  models with a distinguishing trace, and mCRL2 modal mu-calculus formulas
+  on one model. New suite `tt_properties` (needs mCRL2; run in CI).
+- Comparisons no longer need mCRL2: ALVIE checks the inclusion of weak
+  traces itself (`Ltscompare.Weak_trace`) and finds the counterexample that
+  `ltscompare --preorder=weak-trace-ac --strategy=b` found. `fa.exe`,
+  `alvie compare`, `alvie property inclusion|equivalence` and the fixtures
+  give the same results (witness regression: no differences; the 577
+  counterexamples of the regression and 960 inclusions between the
+  checked-in models are the same as mCRL2's), and the witness regression
+  takes 3.7 s instead of 5.7 s. Only `alvie property formula` needs mCRL2.
+  `ALVIE_MCRL2=1` compares with mCRL2 as before, and `ALVIE_MCRL2=check`
+  uses both and warns when their counterexamples differ. New suite
+  `test/weak_trace` (in CI).
+
+### Backends
+
+- ALVIE/Sancus builds the program of each step with its own assembler
+  (`Sancus.Msp430_asm`), not with `msp430-as` and `msp430-ld`: the memory
+  image and the symbols are those of the toolchain, in about 0.6 ms instead
+  of about 8.5 ms a step (fast-A on the simulator: 23.4 ms to 15.3 ms a
+  step, the same model). The board gets the image directly, without an ELF
+  file. The first build of a `--tmpdir` still uses the toolchain, which
+  prepares it; `ALVIE_ASM=toolchain` uses it for every step, and a program
+  that the assembler does not accept is built by the toolchain, with a
+  warning. `tt_asm_golden check` compares it with the toolchain on a corpus
+  (`test/asm/corpus`: 120 programs of learning runs and a program that uses
+  every instruction and addressing mode); it gave the same words and symbols
+  on all the 21605 programs of learning runs on `spec-lib/fast` and
+  `spec-lib/example` (ef753b6, bf89c0b, with and without interrupts).
+  `ALVIE_DUMP_PROGRAMS` collects the programs of a run for the corpus.
+- ALVIE/Core defines the contract with a backend (`Alvie_backend.Backend.S`):
+  `step` gets the programs of all the sections from Core and returns
+  observations (values) and bookkeeping; `restore` replays a step whose
+  observations Core already knows. An adapter turns any backend into the
+  SUL of the learner, so L# and the oracles are unchanged. `tt_plugin` learns
+  a small backend written for the tests, with nothing of Sancus.
+- The Sancus simulator is a backend of this contract (`Sancus.Simulator`). It
+  no longer reconstructs the code of the sections from the history
+  (`relevant_enclave`, `relevant_isr`, `relevant_cleanup` and `update_cfg`
+  are gone), and Core checks that inputs are legal, with the same rules as
+  the input generator: the former generator (`Inputgen`) is used only to
+  compare with, and `learn.exe --inputgen` is removed.
+- **Results change for 8 models, and for two witness counts on `ef753b6`**
+  (B1: 29 instead of 26; B3: 11 instead of 124). The former reconstruction of
+  the enclave code was wrong in three cases, where the code it simulated was
+  not the code the test had run:
+  - after two or more interrupts, it left out the instructions executed
+    between the first and the last resume (B1, B4: e.g. a write to
+    unprotected memory before the interrupt was lost after a re-entry by
+    `jin`, so the attacker read 0 instead of 42);
+  - after a re-entry by `reti`, the learner could still try other enclave
+    instructions than those the enclave had run there (B3; the input
+    generator stopped choosing them in the previous change, but the learner
+    also tries every input of its alphabet).
+  B3 is still found: the witness graph of `ef753b6` has 12 jumps out of the
+  enclave and 12 `reti` edges that resume it in protected mode, and the
+  graphs of `6475709` and `bf89c0b` have none. The counts on the fixing commits and on
+  `bf89c0b` do not change. 48 other models are learned with other state
+  numbers only (isomorphic, with the same bookkeeping).
+- A reset of Sancus restarts the test: the phase rule `restart` starts it
+  afresh from `prepare`, with new code, as the simulator always did. Before,
+  the input generator continued in `cleanup` after a reset in the enclave,
+  where the simulator then answered every input as illegal.
+- New tool `alvie-model-compare A.dot B.dot` (alvie-core): whether two models
+  are the same machine up to the numbering of their states, and otherwise the
+  shortest inputs on which they answer differently (`--observations-only`
+  ignores the bookkeeping of Sancus outputs).
+
+### ALVIE/Sancus-FPGA
+
+- New native plugin `sancus-fpga`: Sancus on an openMSP430/Sancus board (an
+  Arty S7 with an `inst_number_50` image), over its serial port. Its commands
+  are `alvie sancus-fpga learn|compare|property|exec|conformance|fixtures`,
+  with the options of `plugins/sancus-fpga/alvie-plugin.yaml`: `--commit`
+  (required: the commit of the image on the board), `--fpga-port` (default
+  `/dev/ttyUSB1`), `--sancus`, `--tmpdir`. A step takes 15 to 30 ms on the
+  board. New page: Running on an FPGA.
+- It shares the specs, inputs and observations of ALVIE/Sancus (its manifest
+  names the files of `plugins/sancus`), and its models have the inputs and
+  outputs of the simulator's: `alvie-model-compare` compares them.
+- It reuses the Sancus backend as a library, with the board as its target
+  (`Simulator.target`): the program of a step, its build, the bookkeeping,
+  re-entries and the observations of the instructions found
+  (`Sancus.Step_analysis`) are the simulator's. Only how a step runs and how
+  its instructions are found in the board's trace are its own
+  (`lib/sancus-fpga`). ALVIE/Sancus does not change (regression: no
+  differences).
+- This ports the FPGA backend of the branch `feat/alvie-fpga` and its later
+  fixes. Differences from the branch: the serial port is `--fpga-port` (not
+  the variable `FPGA_PORT`); ALVIE does not program the board (`FPGA_TCL` is
+  removed); `learn.exe --fpga`, the `--fpga` option of the wrapper scripts
+  and the serial daemon (`fpga_daemon.py`, `run_fpga.py`) are removed; the
+  programs use the headers of `--commit`, not of the current checkout.
+  Copies of a backend, and several processes, can share a board: each query
+  locks the serial port.
+- On the board, every program first clears the data memory that programs use:
+  the board keeps it between queries, so a test read what earlier tests had
+  written (e.g. `data_s`), and the fixture `attack-a-bf89c0b` found a leak
+  that the simulator does not have. The first query of a test breaks after
+  this code. The simulator's programs do not change.
+- The board's trace is read as the simulator reads its VCD dump, so that the
+  two learn the same models: `r4`, `gie` and Timer A in the last cycle of each
+  instruction, the memory word in the first cycle of the next (the branch read
+  all but Timer A at the next instruction: after `eint`, `gie` was true on the
+  board and false in the simulator); more windows when the step's code starts
+  after the first one (e.g. after a long ISR); a reset
+  when the window goes on after an instruction but the next one never comes
+  (the branch took it for the end of the window); a divergence when 10000
+  cycles go by without the step's code and without the end of the program
+  (the simulator stops a run after 10000 cycles). With the same settings,
+  the models of `learn_all.sh` are those of the simulator, up to the number of
+  cycles `k` of instructions longer than the window (e.g. `sancus_enable`: 50
+  instead of 648); `k` is not part of the attacker's view.
+- `alvie sancus-fpga learn` has `--bad-probability`, with the default of
+  `learn.exe` (0.2). The commands `learn` of other plugins have it too, with
+  the default 0 (no change).
+- It needs no clone of Sancus: building the programs reads the memory sizes
+  and the linker script of `--commit` from the checkout (`git show`).
+- New directory `alvie/fpga/images`: an image (bitstream, gzip) for each
+  commit of the experiments of `learn_all.sh` (`ef753b6`, `e8cf011`,
+  `3170d5d`, `6475709`, `3636536`, `d54f031`, `bf89c0b`; `264f135` has the
+  core of `bf89c0b` and runs on its image). On the board, each learns the
+  models of `results/` for its commit, as the simulator does (60 models; `k`
+  of `create` aside). The images are built from the board project
+  (`scripts/build.tcl`). New page section: Build an Image.
+- An image says which Sancus commit it runs. ALVIE asks it when a command
+  starts, and stops with an error when it is not `--commit` (or a commit with
+  the same core in the `--sancus` checkout); an earlier image, which does not
+  say it, gives a warning.
+- New script `alvie/scripts/program_fpga.tcl`: programs the board with the
+  image of a commit (`-tclargs bf89c0b`) or with a bitstream (`.bit` or
+  `.bit.gz`), after checking that its SHA-256 is that of a known image, and
+  prints the commit of the image.
+- New suite `tt_stress_fpga`: runs 12 programs that create an enclave on the
+  board, at every breakpoint, 20 times each, and fails when a query does not
+  always get the same answer. The Sancus core has combinational loops that
+  timing analysis does not cover, and some builds do not run `sancus_enable`
+  reliably (2 of the 9 placements tried: the board did not answer some
+  queries after it, at random); an image is accepted only if it passes. It
+  needs the board, so CI does not run it.
+- Fixtures: those of ALVIE/Sancus, each for the image of its commit.
+- New suite `tt_attack_fpga`: the attack traces of `tt_attack` on the board
+  (for the commit of the image, `ef753b6` or `bf89c0b`), with the simulator's expected observations, compared as
+  `tt_attack` compares them (the branch had board-only values for 7 of the 20
+  cases, and did not compare `reg_val`). It needs the board, so CI does not
+  run it.
+
+### Input generation
+
+- Learning uses the input generator of ALVIE/Core, driven by the plugin files
+  of `plugins/sancus/` (embedded in the executables). It follows a test
+  through its sections with `phases.yaml` and applies one rule to every
+  section: a section is code, so all its runs in a test are prefixes of its
+  longest run, and new actions are chosen only beyond its end.
+  `learn.exe --inputgen legacy` uses the former generator.
+- **Results change for B3 on `ef753b6`**: 124 witnesses instead of 351, and
+  its two models with interrupts are about half as large. The former
+  generator let an enclave that the attacker re-enters with `reti` choose
+  new actions where the timer had interrupted it, although it was running the
+  same code again: the simulator then ran code that did not match the
+  earlier steps of the test. The enclave now runs the code it ran from that
+  point the first time. B3 is still found: its witness graph on `ef753b6`
+  has 66 `reti` edges (2 on the fixing commit), and the counts on `6475709`
+  and `bf89c0b` do not change. The former generator also let `prepare`
+  choose new actions after a reset. Three other models (B1 on `ef753b6`, B3
+  on `bf89c0b` with secret 1) are learned again with other state numbers
+  only: they are isomorphic to the earlier ones.
+- Specs can state constraints between sections, e.g.
+  `constraint { disjoint(writes(isr), reads(enclave)) };`: the generator
+  offers only actions that keep them, and never leads a section into a dead
+  end. The Sancus atoms have the attributes `reads` and `writes` (the
+  registers of the source and destination operands).
+- Errors in specs give the file, line and column, and what was expected there.
+- The input generation corpus (`tt_inputgen_golden`) now records the
+  generator of ALVIE/Core (703 walks); `check --engine legacy` checks the
+  former one, `--show-history` prints the history before a difference.
+
+### Plugin files (preview)
+
+- ALVIE/Core reads the YAML files that declare a plugin: the manifest, the
+  sections, the atoms with their syntax templates, the observations, the
+  phase rules and the attacker view. It checks each file and the files
+  against each other, and reports every error with its file, line and
+  column, with a suggestion after a typo. Unquoted YAML 1.1 booleans (`on`,
+  `yes`, ...) are rejected. See the new Plugin Files Reference.
+- `plugins/sancus/` declares ALVIE/Sancus in these files. Every spec in
+  `spec-lib/` parses with its grammar to the same values as with
+  `testdl.ml`. Learning and comparison do not use the files yet.
+- The spec language is generic: named sections, the regular operators of
+  TestDL, and the secret as a typed hole. `constraint`, `threads` and `step`
+  blocks are reserved and rejected with an explanation.
+- `alvie/code/schemas/` has a JSON Schema for each plugin file, for editors.
+- New suite `tt_plugin` (fast, run in CI) and benchmark `test/value_bench.exe`.
+- New dependencies: `yaml` and `yojson` (alvie-core), `qcheck-core`
+  (alvie-sancus tests). The Dockerfile and the native installation
+  instructions install them; CI adds them to the published image until it is
+  rebuilt.
+
+### Code structure
+
+- The OCaml project is split into three opam packages: `alvie-core` (the L#
+  learner and its oracles, the profiler, reading and writing `.dot` models,
+  and the comparison engine; no backend), `alvie-rtl-util` (the VCD parser)
+  and `alvie-sancus` (the Sancus backend, the executables and the test
+  suites). The libraries move to `lib/core/`, `lib/rtl-util/` and
+  `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
+  executables, their options and their outputs do not change, and
+  `regression.sh all` finds the same models, witness graphs and counts.
+- ALVIE in the browser (`alvie/code/web/vscode`, see "ALVIE in Your Browser"
+  in the documentation), with nothing to install: a first page with
+  tutorials (notebooks whose cells run commands of ALVIE and draw models)
+  and an empty session, both in VS Code for the Web built from Code - OSS.
+  The extension gives the files of ALVIE (kept in the browser), ALVIE
+  terminals (each command in a Web Worker; the programs and scripts of the
+  guides too), the languages of the specs with their problems
+  (`alvie-web check`), and a preview of models that follows a sequence of
+  inputs. CI runs every tutorial in VS Code for the Web and uploads the site.
+- ALVIE/VaultLink is part of ALVIE (formerly the branch `variant/vaultlink`):
+  `alvie vaultlink learn|compare|replay` (formerly `vl_learn`, `vl_compare`,
+  `vl_replay`) and `serve`. The system under learning reaches a service
+  through a transport: TCP (`--target`, the library `vaultlink-unix`) or a
+  service in memory (`--service reference|firmware`), which runs in
+  `alvie-web` too. The models are those of `vl_learn` (W-method, on the
+  services in memory served over TCP). A test of PAC now ends, where the
+  session may end, with the probability of `--reset-probability`: `vl_learn`
+  did not end on a session such as `(HELLO | READ)*`. New
+  `spec-lib/vaultlink/vault.vtdl`, the ALVIE/VaultLink Reference, and the
+  suite `test/vaultlink` (in CI).
+- ALVIE in WebAssembly (`alvie/code/web`, see "ALVIE in the Browser" in
+  the documentation): `alvie-web` runs the commands of Core for Tiny and for
+  ALVIE/Sancus, compiled by `wasm_of_ocaml` (OCaml 5), on the testbench of
+  sancus-core-gap compiled by Verilator and Emscripten (`web/sim`). It
+  learns the models of the native ALVIE, byte for byte, at about its speed
+  (full-A on `bf89c0b`: 13.8 s against 13.2 s). It runs in Node; CI builds it
+  and runs the fixtures of Tiny and Sancus with it.
+- ALVIE builds with OCaml 5 (5.4.1, Core v0.17) as with 4.13.1: the field
+  `effect` of the rules becomes `effect_` (a keyword since OCaml 5.3), and
+  `Learninglib.Rng`, the generator of random numbers of OCaml 4.13, replaces
+  `Random`, whose generator OCaml 5 changed: with OCaml 5.4.1,
+  `regression.sh all` finds no differences. New test `test/rng` (in CI).
+- ALVIE/Sancus is split in two libraries: `sancus_core` (inputs and
+  outputs, TestDL, the input generators, the assembler, the analysis of a
+  trace and `Step`, the step of the backend whatever runs the program), which
+  needs no Unix library, and `sancus` (the simulator on Verilator:
+  `Simulator` includes `Step`). The module `Sancus` includes `Sancus_core`,
+  so the names do not change; `test/portable` checks `sancus_core` too.
+- The part of Core that a browser build needs runs without C code and
+  without running programs. The plugin files are read through the virtual
+  library `alvie_yaml` (default: libyaml; `alvie-core.yaml-table` knows the
+  YAML files of `plugins/` without C code), and mCRL2 runs through the
+  virtual library `alvie_mcrl2` (default: the tools; `alvie-core.mcrl2-none`
+  has none). `ltscompare` drops `core_unix` and `shexp.process`, and
+  `alvie_cli` drops `core_unix` (files through `Alvie_cli.Fs`). The native
+  executables do not change. New test `test/portable` (in CI): Core and Tiny
+  without C code, with `forbidden_libraries`, run the fixtures of Tiny.
+- The comparison engine of `fa.exe` is generic: what it needs to know about
+  the Sancus inputs and outputs (attacker inputs, public equality, hidden
+  outputs, victim code) comes from a hooks module
+  (`lib/sancus-compare/obs.ml`). The hooks are temporary, until the
+  declarative attacker view replaces them.
+- CI checks that `alvie-core` and `alvie-rtl-util` build on their own.
+- `opam install . --deps-only --with-test` installs the dependencies of all
+  three packages; `alvie.opam` is replaced by `alvie-core.opam`,
+  `alvie-rtl-util.opam` and `alvie-sancus.opam`.
 
 ### Scripts
 
@@ -48,6 +499,8 @@
 
 - The testing guide gives the current time of `tt_attack` (about 2 minutes
   with cached simulators).
+- The testing guide documents the new suites, what to run after each kind of
+  change, and what CI runs.
 
 ## 2026.10
 

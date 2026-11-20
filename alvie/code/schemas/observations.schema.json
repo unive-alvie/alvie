@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/observations.schema.json",
+  "title": "ALVIE plugin observations",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "types": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enum": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "The constants of an enumeration"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                { "type": "string" },
+                {
+                  "type": "object",
+                  "properties": {
+                    "int": {
+                      "type": "array",
+                      "items": { "type": "integer" }
+                    }
+                  },
+                  "required": [ "int" ],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "int, bool, word, { int: [lowest, highest] }, or a declared type"
+            },
+            "description": "The fields of a record type"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "description": "Enumerations and record types used by the fields"
+    },
+    "kinds": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "properties": {
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "anyOf": [
+                    { "type": "string" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "int": {
+                          "type": "array",
+                          "items": { "type": "integer" }
+                        }
+                      },
+                      "required": [ "int" ],
+                      "additionalProperties": false
+                    }
+                  ],
+                  "description": "int, bool, word, { int: [lowest, highest] }, or a declared type"
+                },
+                "description": "The fields of observations of this kind"
+              },
+              "doc": { "type": "string" }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "description": "The kinds of observations, by name"
+    }
+  },
+  "required": [ "format", "kinds" ],
+  "additionalProperties": false
+}

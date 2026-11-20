@@ -1,0 +1,12 @@
+format: 1
+rules:
+  - { match: Done, do: [{ stop: finished }] }
+  - { match: Bad, do: [{ stop: invalid }] }
+  - { match: Ok, do: [] }
+  - { match: Enter, when: { target: 1 }, do: [{ enter: victim }] }
+  - { match: Enter, when: { target: 2 }, do: [{ enter: bus }] }
+  - { match: Enter, when: { target: 3 }, do: [{ enter: blob }] }
+  - { match: Leave, do: [{ enter: main }] }
+  - { match: Irq, in: victim, do: [{ interrupt: irq }] }
+  - { match: Ret, when: { mode: high }, do: [resume] }
+  - { match: Ret, when: { mode: low }, do: [{ switch: main }] }

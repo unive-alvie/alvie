@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/sections.schema.json",
+  "title": "ALVIE plugin sections",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "sections": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "enum": [ "attacker", "victim" ],
+            "description": "attacker or victim"
+          },
+          "kind": {
+            "enum": [ "code", "stimulus", "opaque" ],
+            "description": "code (default), stimulus or opaque"
+          },
+          "atoms": {
+            "type": "string",
+            "description": "The atom class of the section (an entry of atoms: in atoms.yaml)"
+          },
+          "initial": {
+            "type": "boolean",
+            "description": "The system starts in this section"
+          },
+          "doc": { "type": "string" }
+        },
+        "required": [ "role" ],
+        "additionalProperties": false
+      },
+      "description": "The sections of a spec, by name, in the order specs list them"
+    },
+    "secret": {
+      "type": "object",
+      "properties": {
+        "hole": {
+          "type": "boolean",
+          "description": "The secret is the hole of the atoms (the variant marked secret)"
+        },
+        "config": {
+          "type": "string",
+          "description": "The secret is this configuration parameter of the backend"
+        },
+        "values": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The values of the secret to compare"
+        }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "Where the secret is"
+    }
+  },
+  "required": [ "format", "sections" ],
+  "additionalProperties": false
+}

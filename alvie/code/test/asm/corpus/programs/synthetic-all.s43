@@ -1,0 +1,1359 @@
+; config a7a7584bde46e69c20ed3c28eb2bffb0
+; A program that uses every instruction, addressing mode and directive that Msp430_asm supports (test/asm)
+.include "pmem_defs.asm"
+.include "sancus_macros.asm"
+.set k1, 0x10
+.set k2, (k1 << 2) | 3
+.set k3, k2 * 3 - 1
+.set k4, ~k1 & 0xff
+.set k5, 017
+.set k6, 0b101
+.set fwd_later, back_label
+.global main
+main:
+back_label:
+	mov r5, r10
+	mov r5, 2(r11)
+	mov r5, &0x0202
+	mov r5, &DMEM_242
+	mov r5, sym_target
+	mov 4(r6), r10
+	mov 4(r6), 2(r11)
+	mov 4(r6), &0x0202
+	mov 4(r6), &DMEM_242
+	mov 4(r6), sym_target
+	mov -2(r7), r10
+	mov -2(r7), 2(r11)
+	mov -2(r7), &0x0202
+	mov -2(r7), &DMEM_242
+	mov -2(r7), sym_target
+	mov &0x0200, r10
+	mov &0x0200, 2(r11)
+	mov &0x0200, &0x0202
+	mov &0x0200, &DMEM_242
+	mov &0x0200, sym_target
+	mov &DMEM_240, r10
+	mov &DMEM_240, 2(r11)
+	mov &DMEM_240, &0x0202
+	mov &DMEM_240, &DMEM_242
+	mov &DMEM_240, sym_target
+	mov sym_target, r10
+	mov sym_target, 2(r11)
+	mov sym_target, &0x0202
+	mov sym_target, &DMEM_242
+	mov sym_target, sym_target
+	mov @r8, r10
+	mov @r8, 2(r11)
+	mov @r8, &0x0202
+	mov @r8, &DMEM_242
+	mov @r8, sym_target
+	mov @r9+, r10
+	mov @r9+, 2(r11)
+	mov @r9+, &0x0202
+	mov @r9+, &DMEM_242
+	mov @r9+, sym_target
+	mov #0, r10
+	mov #0, 2(r11)
+	mov #1, r10
+	mov #1, 2(r11)
+	mov #2, r10
+	mov #2, 2(r11)
+	mov #4, r10
+	mov #4, 2(r11)
+	mov #8, r10
+	mov #8, 2(r11)
+	mov #-1, r10
+	mov #-1, 2(r11)
+	mov #0xffff, r10
+	mov #0xffff, 2(r11)
+	mov #3, r10
+	mov #3, 2(r11)
+	mov #0x10, r10
+	mov #0x10, 2(r11)
+	mov #k1, r10
+	mov #k1, 2(r11)
+	mov #k2, r10
+	mov #k2, 2(r11)
+	mov #k3, r10
+	mov #k3, 2(r11)
+	mov #k4, r10
+	mov #k4, 2(r11)
+	mov #k5, r10
+	mov #k5, 2(r11)
+	mov #k6, r10
+	mov #k6, 2(r11)
+	mov #main, r10
+	mov #main, 2(r11)
+	mov #sym_target, r10
+	mov #sym_target, 2(r11)
+	mov #later_label, r10
+	mov #later_label, 2(r11)
+	mov #0x1234, r10
+	mov #0x1234, 2(r11)
+	mov.b #0, r12
+	mov.w #0, &0x0204
+	mov.b #1, r12
+	mov.w #1, &0x0204
+	mov.b #2, r12
+	mov.w #2, &0x0204
+	mov.b #4, r12
+	mov.w #4, &0x0204
+	mov.b #8, r12
+	mov.w #8, &0x0204
+	mov.b #-1, r12
+	mov.w #-1, &0x0204
+	mov.b #0xff, r12
+	mov.w #0xff, &0x0204
+	mov.b #0xffff, r12
+	mov.w #0xffff, &0x0204
+	mov.b r5, r12
+	mov.w r5, &0x0204
+	mov.b @r6+, r12
+	mov.w @r6+, &0x0204
+	add r5, r10
+	add r5, 2(r11)
+	add r5, &0x0202
+	add r5, &DMEM_242
+	add r5, sym_target
+	add 4(r6), r10
+	add 4(r6), 2(r11)
+	add 4(r6), &0x0202
+	add 4(r6), &DMEM_242
+	add 4(r6), sym_target
+	add -2(r7), r10
+	add -2(r7), 2(r11)
+	add -2(r7), &0x0202
+	add -2(r7), &DMEM_242
+	add -2(r7), sym_target
+	add &0x0200, r10
+	add &0x0200, 2(r11)
+	add &0x0200, &0x0202
+	add &0x0200, &DMEM_242
+	add &0x0200, sym_target
+	add &DMEM_240, r10
+	add &DMEM_240, 2(r11)
+	add &DMEM_240, &0x0202
+	add &DMEM_240, &DMEM_242
+	add &DMEM_240, sym_target
+	add sym_target, r10
+	add sym_target, 2(r11)
+	add sym_target, &0x0202
+	add sym_target, &DMEM_242
+	add sym_target, sym_target
+	add @r8, r10
+	add @r8, 2(r11)
+	add @r8, &0x0202
+	add @r8, &DMEM_242
+	add @r8, sym_target
+	add @r9+, r10
+	add @r9+, 2(r11)
+	add @r9+, &0x0202
+	add @r9+, &DMEM_242
+	add @r9+, sym_target
+	add #0, r10
+	add #0, 2(r11)
+	add #1, r10
+	add #1, 2(r11)
+	add #2, r10
+	add #2, 2(r11)
+	add #4, r10
+	add #4, 2(r11)
+	add #8, r10
+	add #8, 2(r11)
+	add #-1, r10
+	add #-1, 2(r11)
+	add #0xffff, r10
+	add #0xffff, 2(r11)
+	add #3, r10
+	add #3, 2(r11)
+	add #0x10, r10
+	add #0x10, 2(r11)
+	add #k1, r10
+	add #k1, 2(r11)
+	add #k2, r10
+	add #k2, 2(r11)
+	add #k3, r10
+	add #k3, 2(r11)
+	add #k4, r10
+	add #k4, 2(r11)
+	add #k5, r10
+	add #k5, 2(r11)
+	add #k6, r10
+	add #k6, 2(r11)
+	add #main, r10
+	add #main, 2(r11)
+	add #sym_target, r10
+	add #sym_target, 2(r11)
+	add #later_label, r10
+	add #later_label, 2(r11)
+	add #0x1234, r10
+	add #0x1234, 2(r11)
+	add.b #0, r12
+	add.w #0, &0x0204
+	add.b #1, r12
+	add.w #1, &0x0204
+	add.b #2, r12
+	add.w #2, &0x0204
+	add.b #4, r12
+	add.w #4, &0x0204
+	add.b #8, r12
+	add.w #8, &0x0204
+	add.b #-1, r12
+	add.w #-1, &0x0204
+	add.b #0xff, r12
+	add.w #0xff, &0x0204
+	add.b #0xffff, r12
+	add.w #0xffff, &0x0204
+	add.b r5, r12
+	add.w r5, &0x0204
+	add.b @r6+, r12
+	add.w @r6+, &0x0204
+	addc r5, r10
+	addc r5, 2(r11)
+	addc r5, &0x0202
+	addc r5, &DMEM_242
+	addc r5, sym_target
+	addc 4(r6), r10
+	addc 4(r6), 2(r11)
+	addc 4(r6), &0x0202
+	addc 4(r6), &DMEM_242
+	addc 4(r6), sym_target
+	addc -2(r7), r10
+	addc -2(r7), 2(r11)
+	addc -2(r7), &0x0202
+	addc -2(r7), &DMEM_242
+	addc -2(r7), sym_target
+	addc &0x0200, r10
+	addc &0x0200, 2(r11)
+	addc &0x0200, &0x0202
+	addc &0x0200, &DMEM_242
+	addc &0x0200, sym_target
+	addc &DMEM_240, r10
+	addc &DMEM_240, 2(r11)
+	addc &DMEM_240, &0x0202
+	addc &DMEM_240, &DMEM_242
+	addc &DMEM_240, sym_target
+	addc sym_target, r10
+	addc sym_target, 2(r11)
+	addc sym_target, &0x0202
+	addc sym_target, &DMEM_242
+	addc sym_target, sym_target
+	addc @r8, r10
+	addc @r8, 2(r11)
+	addc @r8, &0x0202
+	addc @r8, &DMEM_242
+	addc @r8, sym_target
+	addc @r9+, r10
+	addc @r9+, 2(r11)
+	addc @r9+, &0x0202
+	addc @r9+, &DMEM_242
+	addc @r9+, sym_target
+	addc #0, r10
+	addc #0, 2(r11)
+	addc #1, r10
+	addc #1, 2(r11)
+	addc #2, r10
+	addc #2, 2(r11)
+	addc #4, r10
+	addc #4, 2(r11)
+	addc #8, r10
+	addc #8, 2(r11)
+	addc #-1, r10
+	addc #-1, 2(r11)
+	addc #0xffff, r10
+	addc #0xffff, 2(r11)
+	addc #3, r10
+	addc #3, 2(r11)
+	addc #0x10, r10
+	addc #0x10, 2(r11)
+	addc #k1, r10
+	addc #k1, 2(r11)
+	addc #k2, r10
+	addc #k2, 2(r11)
+	addc #k3, r10
+	addc #k3, 2(r11)
+	addc #k4, r10
+	addc #k4, 2(r11)
+	addc #k5, r10
+	addc #k5, 2(r11)
+	addc #k6, r10
+	addc #k6, 2(r11)
+	addc #main, r10
+	addc #main, 2(r11)
+	addc #sym_target, r10
+	addc #sym_target, 2(r11)
+	addc #later_label, r10
+	addc #later_label, 2(r11)
+	addc #0x1234, r10
+	addc #0x1234, 2(r11)
+	addc.b #0, r12
+	addc.w #0, &0x0204
+	addc.b #1, r12
+	addc.w #1, &0x0204
+	addc.b #2, r12
+	addc.w #2, &0x0204
+	addc.b #4, r12
+	addc.w #4, &0x0204
+	addc.b #8, r12
+	addc.w #8, &0x0204
+	addc.b #-1, r12
+	addc.w #-1, &0x0204
+	addc.b #0xff, r12
+	addc.w #0xff, &0x0204
+	addc.b #0xffff, r12
+	addc.w #0xffff, &0x0204
+	addc.b r5, r12
+	addc.w r5, &0x0204
+	addc.b @r6+, r12
+	addc.w @r6+, &0x0204
+	subc r5, r10
+	subc r5, 2(r11)
+	subc r5, &0x0202
+	subc r5, &DMEM_242
+	subc r5, sym_target
+	subc 4(r6), r10
+	subc 4(r6), 2(r11)
+	subc 4(r6), &0x0202
+	subc 4(r6), &DMEM_242
+	subc 4(r6), sym_target
+	subc -2(r7), r10
+	subc -2(r7), 2(r11)
+	subc -2(r7), &0x0202
+	subc -2(r7), &DMEM_242
+	subc -2(r7), sym_target
+	subc &0x0200, r10
+	subc &0x0200, 2(r11)
+	subc &0x0200, &0x0202
+	subc &0x0200, &DMEM_242
+	subc &0x0200, sym_target
+	subc &DMEM_240, r10
+	subc &DMEM_240, 2(r11)
+	subc &DMEM_240, &0x0202
+	subc &DMEM_240, &DMEM_242
+	subc &DMEM_240, sym_target
+	subc sym_target, r10
+	subc sym_target, 2(r11)
+	subc sym_target, &0x0202
+	subc sym_target, &DMEM_242
+	subc sym_target, sym_target
+	subc @r8, r10
+	subc @r8, 2(r11)
+	subc @r8, &0x0202
+	subc @r8, &DMEM_242
+	subc @r8, sym_target
+	subc @r9+, r10
+	subc @r9+, 2(r11)
+	subc @r9+, &0x0202
+	subc @r9+, &DMEM_242
+	subc @r9+, sym_target
+	subc #0, r10
+	subc #0, 2(r11)
+	subc #1, r10
+	subc #1, 2(r11)
+	subc #2, r10
+	subc #2, 2(r11)
+	subc #4, r10
+	subc #4, 2(r11)
+	subc #8, r10
+	subc #8, 2(r11)
+	subc #-1, r10
+	subc #-1, 2(r11)
+	subc #0xffff, r10
+	subc #0xffff, 2(r11)
+	subc #3, r10
+	subc #3, 2(r11)
+	subc #0x10, r10
+	subc #0x10, 2(r11)
+	subc #k1, r10
+	subc #k1, 2(r11)
+	subc #k2, r10
+	subc #k2, 2(r11)
+	subc #k3, r10
+	subc #k3, 2(r11)
+	subc #k4, r10
+	subc #k4, 2(r11)
+	subc #k5, r10
+	subc #k5, 2(r11)
+	subc #k6, r10
+	subc #k6, 2(r11)
+	subc #main, r10
+	subc #main, 2(r11)
+	subc #sym_target, r10
+	subc #sym_target, 2(r11)
+	subc #later_label, r10
+	subc #later_label, 2(r11)
+	subc #0x1234, r10
+	subc #0x1234, 2(r11)
+	subc.b #0, r12
+	subc.w #0, &0x0204
+	subc.b #1, r12
+	subc.w #1, &0x0204
+	subc.b #2, r12
+	subc.w #2, &0x0204
+	subc.b #4, r12
+	subc.w #4, &0x0204
+	subc.b #8, r12
+	subc.w #8, &0x0204
+	subc.b #-1, r12
+	subc.w #-1, &0x0204
+	subc.b #0xff, r12
+	subc.w #0xff, &0x0204
+	subc.b #0xffff, r12
+	subc.w #0xffff, &0x0204
+	subc.b r5, r12
+	subc.w r5, &0x0204
+	subc.b @r6+, r12
+	subc.w @r6+, &0x0204
+	sub r5, r10
+	sub r5, 2(r11)
+	sub r5, &0x0202
+	sub r5, &DMEM_242
+	sub r5, sym_target
+	sub 4(r6), r10
+	sub 4(r6), 2(r11)
+	sub 4(r6), &0x0202
+	sub 4(r6), &DMEM_242
+	sub 4(r6), sym_target
+	sub -2(r7), r10
+	sub -2(r7), 2(r11)
+	sub -2(r7), &0x0202
+	sub -2(r7), &DMEM_242
+	sub -2(r7), sym_target
+	sub &0x0200, r10
+	sub &0x0200, 2(r11)
+	sub &0x0200, &0x0202
+	sub &0x0200, &DMEM_242
+	sub &0x0200, sym_target
+	sub &DMEM_240, r10
+	sub &DMEM_240, 2(r11)
+	sub &DMEM_240, &0x0202
+	sub &DMEM_240, &DMEM_242
+	sub &DMEM_240, sym_target
+	sub sym_target, r10
+	sub sym_target, 2(r11)
+	sub sym_target, &0x0202
+	sub sym_target, &DMEM_242
+	sub sym_target, sym_target
+	sub @r8, r10
+	sub @r8, 2(r11)
+	sub @r8, &0x0202
+	sub @r8, &DMEM_242
+	sub @r8, sym_target
+	sub @r9+, r10
+	sub @r9+, 2(r11)
+	sub @r9+, &0x0202
+	sub @r9+, &DMEM_242
+	sub @r9+, sym_target
+	sub #0, r10
+	sub #0, 2(r11)
+	sub #1, r10
+	sub #1, 2(r11)
+	sub #2, r10
+	sub #2, 2(r11)
+	sub #4, r10
+	sub #4, 2(r11)
+	sub #8, r10
+	sub #8, 2(r11)
+	sub #-1, r10
+	sub #-1, 2(r11)
+	sub #0xffff, r10
+	sub #0xffff, 2(r11)
+	sub #3, r10
+	sub #3, 2(r11)
+	sub #0x10, r10
+	sub #0x10, 2(r11)
+	sub #k1, r10
+	sub #k1, 2(r11)
+	sub #k2, r10
+	sub #k2, 2(r11)
+	sub #k3, r10
+	sub #k3, 2(r11)
+	sub #k4, r10
+	sub #k4, 2(r11)
+	sub #k5, r10
+	sub #k5, 2(r11)
+	sub #k6, r10
+	sub #k6, 2(r11)
+	sub #main, r10
+	sub #main, 2(r11)
+	sub #sym_target, r10
+	sub #sym_target, 2(r11)
+	sub #later_label, r10
+	sub #later_label, 2(r11)
+	sub #0x1234, r10
+	sub #0x1234, 2(r11)
+	sub.b #0, r12
+	sub.w #0, &0x0204
+	sub.b #1, r12
+	sub.w #1, &0x0204
+	sub.b #2, r12
+	sub.w #2, &0x0204
+	sub.b #4, r12
+	sub.w #4, &0x0204
+	sub.b #8, r12
+	sub.w #8, &0x0204
+	sub.b #-1, r12
+	sub.w #-1, &0x0204
+	sub.b #0xff, r12
+	sub.w #0xff, &0x0204
+	sub.b #0xffff, r12
+	sub.w #0xffff, &0x0204
+	sub.b r5, r12
+	sub.w r5, &0x0204
+	sub.b @r6+, r12
+	sub.w @r6+, &0x0204
+	cmp r5, r10
+	cmp r5, 2(r11)
+	cmp r5, &0x0202
+	cmp r5, &DMEM_242
+	cmp r5, sym_target
+	cmp 4(r6), r10
+	cmp 4(r6), 2(r11)
+	cmp 4(r6), &0x0202
+	cmp 4(r6), &DMEM_242
+	cmp 4(r6), sym_target
+	cmp -2(r7), r10
+	cmp -2(r7), 2(r11)
+	cmp -2(r7), &0x0202
+	cmp -2(r7), &DMEM_242
+	cmp -2(r7), sym_target
+	cmp &0x0200, r10
+	cmp &0x0200, 2(r11)
+	cmp &0x0200, &0x0202
+	cmp &0x0200, &DMEM_242
+	cmp &0x0200, sym_target
+	cmp &DMEM_240, r10
+	cmp &DMEM_240, 2(r11)
+	cmp &DMEM_240, &0x0202
+	cmp &DMEM_240, &DMEM_242
+	cmp &DMEM_240, sym_target
+	cmp sym_target, r10
+	cmp sym_target, 2(r11)
+	cmp sym_target, &0x0202
+	cmp sym_target, &DMEM_242
+	cmp sym_target, sym_target
+	cmp @r8, r10
+	cmp @r8, 2(r11)
+	cmp @r8, &0x0202
+	cmp @r8, &DMEM_242
+	cmp @r8, sym_target
+	cmp @r9+, r10
+	cmp @r9+, 2(r11)
+	cmp @r9+, &0x0202
+	cmp @r9+, &DMEM_242
+	cmp @r9+, sym_target
+	cmp #0, r10
+	cmp #0, 2(r11)
+	cmp #1, r10
+	cmp #1, 2(r11)
+	cmp #2, r10
+	cmp #2, 2(r11)
+	cmp #4, r10
+	cmp #4, 2(r11)
+	cmp #8, r10
+	cmp #8, 2(r11)
+	cmp #-1, r10
+	cmp #-1, 2(r11)
+	cmp #0xffff, r10
+	cmp #0xffff, 2(r11)
+	cmp #3, r10
+	cmp #3, 2(r11)
+	cmp #0x10, r10
+	cmp #0x10, 2(r11)
+	cmp #k1, r10
+	cmp #k1, 2(r11)
+	cmp #k2, r10
+	cmp #k2, 2(r11)
+	cmp #k3, r10
+	cmp #k3, 2(r11)
+	cmp #k4, r10
+	cmp #k4, 2(r11)
+	cmp #k5, r10
+	cmp #k5, 2(r11)
+	cmp #k6, r10
+	cmp #k6, 2(r11)
+	cmp #main, r10
+	cmp #main, 2(r11)
+	cmp #sym_target, r10
+	cmp #sym_target, 2(r11)
+	cmp #later_label, r10
+	cmp #later_label, 2(r11)
+	cmp #0x1234, r10
+	cmp #0x1234, 2(r11)
+	cmp.b #0, r12
+	cmp.w #0, &0x0204
+	cmp.b #1, r12
+	cmp.w #1, &0x0204
+	cmp.b #2, r12
+	cmp.w #2, &0x0204
+	cmp.b #4, r12
+	cmp.w #4, &0x0204
+	cmp.b #8, r12
+	cmp.w #8, &0x0204
+	cmp.b #-1, r12
+	cmp.w #-1, &0x0204
+	cmp.b #0xff, r12
+	cmp.w #0xff, &0x0204
+	cmp.b #0xffff, r12
+	cmp.w #0xffff, &0x0204
+	cmp.b r5, r12
+	cmp.w r5, &0x0204
+	cmp.b @r6+, r12
+	cmp.w @r6+, &0x0204
+	dadd r5, r10
+	dadd r5, 2(r11)
+	dadd r5, &0x0202
+	dadd r5, &DMEM_242
+	dadd r5, sym_target
+	dadd 4(r6), r10
+	dadd 4(r6), 2(r11)
+	dadd 4(r6), &0x0202
+	dadd 4(r6), &DMEM_242
+	dadd 4(r6), sym_target
+	dadd -2(r7), r10
+	dadd -2(r7), 2(r11)
+	dadd -2(r7), &0x0202
+	dadd -2(r7), &DMEM_242
+	dadd -2(r7), sym_target
+	dadd &0x0200, r10
+	dadd &0x0200, 2(r11)
+	dadd &0x0200, &0x0202
+	dadd &0x0200, &DMEM_242
+	dadd &0x0200, sym_target
+	dadd &DMEM_240, r10
+	dadd &DMEM_240, 2(r11)
+	dadd &DMEM_240, &0x0202
+	dadd &DMEM_240, &DMEM_242
+	dadd &DMEM_240, sym_target
+	dadd sym_target, r10
+	dadd sym_target, 2(r11)
+	dadd sym_target, &0x0202
+	dadd sym_target, &DMEM_242
+	dadd sym_target, sym_target
+	dadd @r8, r10
+	dadd @r8, 2(r11)
+	dadd @r8, &0x0202
+	dadd @r8, &DMEM_242
+	dadd @r8, sym_target
+	dadd @r9+, r10
+	dadd @r9+, 2(r11)
+	dadd @r9+, &0x0202
+	dadd @r9+, &DMEM_242
+	dadd @r9+, sym_target
+	dadd #0, r10
+	dadd #0, 2(r11)
+	dadd #1, r10
+	dadd #1, 2(r11)
+	dadd #2, r10
+	dadd #2, 2(r11)
+	dadd #4, r10
+	dadd #4, 2(r11)
+	dadd #8, r10
+	dadd #8, 2(r11)
+	dadd #-1, r10
+	dadd #-1, 2(r11)
+	dadd #0xffff, r10
+	dadd #0xffff, 2(r11)
+	dadd #3, r10
+	dadd #3, 2(r11)
+	dadd #0x10, r10
+	dadd #0x10, 2(r11)
+	dadd #k1, r10
+	dadd #k1, 2(r11)
+	dadd #k2, r10
+	dadd #k2, 2(r11)
+	dadd #k3, r10
+	dadd #k3, 2(r11)
+	dadd #k4, r10
+	dadd #k4, 2(r11)
+	dadd #k5, r10
+	dadd #k5, 2(r11)
+	dadd #k6, r10
+	dadd #k6, 2(r11)
+	dadd #main, r10
+	dadd #main, 2(r11)
+	dadd #sym_target, r10
+	dadd #sym_target, 2(r11)
+	dadd #later_label, r10
+	dadd #later_label, 2(r11)
+	dadd #0x1234, r10
+	dadd #0x1234, 2(r11)
+	dadd.b #0, r12
+	dadd.w #0, &0x0204
+	dadd.b #1, r12
+	dadd.w #1, &0x0204
+	dadd.b #2, r12
+	dadd.w #2, &0x0204
+	dadd.b #4, r12
+	dadd.w #4, &0x0204
+	dadd.b #8, r12
+	dadd.w #8, &0x0204
+	dadd.b #-1, r12
+	dadd.w #-1, &0x0204
+	dadd.b #0xff, r12
+	dadd.w #0xff, &0x0204
+	dadd.b #0xffff, r12
+	dadd.w #0xffff, &0x0204
+	dadd.b r5, r12
+	dadd.w r5, &0x0204
+	dadd.b @r6+, r12
+	dadd.w @r6+, &0x0204
+	bit r5, r10
+	bit r5, 2(r11)
+	bit r5, &0x0202
+	bit r5, &DMEM_242
+	bit r5, sym_target
+	bit 4(r6), r10
+	bit 4(r6), 2(r11)
+	bit 4(r6), &0x0202
+	bit 4(r6), &DMEM_242
+	bit 4(r6), sym_target
+	bit -2(r7), r10
+	bit -2(r7), 2(r11)
+	bit -2(r7), &0x0202
+	bit -2(r7), &DMEM_242
+	bit -2(r7), sym_target
+	bit &0x0200, r10
+	bit &0x0200, 2(r11)
+	bit &0x0200, &0x0202
+	bit &0x0200, &DMEM_242
+	bit &0x0200, sym_target
+	bit &DMEM_240, r10
+	bit &DMEM_240, 2(r11)
+	bit &DMEM_240, &0x0202
+	bit &DMEM_240, &DMEM_242
+	bit &DMEM_240, sym_target
+	bit sym_target, r10
+	bit sym_target, 2(r11)
+	bit sym_target, &0x0202
+	bit sym_target, &DMEM_242
+	bit sym_target, sym_target
+	bit @r8, r10
+	bit @r8, 2(r11)
+	bit @r8, &0x0202
+	bit @r8, &DMEM_242
+	bit @r8, sym_target
+	bit @r9+, r10
+	bit @r9+, 2(r11)
+	bit @r9+, &0x0202
+	bit @r9+, &DMEM_242
+	bit @r9+, sym_target
+	bit #0, r10
+	bit #0, 2(r11)
+	bit #1, r10
+	bit #1, 2(r11)
+	bit #2, r10
+	bit #2, 2(r11)
+	bit #4, r10
+	bit #4, 2(r11)
+	bit #8, r10
+	bit #8, 2(r11)
+	bit #-1, r10
+	bit #-1, 2(r11)
+	bit #0xffff, r10
+	bit #0xffff, 2(r11)
+	bit #3, r10
+	bit #3, 2(r11)
+	bit #0x10, r10
+	bit #0x10, 2(r11)
+	bit #k1, r10
+	bit #k1, 2(r11)
+	bit #k2, r10
+	bit #k2, 2(r11)
+	bit #k3, r10
+	bit #k3, 2(r11)
+	bit #k4, r10
+	bit #k4, 2(r11)
+	bit #k5, r10
+	bit #k5, 2(r11)
+	bit #k6, r10
+	bit #k6, 2(r11)
+	bit #main, r10
+	bit #main, 2(r11)
+	bit #sym_target, r10
+	bit #sym_target, 2(r11)
+	bit #later_label, r10
+	bit #later_label, 2(r11)
+	bit #0x1234, r10
+	bit #0x1234, 2(r11)
+	bit.b #0, r12
+	bit.w #0, &0x0204
+	bit.b #1, r12
+	bit.w #1, &0x0204
+	bit.b #2, r12
+	bit.w #2, &0x0204
+	bit.b #4, r12
+	bit.w #4, &0x0204
+	bit.b #8, r12
+	bit.w #8, &0x0204
+	bit.b #-1, r12
+	bit.w #-1, &0x0204
+	bit.b #0xff, r12
+	bit.w #0xff, &0x0204
+	bit.b #0xffff, r12
+	bit.w #0xffff, &0x0204
+	bit.b r5, r12
+	bit.w r5, &0x0204
+	bit.b @r6+, r12
+	bit.w @r6+, &0x0204
+	bic r5, r10
+	bic r5, 2(r11)
+	bic r5, &0x0202
+	bic r5, &DMEM_242
+	bic r5, sym_target
+	bic 4(r6), r10
+	bic 4(r6), 2(r11)
+	bic 4(r6), &0x0202
+	bic 4(r6), &DMEM_242
+	bic 4(r6), sym_target
+	bic -2(r7), r10
+	bic -2(r7), 2(r11)
+	bic -2(r7), &0x0202
+	bic -2(r7), &DMEM_242
+	bic -2(r7), sym_target
+	bic &0x0200, r10
+	bic &0x0200, 2(r11)
+	bic &0x0200, &0x0202
+	bic &0x0200, &DMEM_242
+	bic &0x0200, sym_target
+	bic &DMEM_240, r10
+	bic &DMEM_240, 2(r11)
+	bic &DMEM_240, &0x0202
+	bic &DMEM_240, &DMEM_242
+	bic &DMEM_240, sym_target
+	bic sym_target, r10
+	bic sym_target, 2(r11)
+	bic sym_target, &0x0202
+	bic sym_target, &DMEM_242
+	bic sym_target, sym_target
+	bic @r8, r10
+	bic @r8, 2(r11)
+	bic @r8, &0x0202
+	bic @r8, &DMEM_242
+	bic @r8, sym_target
+	bic @r9+, r10
+	bic @r9+, 2(r11)
+	bic @r9+, &0x0202
+	bic @r9+, &DMEM_242
+	bic @r9+, sym_target
+	bic #0, r10
+	bic #0, 2(r11)
+	bic #1, r10
+	bic #1, 2(r11)
+	bic #2, r10
+	bic #2, 2(r11)
+	bic #4, r10
+	bic #4, 2(r11)
+	bic #8, r10
+	bic #8, 2(r11)
+	bic #-1, r10
+	bic #-1, 2(r11)
+	bic #0xffff, r10
+	bic #0xffff, 2(r11)
+	bic #3, r10
+	bic #3, 2(r11)
+	bic #0x10, r10
+	bic #0x10, 2(r11)
+	bic #k1, r10
+	bic #k1, 2(r11)
+	bic #k2, r10
+	bic #k2, 2(r11)
+	bic #k3, r10
+	bic #k3, 2(r11)
+	bic #k4, r10
+	bic #k4, 2(r11)
+	bic #k5, r10
+	bic #k5, 2(r11)
+	bic #k6, r10
+	bic #k6, 2(r11)
+	bic #main, r10
+	bic #main, 2(r11)
+	bic #sym_target, r10
+	bic #sym_target, 2(r11)
+	bic #later_label, r10
+	bic #later_label, 2(r11)
+	bic #0x1234, r10
+	bic #0x1234, 2(r11)
+	bic.b #0, r12
+	bic.w #0, &0x0204
+	bic.b #1, r12
+	bic.w #1, &0x0204
+	bic.b #2, r12
+	bic.w #2, &0x0204
+	bic.b #4, r12
+	bic.w #4, &0x0204
+	bic.b #8, r12
+	bic.w #8, &0x0204
+	bic.b #-1, r12
+	bic.w #-1, &0x0204
+	bic.b #0xff, r12
+	bic.w #0xff, &0x0204
+	bic.b #0xffff, r12
+	bic.w #0xffff, &0x0204
+	bic.b r5, r12
+	bic.w r5, &0x0204
+	bic.b @r6+, r12
+	bic.w @r6+, &0x0204
+	bis r5, r10
+	bis r5, 2(r11)
+	bis r5, &0x0202
+	bis r5, &DMEM_242
+	bis r5, sym_target
+	bis 4(r6), r10
+	bis 4(r6), 2(r11)
+	bis 4(r6), &0x0202
+	bis 4(r6), &DMEM_242
+	bis 4(r6), sym_target
+	bis -2(r7), r10
+	bis -2(r7), 2(r11)
+	bis -2(r7), &0x0202
+	bis -2(r7), &DMEM_242
+	bis -2(r7), sym_target
+	bis &0x0200, r10
+	bis &0x0200, 2(r11)
+	bis &0x0200, &0x0202
+	bis &0x0200, &DMEM_242
+	bis &0x0200, sym_target
+	bis &DMEM_240, r10
+	bis &DMEM_240, 2(r11)
+	bis &DMEM_240, &0x0202
+	bis &DMEM_240, &DMEM_242
+	bis &DMEM_240, sym_target
+	bis sym_target, r10
+	bis sym_target, 2(r11)
+	bis sym_target, &0x0202
+	bis sym_target, &DMEM_242
+	bis sym_target, sym_target
+	bis @r8, r10
+	bis @r8, 2(r11)
+	bis @r8, &0x0202
+	bis @r8, &DMEM_242
+	bis @r8, sym_target
+	bis @r9+, r10
+	bis @r9+, 2(r11)
+	bis @r9+, &0x0202
+	bis @r9+, &DMEM_242
+	bis @r9+, sym_target
+	bis #0, r10
+	bis #0, 2(r11)
+	bis #1, r10
+	bis #1, 2(r11)
+	bis #2, r10
+	bis #2, 2(r11)
+	bis #4, r10
+	bis #4, 2(r11)
+	bis #8, r10
+	bis #8, 2(r11)
+	bis #-1, r10
+	bis #-1, 2(r11)
+	bis #0xffff, r10
+	bis #0xffff, 2(r11)
+	bis #3, r10
+	bis #3, 2(r11)
+	bis #0x10, r10
+	bis #0x10, 2(r11)
+	bis #k1, r10
+	bis #k1, 2(r11)
+	bis #k2, r10
+	bis #k2, 2(r11)
+	bis #k3, r10
+	bis #k3, 2(r11)
+	bis #k4, r10
+	bis #k4, 2(r11)
+	bis #k5, r10
+	bis #k5, 2(r11)
+	bis #k6, r10
+	bis #k6, 2(r11)
+	bis #main, r10
+	bis #main, 2(r11)
+	bis #sym_target, r10
+	bis #sym_target, 2(r11)
+	bis #later_label, r10
+	bis #later_label, 2(r11)
+	bis #0x1234, r10
+	bis #0x1234, 2(r11)
+	bis.b #0, r12
+	bis.w #0, &0x0204
+	bis.b #1, r12
+	bis.w #1, &0x0204
+	bis.b #2, r12
+	bis.w #2, &0x0204
+	bis.b #4, r12
+	bis.w #4, &0x0204
+	bis.b #8, r12
+	bis.w #8, &0x0204
+	bis.b #-1, r12
+	bis.w #-1, &0x0204
+	bis.b #0xff, r12
+	bis.w #0xff, &0x0204
+	bis.b #0xffff, r12
+	bis.w #0xffff, &0x0204
+	bis.b r5, r12
+	bis.w r5, &0x0204
+	bis.b @r6+, r12
+	bis.w @r6+, &0x0204
+	xor r5, r10
+	xor r5, 2(r11)
+	xor r5, &0x0202
+	xor r5, &DMEM_242
+	xor r5, sym_target
+	xor 4(r6), r10
+	xor 4(r6), 2(r11)
+	xor 4(r6), &0x0202
+	xor 4(r6), &DMEM_242
+	xor 4(r6), sym_target
+	xor -2(r7), r10
+	xor -2(r7), 2(r11)
+	xor -2(r7), &0x0202
+	xor -2(r7), &DMEM_242
+	xor -2(r7), sym_target
+	xor &0x0200, r10
+	xor &0x0200, 2(r11)
+	xor &0x0200, &0x0202
+	xor &0x0200, &DMEM_242
+	xor &0x0200, sym_target
+	xor &DMEM_240, r10
+	xor &DMEM_240, 2(r11)
+	xor &DMEM_240, &0x0202
+	xor &DMEM_240, &DMEM_242
+	xor &DMEM_240, sym_target
+	xor sym_target, r10
+	xor sym_target, 2(r11)
+	xor sym_target, &0x0202
+	xor sym_target, &DMEM_242
+	xor sym_target, sym_target
+	xor @r8, r10
+	xor @r8, 2(r11)
+	xor @r8, &0x0202
+	xor @r8, &DMEM_242
+	xor @r8, sym_target
+	xor @r9+, r10
+	xor @r9+, 2(r11)
+	xor @r9+, &0x0202
+	xor @r9+, &DMEM_242
+	xor @r9+, sym_target
+	xor #0, r10
+	xor #0, 2(r11)
+	xor #1, r10
+	xor #1, 2(r11)
+	xor #2, r10
+	xor #2, 2(r11)
+	xor #4, r10
+	xor #4, 2(r11)
+	xor #8, r10
+	xor #8, 2(r11)
+	xor #-1, r10
+	xor #-1, 2(r11)
+	xor #0xffff, r10
+	xor #0xffff, 2(r11)
+	xor #3, r10
+	xor #3, 2(r11)
+	xor #0x10, r10
+	xor #0x10, 2(r11)
+	xor #k1, r10
+	xor #k1, 2(r11)
+	xor #k2, r10
+	xor #k2, 2(r11)
+	xor #k3, r10
+	xor #k3, 2(r11)
+	xor #k4, r10
+	xor #k4, 2(r11)
+	xor #k5, r10
+	xor #k5, 2(r11)
+	xor #k6, r10
+	xor #k6, 2(r11)
+	xor #main, r10
+	xor #main, 2(r11)
+	xor #sym_target, r10
+	xor #sym_target, 2(r11)
+	xor #later_label, r10
+	xor #later_label, 2(r11)
+	xor #0x1234, r10
+	xor #0x1234, 2(r11)
+	xor.b #0, r12
+	xor.w #0, &0x0204
+	xor.b #1, r12
+	xor.w #1, &0x0204
+	xor.b #2, r12
+	xor.w #2, &0x0204
+	xor.b #4, r12
+	xor.w #4, &0x0204
+	xor.b #8, r12
+	xor.w #8, &0x0204
+	xor.b #-1, r12
+	xor.w #-1, &0x0204
+	xor.b #0xff, r12
+	xor.w #0xff, &0x0204
+	xor.b #0xffff, r12
+	xor.w #0xffff, &0x0204
+	xor.b r5, r12
+	xor.w r5, &0x0204
+	xor.b @r6+, r12
+	xor.w @r6+, &0x0204
+	and r5, r10
+	and r5, 2(r11)
+	and r5, &0x0202
+	and r5, &DMEM_242
+	and r5, sym_target
+	and 4(r6), r10
+	and 4(r6), 2(r11)
+	and 4(r6), &0x0202
+	and 4(r6), &DMEM_242
+	and 4(r6), sym_target
+	and -2(r7), r10
+	and -2(r7), 2(r11)
+	and -2(r7), &0x0202
+	and -2(r7), &DMEM_242
+	and -2(r7), sym_target
+	and &0x0200, r10
+	and &0x0200, 2(r11)
+	and &0x0200, &0x0202
+	and &0x0200, &DMEM_242
+	and &0x0200, sym_target
+	and &DMEM_240, r10
+	and &DMEM_240, 2(r11)
+	and &DMEM_240, &0x0202
+	and &DMEM_240, &DMEM_242
+	and &DMEM_240, sym_target
+	and sym_target, r10
+	and sym_target, 2(r11)
+	and sym_target, &0x0202
+	and sym_target, &DMEM_242
+	and sym_target, sym_target
+	and @r8, r10
+	and @r8, 2(r11)
+	and @r8, &0x0202
+	and @r8, &DMEM_242
+	and @r8, sym_target
+	and @r9+, r10
+	and @r9+, 2(r11)
+	and @r9+, &0x0202
+	and @r9+, &DMEM_242
+	and @r9+, sym_target
+	and #0, r10
+	and #0, 2(r11)
+	and #1, r10
+	and #1, 2(r11)
+	and #2, r10
+	and #2, 2(r11)
+	and #4, r10
+	and #4, 2(r11)
+	and #8, r10
+	and #8, 2(r11)
+	and #-1, r10
+	and #-1, 2(r11)
+	and #0xffff, r10
+	and #0xffff, 2(r11)
+	and #3, r10
+	and #3, 2(r11)
+	and #0x10, r10
+	and #0x10, 2(r11)
+	and #k1, r10
+	and #k1, 2(r11)
+	and #k2, r10
+	and #k2, 2(r11)
+	and #k3, r10
+	and #k3, 2(r11)
+	and #k4, r10
+	and #k4, 2(r11)
+	and #k5, r10
+	and #k5, 2(r11)
+	and #k6, r10
+	and #k6, 2(r11)
+	and #main, r10
+	and #main, 2(r11)
+	and #sym_target, r10
+	and #sym_target, 2(r11)
+	and #later_label, r10
+	and #later_label, 2(r11)
+	and #0x1234, r10
+	and #0x1234, 2(r11)
+	and.b #0, r12
+	and.w #0, &0x0204
+	and.b #1, r12
+	and.w #1, &0x0204
+	and.b #2, r12
+	and.w #2, &0x0204
+	and.b #4, r12
+	and.w #4, &0x0204
+	and.b #8, r12
+	and.w #8, &0x0204
+	and.b #-1, r12
+	and.w #-1, &0x0204
+	and.b #0xff, r12
+	and.w #0xff, &0x0204
+	and.b #0xffff, r12
+	and.w #0xffff, &0x0204
+	and.b r5, r12
+	and.w r5, &0x0204
+	and.b @r6+, r12
+	and.w @r6+, &0x0204
+	rrc r13
+	rrc 2(r14)
+	rrc &0x0206
+	rrc sym_target
+	rrc @r4
+	rrc @r5+
+	rrc #0x54
+	rrc #8
+	rrc.b r6
+	swpb r13
+	swpb 2(r14)
+	swpb &0x0206
+	swpb sym_target
+	swpb @r4
+	swpb @r5+
+	rra r13
+	rra 2(r14)
+	rra &0x0206
+	rra sym_target
+	rra @r4
+	rra @r5+
+	rra #0x54
+	rra #8
+	rra.b r6
+	sxt r13
+	sxt 2(r14)
+	sxt &0x0206
+	sxt sym_target
+	sxt @r4
+	sxt @r5+
+	push r13
+	push 2(r14)
+	push &0x0206
+	push sym_target
+	push @r4
+	push @r5+
+	push #0x54
+	push #8
+	push.b r6
+	call r13
+	call 2(r14)
+	call &0x0206
+	call sym_target
+	call @r4
+	call @r5+
+	call #0x54
+	call #8
+	push #0
+	push #1
+	push #2
+	push #4
+	push #8
+	push #-1
+	push #0xff
+	push #0xffff
+	call #0
+	call #1
+	call #2
+	call #4
+	call #8
+	call #-1
+	call #0xffff
+	push.b #0
+	push.b #1
+	push.b #2
+	push.b #4
+	push.b #8
+	push.b #-1
+	push.b #0xff
+	push.b #0xffff
+	rrc #0
+	rrc #1
+	rrc #2
+	rrc #4
+	rrc #8
+	rrc #-1
+	rra.b #0
+	rra.b #1
+	rra.b #2
+	rra.b #4
+	rra.b #8
+	rra.b #-1
+	reti
+jback:
+	jne jback
+	jne later_label
+	jne $+4
+	jnz jback
+	jnz later_label
+	jnz $+4
+	jeq jback
+	jeq later_label
+	jeq $+4
+	jz jback
+	jz later_label
+	jz $+4
+	jnc jback
+	jnc later_label
+	jnc $+4
+	jlo jback
+	jlo later_label
+	jlo $+4
+	jc jback
+	jc later_label
+	jc $+4
+	jhs jback
+	jhs later_label
+	jhs $+4
+	jn jback
+	jn later_label
+	jn $+4
+	jge jback
+	jge later_label
+	jge $+4
+	jl jback
+	jl later_label
+	jl $+4
+	jmp jback
+	jmp later_label
+	jmp $+4
+	nop
+	ret
+	dint
+	eint
+	setc
+	clrc
+	setz
+	clrz
+	setn
+	clrn
+	reti
+	br #later_label
+	br r7
+	br &0x0208
+	clr r8
+	clr &0x020a
+	inc r9
+	incd r9
+	dec r9
+	decd r9
+	tst r9
+	inv r9
+	pop r10
+	adc r11
+	sbc r11
+	dadc r11
+	rla r12
+	rlc r12
+	clr.b r8
+	inc.b &0x020c
+	tst.b r9
+	sancus_get_caller_id
+	sancus_get_id
+	sancus_stack_guard #0x0300
+	sancus_enable #1234, #main, #later_label, #DMEM_240, #DMEM_24A
+	sancus_wrap #0, #DMEM_240, #DMEM_242, #DMEM_244, #DMEM_246, #DMEM_248, #DMEM_24A
+	sancus_unwrap #0, #DMEM_240, #DMEM_242, #DMEM_244, #DMEM_246, #DMEM_248, #DMEM_24A
+	do_reti #main
+	disable_wdt
+	halt
+	jz . /* a comment that /* nests */
+	.word 0x1381, k3, main, later_label - main
+	.byte 1, 2, k1, 0
+.word 0xbeef
+sym_target: .word 0
+later_label:
+	nop
+.section .vectors, "a"
+.word main, back_label, later_label, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, main

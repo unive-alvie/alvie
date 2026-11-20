@@ -1,0 +1,14 @@
+format: 1
+types:
+  val:
+    variants:
+      lit: { syntax: "{num}", args: { num: { int: [0, 9] } } }
+      secret: { syntax: "?", secret: { expand: "{value}" } }
+attributes:
+  uses: { of: val }
+atoms:
+  ops:
+    call: { syntax: "call {s}", args: { s: symbol } }
+    put: { syntax: "put {v}", args: { v: val }, attributes: { uses: [v] } }
+    nop: { syntax: nop }
+    ret: { syntax: ret }

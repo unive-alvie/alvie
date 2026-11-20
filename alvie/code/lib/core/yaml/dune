@@ -1,0 +1,9 @@
+; The YAML parser of the plugin files, as a stream of events. It is a virtual library: the default implementation
+; uses libyaml (C, through the yaml library); a build without C code, e.g. for a browser, links
+; alvie-core.yaml-table, which knows the YAML files of plugins/.
+(library
+ (name alvie_yaml)
+ (public_name alvie-core.yaml)
+ (modules yaml_event yaml_parser)
+ (virtual_modules yaml_parser)
+ (default_implementation alvie-core.yaml-libyaml))

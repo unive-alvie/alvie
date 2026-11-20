@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/phases.schema.json",
+  "title": "ALVIE plugin phase rules",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "match": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ],
+            "description": "The kinds of observations the rule applies to (all if absent)"
+          },
+          "in": {
+            "anyOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ],
+            "description": "The current sections the rule applies in (all if absent)"
+          },
+          "when": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "The values of fields the rule requires"
+          },
+          "do": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                { "enum": [ "restart", "reset", "resume" ] },
+                {
+                  "type": "object",
+                  "properties": {
+                    "enter": {
+                      "type": "string",
+                      "description": "The section starts again and becomes current"
+                    },
+                    "switch": {
+                      "type": "string",
+                      "description": "The section becomes current where it was"
+                    },
+                    "interrupt": {
+                      "type": "string",
+                      "description": "The current section is saved, and this one is entered"
+                    },
+                    "stop": {
+                      "enum": [ "finished", "invalid" ],
+                      "description": "The test stops"
+                    }
+                  },
+                  "required": [],
+                  "additionalProperties": false
+                }
+              ],
+              "description": "restart, reset, resume, { enter: S }, { switch: S }, { interrupt: S } or { stop: finished | invalid }"
+            },
+            "description": "The actions, in order"
+          }
+        },
+        "required": [ "do" ],
+        "additionalProperties": false
+      },
+      "description": "The rules, in order: the first that matches applies"
+    }
+  },
+  "required": [ "format", "rules" ],
+  "additionalProperties": false
+}

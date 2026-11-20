@@ -1,0 +1,7 @@
+(executable
+ (name model_compare_main)
+ (public_name alvie-model-compare)
+ (package alvie-core)
+ (modules model_compare model_compare_main)
+ (preprocess (pps ppx_jane))
+ (libraries core core_unix.command_unix core_unix.sys_unix str))

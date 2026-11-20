@@ -9,6 +9,9 @@ old
 
 # ocamlbuild working directory
 **/_build/
+**/_build-alvie-*/
+**/_build-web/
+**/_build-5.*/
 
 # ocamlbuild targets
 *.byte
@@ -115,7 +118,7 @@ MANIFEST
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
-*.spec
+# (not *.spec: ALVIE's specs, e.g. the fixtures of plugins/tiny, are .spec files)
 
 # Installer logs
 pip-log.txt
@@ -258,3 +261,7 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Output of regression.sh
+results/regression/
+counterexamples/regression/

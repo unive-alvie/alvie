@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>alvie-web smoke test</title>
+<pre id="out">running...</pre>
+<script>
+// Learns a model of ALVIE/Sancus (by default the Getting Started example on bf89c0b) with alvie-web in a Web Worker,
+// shows the output and
+// the model, and posts them to /result (see smoke.py)
+(async () => {
+  // ?att=FILE&encl=FILE&commit=C&secret=S&profile=1 (files in spec/; profile: ALVIE_PROFILE=1); the Getting Started
+  // example on bf89c0b by default
+  const q = new URLSearchParams(location.search);
+  const att = q.get('att') || 'attacker.atdl', encl = q.get('encl') || 'enclave.etdl', commit = q.get('commit') || 'bf89c0b';
+  const text = async (p) => (await fetch(p)).text();
+  const files = { '/w/attacker.atdl': await text(`spec/${att}`), '/w/enclave.etdl': await text(`spec/${encl}`) };
+  const argv = ['sancus', 'learn', '--spec', '/w/attacker.atdl', '--spec', '/w/enclave.etdl', '--secret', q.get('secret') || '0',
+                '--commit', commit, '--sancus', 'none', '--tmpdir', '/w/tmp', '--res', '/w/model.dot'];
+  const worker = new Worker('worker.js');
+  const t0 = performance.now();
+  worker.onmessage = async (event) => {
+    const result = { ...event.data, ms: Math.round(performance.now() - t0), userAgent: navigator.userAgent };
+    document.getElementById('out').textContent = result.lines.join('\n') + '\n\n' + (result.files['/w/model.dot'] || '(no model)');
+    await fetch('/result', { method: 'POST', body: JSON.stringify(result) });
+  };
+  const env = q.get('profile') ? { ALVIE_PROFILE: '1' } : {};
+  worker.postMessage({ argv, env, files, collect: ['/w/model.dot'], commit });
+})();
+</script>

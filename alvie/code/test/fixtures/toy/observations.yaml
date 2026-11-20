@@ -1,0 +1,11 @@
+format: 1
+types:
+  mode: { enum: [low, high] }
+kinds:
+  Ok: {}
+  Enter: { fields: { target: { int: [0, 9] } } }
+  Leave: {}
+  Irq: {}
+  Ret: { fields: { mode: mode } }
+  Done: {}
+  Bad: {}

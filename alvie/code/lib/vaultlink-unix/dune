@@ -1,0 +1,6 @@
+; ALVIE/VaultLink over TCP: the transport of Vaultlink.Service that reaches a service at host:port (the Unix library)
+(library
+ (name vaultlink_unix)
+ (public_name alvie-core.vaultlink-unix)
+ (modules conn tcp)
+ (libraries vaultlink unix))

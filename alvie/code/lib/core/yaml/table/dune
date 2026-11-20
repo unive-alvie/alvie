@@ -1,0 +1,12 @@
+; An implementation of alvie_yaml without C code, e.g. for a browser: it knows the events of the YAML files of
+; plugins/ (the plugin files and their fixtures), read with libyaml when ALVIE is built, and reads only those.
+(library
+ (name alvie_yaml_table)
+ (public_name alvie-core.yaml-table)
+ (implements alvie_yaml)
+ (private_modules yaml_table))
+
+(rule
+ (targets yaml_table.ml)
+ (deps (glob_files_rec %{project_root}/plugins/*.yaml))
+ (action (with-stdout-to %{targets} (run %{exe:gen/yaml_table_gen.exe} %{deps}))))

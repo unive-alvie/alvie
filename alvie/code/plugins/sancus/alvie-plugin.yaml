@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=../../schemas/alvie-plugin.schema.json
+# The manifest of ALVIE/Sancus: Sancus (an embedded TEE on the openMSP430) under an attacker that controls the
+# untrusted software, the timer and interrupts.
+format: 1
+name: sancus
+version: "2026.10"
+core: "1"
+kind: native
+description: >-
+  Sancus enclaves on the openMSP430, simulated with Verilator from the sancus-core-gap repository: the attacker
+  prepares and enters the enclave, interrupts it with the timer, runs its own ISR, and resumes or re-enters it.
+
+config:
+  sancus:
+    type: path
+    required: true
+    doc: The sancus-core-gap checkout (a git repository with the whole history)
+  commit:
+    type: string
+    default: ef753b6
+    doc: The commit of sancus-core-gap to simulate (ef753b6 has no Mind the Gap mitigations)
+  sancus-master-key:
+    type: string
+    default: cafe
+    doc: The master key the processor is built with, in hex
+  tmpdir:
+    type: path
+    required: true
+    doc: Where the generated programs and the simulators are built
+  keep-repeated-reentries:
+    type: bool
+    default: "false"
+    doc: >-
+      Do not identify a segment of execution between two re-entries (reti) with an identical segment immediately
+      before it (without this, attackers that resume an enclave repeatedly, such as B3, give finite models)
+
+variants:
+  no-interrupts:
+    doc: >-
+      The attacker cannot interrupt the enclave (timer_enable starts no timer): the baseline whose differences
+      are not caused by interrupts
+
+capabilities: [restore, clone, parallel]
+fixtures: fixtures

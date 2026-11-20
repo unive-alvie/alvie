@@ -1,0 +1,6 @@
+; External plugins: the protocol of Core (Protocol) and the backend that speaks it (Rpc_backend)
+(library
+ (name alvie_rpc)
+ (public_name alvie-core.rpc)
+ (preprocess (pps ppx_jane))
+ (libraries core core_unix unix yojson logs alvie_plugin alvie_backend alvie_cli))

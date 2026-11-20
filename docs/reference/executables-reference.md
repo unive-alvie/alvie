@@ -2,16 +2,120 @@
 title: Executables Reference
 description: Command-line reference for ALVIE/Sancus tools.
 sidebar:
-  order: 6
+  order: 2
 ---
 
-All executables are built with `dune build` from inside `alvie/code/` and run as:
+All executables are built with `dune build` from inside `alvie/code/` and run from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
+[ALVIE in your browser](/alvie/play/) runs most of them with nothing to install: see [In the browser](#in-the-browser).
 
-```
-_build/default/bin/<name>.exe [flags]
+## The `alvie` command
+
+`alvie` gathers the tools of this page under one command:
+
+| Command | Same as | Does |
+| --- | --- | --- |
+| `alvie learn` | `learn.exe` | Learns a model |
+| `alvie compare` | `fa.exe` | Compares the four models of an experiment |
+| `alvie exec` | `exec.exe` | Runs a sequence of inputs on the simulator |
+| `alvie pbt` | `pbt.exe` | Property-based testing of two attacker specifications |
+| `alvie property inclusion M1 M2` | | Checks that every trace of `M1` is one of `M2`, or prints one that is not |
+| `alvie property equivalence M1 M2` | | Checks that two models have the same traces, or prints one of a single model |
+| `alvie property formula M -f F.mcf` | | Checks that a model satisfies an mCRL2 modal μ-calculus formula |
+| `alvie plugin check [DIR]` | | Checks the files of a plugin (by default `plugins/sancus`, which `alvie` is built with) and prints a summary, or every problem with its place |
+| `alvie plugin schemas OUT` | | Writes the JSON Schemas of the plugin files and of the plugin's values to `OUT` |
+| `alvie plugin new NAME [--external]` | | Makes a plugin from the template: native, or external in Python (see the [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/)) |
+| `alvie plugin types DIR OUT.py` | | Writes the Python constructors of the observations of the plugin in `DIR` |
+| `alvie external DIR ...` | | The commands of ALVIE/Core on the external plugin in `DIR` (see the [protocol](/alvie/plugin-authors/protocol/)) |
+| `alvie vaultlink learn\|compare\|replay\|serve` | | ALVIE/VaultLink: models of services that speak a line-based text protocol, over TCP or in memory (see the [ALVIE/VaultLink Reference](/alvie/vaultlink/vaultlink-reference/)) |
+| `alvie tiny ...` | | The commands of ALVIE/Core on Tiny, the reference platform (see [below](#the-commands-of-a-plugin)) |
+| `alvie sancus conformance`, `fixtures`, `exec` | | The same commands on Sancus: the conformance of the simulator, and the fixtures of `plugins/sancus` |
+| `alvie sancus-fpga ...` | | The commands of ALVIE/Core on Sancus-FPGA: Sancus on an openMSP430/Sancus board (see [Running on an FPGA](/alvie/sancus/fpga/)) |
+
+```bash
+_build/default/bin/alvie.exe learn --att-spec ... --encl-spec ... --res model.dot --tmpdir /tmp/alvie --sancus ../../sancus-core-gap --oracle pac
+_build/default/bin/alvie.exe plugin check
 ```
 
-from the **`alvie/code/` directory** unless a `--tmpdir` or `--sancus` path says otherwise.
+`learn.exe`, `fa.exe`, `exec.exe` and `pbt.exe` are the same commands under their former names.
+They remain for one release, for the scripts and tools that call them (alvie-ui runs `bin/learn.exe` and reads its output, which does not change), and the sections below describe them by these names.
+
+The options of the backend (`--sancus`, `--commit`, `--sancus-master-key`, `--tmpdir`, `--keep-repeated-reentries`) come from the configuration parameters of `plugins/sancus/alvie-plugin.yaml`: their names, types, defaults and help are those of the manifest.
+
+## Properties (`alvie property`)
+
+`alvie property` checks the other properties of the catalogue of ALVIE/Core (version 1) on learned models.
+Noninterference, the fourth, is `alvie compare`.
+Like `alvie compare`, it sees the models as the attacker does: through the view of `plugins/sancus/view.yaml`, with hidden outputs silent (`τ` in traces).
+Only `formula` needs mCRL2.
+
+```bash
+_build/default/bin/alvie.exe property equivalence ../../results/264f135-b7-enclave-complete-0-0.01-0.01-int.dot ../../results/264f135-b7-enclave-complete-1-0.01-0.01-int.dot
+_build/default/bin/alvie.exe property formula model.dot --formula my-property.mcf
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--tmpdir` | `/tmp/alvie` | Directory for the files given to mCRL2 (`formula`, or `ALVIE_MCRL2=1`) |
+| `--formula`, `-f` | | The formula (`formula` only) |
+| `--debug` | | Debug-level logging, and keep the files of mCRL2; the command prints where they are |
+
+In a formula, the actions are the labels of the model, `input/Output(fields)`, made into mCRL2 identifiers: every character other than a letter or a digit becomes `_`.
+With `--debug`, `actions.txt`, next to the model given to mCRL2, lists each action and its label.
+
+The exit status is 0 when the property holds and 4 when it does not; when it does not, the output gives a trace that shows it (except for a formula).
+A mistake in the command or the files (a missing model, a model of a newer format, a formula that mCRL2 rejects) exits with 2 and a message.
+
+## The commands of a plugin
+
+ALVIE/Core has the same commands for every plugin: `alvie tiny ...` for Tiny, `alvie-NAME ...` for a native plugin made with `alvie plugin new`, and `alvie external DIR ...` for an external one (`alvie external plugins/tiny-py ...` for Tiny in Python).
+Their options include those of the plugin's manifest: `--mitigation` for Tiny.
+The [Tiny tutorial](/alvie/core/tiny-tutorial/) uses each of them.
+
+| Command | Does |
+| --- | --- |
+| `learn --spec F --res M.dot` | Learns a model of the backend under the spec (several `--spec` for a spec in several files) |
+| `compare --m1 A --m2 B --secrets s1,s2 --witnesses W.dot` | Noninterference: the witnesses that tell apart two models that differ only in the secret |
+| `property inclusion\|equivalence\|formula` | The other properties, as `alvie property` below |
+| `exec --spec F --inputs FILE` | Runs the atoms of `FILE` (one per line, as a spec writes them; a line that starts with `#` is a comment) and prints what each observes |
+| `conformance --spec F` | Checks that the backend keeps the contract of Core, on random tests of the spec |
+| `fixtures [NAME ...]` | Learns and compares the plugin's fixtures, and checks their verdicts |
+
+Options of `learn` (and of `exec` and `conformance` where they apply):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--secret V` | | The value of the secret `?` in the spec; needed when the spec has one |
+| `--variant NAME` | | A variant of the system from the manifest, such as `no-interrupts` |
+| `--oracle` | `pac` | `pac`, with `--epsilon` and `--delta` (0.01 each) and `--round-limit`; `randomwalk`, with `--test-count` (500) and `--reset-probability` (0.05); `wmethod`, with `--extra-states` (1) and `--max-tests` (no limit); or `exhaustive` |
+| `--seed N` | 0 | The seed of the random choices: learning is deterministic for a seed |
+| `--debug` | | Debug-level logging |
+
+Options of `compare`: `--m1-baseline` and `--m2-baseline` (models of a baseline variant, whose witnesses do not count), `--tmpdir` (for mCRL2 with `ALVIE_MCRL2=1`, default `/tmp/alvie`) and `--cex-limit`.
+Options of `conformance`: `--tests` (50), `--length` (30) and `--seed`; of `fixtures`: `--dir` (another directory of fixtures) and `--out` (the models and witnesses, default `/tmp/alvie/fixtures`).
+
+The models of these commands are of the generic form: their inputs are atoms and their outputs observations, as the plugin files declare them; they do not contain the inputs that the spec does not allow.
+`compare`, `property` and `fixtures` refuse a model of another plugin.
+
+`compare`, `property`, `conformance` and `fixtures` exit with 0 when the check passes and 4 when it does not.
+A mistake in the command or its files exits with 2; errors that the command-line parser finds (an unknown option, a value of the wrong type, a missing option) exit with 1.
+
+On Sancus, `alvie learn` and `alvie compare` stay the commands of experiments, with the Sancus model files; `alvie sancus` has the commands that check the plugin.
+The simulator takes a few minutes for each model of a fixture.
+
+`alvie sancus-fpga` has all the commands, on the board.
+Its options are those of `plugins/sancus-fpga/alvie-plugin.yaml`: `--sancus`, `--commit` (required: the commit of the image on the board), `--fpga-port` (default `/dev/ttyUSB1`), `--sancus-master-key`, `--tmpdir` and `--keep-repeated-reentries`.
+It uses the specs, inputs and observations of ALVIE/Sancus, and its models have the inputs and outputs of the models of `learn.exe`: `alvie sancus-fpga compare` finds their witnesses (`fa.exe` refuses them, as models of another plugin), and `alvie-model-compare` compares them with the simulator's.
+
+## Model files
+
+Learned models are Graphviz `.dot` files whose first line says what made them:
+
+```text
+// alvie-model format 1; plugin sancus 2026.10; core 1
+```
+
+Models without this line come from earlier versions; they read the same.
+A model of a later format is refused with a message: it needs a newer ALVIE, and so is a model of another plugin.
 
 ---
 
@@ -27,7 +131,6 @@ This is the main experiment driver.
 |------|-------------|
 | `--att-spec <file>` | Path to attacker specification (`.atdl` file) |
 | `--encl-spec <file>` | Path to enclave specification (`.etdl` file) |
-| `--oracle <mode>` | Query oracle mode: `randomwalk`, `pac`, or `exhaustive` |
 | `--res <file>` | Output `.dot` file path for the learned model |
 | `--tmpdir <dir>` | Directory for temporary Verilog simulation files |
 | `--sancus <dir>` | Path to the Sancus simulator root |
@@ -36,22 +139,25 @@ This is the main experiment driver.
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--oracle <mode>` | `pac` | Query oracle mode: `randomwalk`, `pac`, `exhaustive`, or `wmethod` |
 | `--commit <sha>` | `ef753b6` | Label or git commit of the Sancus version to check |
 | `--secret <value>` | absent | Secret substituted into the enclave specification; required when the spec contains `?` |
-| `--epsilon <float>` | `0.001` | PAC error bound, used only by `pac` |
-| `--delta <float>` | `0.001` | PAC confidence parameter, used only by `pac` |
+| `--epsilon <float>` | `0.01` | PAC error bound, used only by `pac` |
+| `--delta <float>` | `0.01` | PAC confidence parameter, used only by `pac` |
 | `--pac-bound <int>` | `1` | Included in `--report` output only; does not limit the current PAC oracle |
 | `--step-limit <int>` | `500` | Max steps for a random-walk equivalence query |
 | `--round-limit <int>` | unlimited | Max rounds for a PAC equivalence query |
 | `--reset-probability <float>` | `0.05` | Random-walk probability of restarting the current path |
+| `--extra-states <int>` | `1` | W-method: the number of states that the system may have beyond the model |
+| `--max-tests <int>` | unlimited | W-method: the maximum number of tests of an equivalence query; a limit removes the guarantee |
 | `--bad-probability <float>` | `0.20` | Probability of generating an input not driven by the specification |
 | `--ignore-interrupts` | false | Treat interrupts as invisible (collapse interrupt outputs) |
-| `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/guides/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
+| `--keep-repeated-reentries` | false | Do not identify a segment of execution between two enclave re-entries with an identical one immediately before it (see [Choosing Learner Settings](/alvie/core/learning-settings/#repeated-enclave-re-entries)); learning may not finish when an enclave can be resumed repeatedly |
 | `--sancus-master-key <hex>` | _(default key)_ | Master key passed to the Sancus simulator |
 | `--dry` | false | Dry run: set up the simulator but do not learn |
-| `--report` | false | Print a line of learning statistics on stderr (see the [log output reference](../log-output-reference/#learning-statistics)) |
+| `--report` | false | Print a line of learning statistics on stderr (see the [log output reference](/alvie/sancus/log-output-reference/#learning-statistics)) |
 | `--debug` | false | Enable debug-level logging |
-| `--info` | false | Enable info-level logging: one line per equivalence-query round and one per counterexample (see the [log output reference](../log-output-reference/#info-level-output)) |
+| `--info` | false | Enable info-level logging: one line per equivalence-query round and one per counterexample (see the [log output reference](/alvie/sancus/log-output-reference/#info-level-output)) |
 
 ### Environment variables
 
@@ -61,13 +167,16 @@ This is the main experiment driver.
 | `ALVIE_PROFILE` | With `1`, print on stderr, at the end of the run, the time spent in each part of the learner and of the simulator; `SIGUSR1` prints it during the run |
 | `ALVIE_CHECK_APART` | With `1`, check every answer of the learner's caches against a computation from scratch, and stop at the first difference. Very slow: for testing changes to the learner |
 | `ALVIE_FULL_TRACE` | With `1`, the simulator dumps every signal instead of the top level of the testbench (useful to inspect the VCD files); used when the simulator is compiled |
+| `ALVIE_ASM` | With `toolchain`, the programs of the steps are built by `msp430-as` and `msp430-ld`, as before; by default ALVIE's assembler builds them (the first build of a `--tmpdir` still uses the toolchain, which prepares it) |
+| `ALVIE_MCRL2` | With `1`, comparisons ask mCRL2 (`ltscompare` and `tracepp`) for the traces that one model has and the other does not, as before; with `check`, ALVIE asks both and warns when they differ. By default ALVIE checks the inclusion itself |
+| `ALVIE_DUMP_PROGRAMS` | A directory where the simulator writes every program it builds, with its configuration: the input of `tt_asm_golden record` |
 | `OCAMLRUNPARAM` | Garbage collector settings; when it is set, `learn.exe` does not apply its own |
 
 ### Output
 
 A Mealy machine in `.dot` format is written to `--res`.
 Each edge is labelled `input / output`, where inputs and outputs use the symbolic alphabet defined in the specifications.
-See the [Log and Output Reference](../log-output-reference/) for output token meanings.
+See the [Log and Output Reference](/alvie/sancus/log-output-reference/) for output token meanings.
 
 ### Quick example
 
@@ -100,7 +209,7 @@ For an unexpected failure, rerun with `--debug` and file a [bug report](https://
 ## 2. `fa.exe` — Find flow-analysis (NI) violations between two models
 
 **Purpose:** Takes two interrupt-enabled `.dot` Mealy machines and optionally their two no-interrupt counterparts.
-It uses mCRL2 model checking to find distinguishing traces.
+It checks the inclusion of the traces that the attacker sees, in both directions, to find distinguishing traces.
 Supplying the no-interrupt models removes witnesses that already exist without interrupt scheduling.
 
 ### Flags
@@ -112,8 +221,9 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 | `--m1-nint <file>` | optional | secret=0 no-interrupt model (`.dot`) |
 | `--m2-nint <file>` | optional | secret=1 no-interrupt model (`.dot`) |
 | `--witness-file-basename <base>` | _(required)_ | Output path prefix; produces `<base>_int.dot` |
-| `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files |
+| `--tmpdir <dir>` | _(required)_ | Directory for intermediate mCRL2 files (only with `ALVIE_MCRL2=1`) |
 | `--cex-limit <int>` | unlimited | Stops the search after the round that finds this many witnesses, in each of the two directions. One round can find several witnesses, so the result can have more. |
+| `--secrets <s1>,<s2>` | from the model names | The values of the secret in the first and the second model. By default they are read from the names `<commit>-<attacker>-<enclave>-<secret>-<eps>-<delta>[-int\|-nint].dot`. The comparison ignores them in the victim's code, so that the two runs of a witness run "the same code". |
 | `--debug` | false | Enable debug-level logging |
 
 ### Output
@@ -121,7 +231,7 @@ Supplying the no-interrupt models removes witnesses that already exist without i
 `<witness-file-basename>_int.dot` — a `.dot` graph whose paths are distinguishing traces (attack witnesses).
 If no counterexample exists, the file contains one state and no transitions.
 The tool prints the number of violations only with `--debug`.
-See [Reading and Checking a Witness](/alvie/guides/interpreting-results/) for how to read the graph.
+See [Reading and Checking a Witness](/alvie/core/interpreting-results/) for how to read the graph.
 
 ### Quick example
 
@@ -238,11 +348,26 @@ _build/default/bin/pbt.exe \
 
 ---
 
+## In the browser
+
+[ALVIE in your browser](/alvie/play/) runs the commands of this page in its terminals and tutorials, with the same options and outputs, from the root of its files (the repository root):
+
+| Available | Not available |
+| --- | --- |
+| `learn.exe`, `fa.exe`, `exec.exe` (also as `_build/default/bin/...`), and `alvie learn`, `compare`, `exec` | `pbt.exe` |
+| `alvie sancus ...` on the simulators of the eight commits of the experiments (`ef753b6`, `e8cf011`, `3170d5d`, `6475709`, `3636536`, `d54f031`, `264f135`, `bf89c0b`), built with the key `cafe`; `--sancus` and `--tmpdir` may be left out | Other commits or keys of Sancus, and the FPGA board (`alvie sancus-fpga`) |
+| `alvie tiny ...` | `alvie property formula`: it needs mCRL2 |
+| `alvie vaultlink ...` on the services in memory (`--service`) | `--target host:port` and `serve`: a page cannot open TCP connections |
+| The scripts `learn_example.sh`, `learn_one.sh`, `learn_one_nospecial.sh`, `learn_all.sh`, `check_example.sh`, `check_one.sh`, `check_all.sh` | Environment variables such as `ALVIE_JOBS`: a script runs up to four commands at once |
+
+The models are the same as those of the native ALVIE: learning is deterministic, and CI checks it.
+See [ALVIE in Your Browser](/alvie/core/alvie-ide/).
+
 ## Summary table
 
 | Executable | Purpose | Needs simulator | Needs mCRL2 | Output |
 |------------|---------|-----------------|-------------|--------|
 | `learn.exe` | Learn Mealy machine via L# | Yes | No | `.dot` model |
-| `fa.exe` | Find NI violations between two models | No | Yes | `.dot` witness graph |
+| `fa.exe` | Find NI violations between two models | No | No | `.dot` witness graph |
 | `exec.exe` | Replay an input trace (debug) | Yes | No | stdout trace |
 | `pbt.exe` | Random NI testing (no model) | Yes | No | QCheck report |

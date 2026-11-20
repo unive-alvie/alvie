@@ -1,0 +1,83 @@
+# Tiny: a leak in a few seconds
+
+Find a timing leak on Tiny, a small processor made for learning ALVIE: a model takes a fraction of a second. Then see which leaks only interrupts reveal, and check a mitigation.
+
+## 1. The platform and the spec
+
+Tiny runs the attacker's code or the code of one enclave. The attacker arms a timer with `timer n` and calls the enclave with `call`. Each instruction of the enclave takes one or two cycles: `bz r` (branch on zero) takes 2 if `r` is 0, 1 otherwise. When the timer expires, the attacker sees the interrupt and its *latency*; when the enclave returns, the attacker sees how many cycles it ran.
+
+```alvie
+cat plugins/tiny/fixtures/leak-time.spec
+```
+
+The enclave puts the secret (`?`) in `r0` and branches on it.
+
+## 2. Run one test by hand
+
+`alvie tiny exec` runs inputs one at a time and prints what each observes:
+
+```alvie
+cat tutorials/tiny-inputs.txt
+alvie tiny exec --spec plugins/tiny/fixtures/leak-time.spec --secret 0 --inputs tutorials/tiny-inputs.txt
+```
+
+`mov` took one cycle; the timer expired after the first cycle of `bz`, which takes two on 0, so the latency is 1. Try `--secret 1`.
+
+## 3. Learn and compare
+
+```alvie
+alvie tiny learn --spec plugins/tiny/fixtures/leak-time.spec --secret 0 --res models/time-0.dot
+alvie tiny learn --spec plugins/tiny/fixtures/leak-time.spec --secret 1 --res models/time-1.dot
+view models/time-0.dot models/time-1.dot
+```
+
+`alvie tiny compare` looks for runs that the attacker tells apart. It ends with the status 4 when it finds some, so this cell stops after it with an error mark: here that means "a leak".
+
+```alvie
+alvie tiny compare --m1 models/time-0.dot --m2 models/time-1.dot --secrets 0,1 --witnesses models/time-witnesses.dot
+```
+
+```alvie
+view models/time-witnesses.dot
+```
+
+One witness is the run without a timer: the enclave takes one cycle more for secret 0.
+
+## 4. A leak that only interrupts reveal
+
+`leak-interrupt.spec` pads the branch, so the enclave takes three cycles whatever the secret: without interrupts, nothing leaks. Learn the models with interrupts and without (`--variant no-interrupts`), and compare them with the models without interrupts as the baseline: a witness that the baseline has too does not count.
+
+```alvie
+alvie tiny learn --spec plugins/tiny/fixtures/leak-interrupt.spec --secret 0 --res models/irq-0.dot
+alvie tiny learn --spec plugins/tiny/fixtures/leak-interrupt.spec --secret 1 --res models/irq-1.dot
+alvie tiny learn --spec plugins/tiny/fixtures/leak-interrupt.spec --secret 0 --variant no-interrupts --res models/irq-0-nint.dot
+alvie tiny learn --spec plugins/tiny/fixtures/leak-interrupt.spec --secret 1 --variant no-interrupts --res models/irq-1-nint.dot
+```
+
+```alvie
+alvie tiny compare --m1 models/irq-0.dot --m2 models/irq-1.dot --m1-baseline models/irq-0-nint.dot --m2-baseline models/irq-1-nint.dot --secrets 0,1 --witnesses models/irq.dot
+```
+
+```alvie
+view models/irq.dot
+```
+
+The witnesses arm the timer with `timer 2` or `timer 3`: the latency of the interrupt tells the secret, as the attack of Nemesis does on Sancus.
+
+## 5. Check a mitigation
+
+`--mitigation constant-time` makes `bz` and `pad` take two cycles whatever the register:
+
+```alvie
+alvie tiny learn --spec plugins/tiny/fixtures/leak-interrupt.spec --secret 0 --mitigation constant-time --res models/ct-0.dot
+alvie tiny learn --spec plugins/tiny/fixtures/leak-interrupt.spec --secret 1 --mitigation constant-time --res models/ct-1.dot
+alvie tiny compare --m1 models/ct-0.dot --m2 models/ct-1.dot --secrets 0,1 --witnesses models/ct.dot
+```
+
+## Next
+
+`alvie tiny fixtures` learns and checks all the specs of `plugins/tiny/fixtures` with their expected verdicts. Copy one (`cp plugins/tiny/fixtures/leak-time.spec models/my.spec`), change its enclave, and predict the verdict before you check it.
+
+```alvie
+alvie tiny fixtures --out models/tiny-fixtures
+```

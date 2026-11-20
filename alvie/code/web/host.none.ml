@@ -1,0 +1,5 @@
+(* The host of alvie-web without js_of_ocaml (see host.jsoo.ml): the argv of the program, and no simulator *)
+let install_sancus () = ()
+let argv () = "alvie" :: List.tl (Array.to_list Sys.argv)
+let write_files () = ()
+let on_exit () = ()

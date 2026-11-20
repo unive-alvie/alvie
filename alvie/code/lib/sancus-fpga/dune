@@ -1,0 +1,20 @@
+; ALVIE/Sancus-FPGA: the plugin of an openMSP430/Sancus board (plugins/sancus-fpga), which reuses the Sancus backend
+; (library sancus) with the board as its target
+(library
+ (name sancus_fpga)
+ (public_name alvie-sancus.sancus_fpga)
+ (modules fpga sancus_fpga_plugin_files native)
+ (foreign_stubs (language c) (names serial_stubs))
+ (preprocess (pps ppx_sexp_conv))
+ (libraries sancus prof alvie_plugin alvie_backend core core_unix core_unix.sys_unix logs))
+
+; The plugin files, embedded in the executables: the manifest and fixtures of plugins/sancus-fpga, and the files of
+; plugins/sancus it shares (its manifest names them ../sancus/...)
+(rule
+ (targets sancus_fpga_plugin_files.ml)
+ (deps
+  (glob_files %{project_root}/plugins/sancus-fpga/*.yaml)
+  (glob_files %{project_root}/plugins/sancus/*.yaml))
+ (action
+  (with-stdout-to %{targets}
+   (system "printf '(* Generated from plugins/sancus-fpga and plugins/sancus by lib/sancus-fpga/dune *)\nlet files = [\n'; for f in %{deps}; do case $f in *plugins/sancus-fpga/*) k=$(basename $f) ;; *) k=../sancus/$(basename $f) ;; esac; [ \"$k\" = ../sancus/alvie-plugin.yaml ] && continue; printf '  (\"%s\", {alvie_yaml|' \"$k\"; cat $f; printf '|alvie_yaml});\n'; done; printf ']\n'"))))

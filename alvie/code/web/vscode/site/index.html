@@ -1,0 +1,111 @@
+<!doctype html>
+<!-- The first page of ALVIE in the browser (make-site.sh): the tutorials (alvie/bundle/tutorials.json, made by
+     prepare.sh) and an empty session; each opens VS Code for the Web (code.html) -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ALVIE in your browser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="vscode/favicon.ico" type="image/x-icon">
+  <style>
+    :root {
+      --bg: #f6f7f9; --surface: #ffffff; --text: #1c2128; --muted: #5b6573; --border: #d8dde3;
+      --accent: #2a6fd6; --accent-soft: #e8f0fc; --shadow: 0 1px 2px rgba(20, 30, 45, .06), 0 4px 16px rgba(20, 30, 45, .05);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #16181c; --surface: #1f2228; --text: #e6e8eb; --muted: #9aa3ae; --border: #30353d;
+        --accent: #6aa5ff; --accent-soft: #1f2c42; --shadow: none;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #16181c; --surface: #1f2228; --text: #e6e8eb; --muted: #9aa3ae; --border: #30353d;
+      --accent: #6aa5ff; --accent-soft: #1f2c42; --shadow: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 880px; margin: 0 auto; padding: 56px 16px 64px; }
+    h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.01em; }
+    .lead { color: var(--muted); max-width: 62ch; margin: 0 0 40px; }
+    h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+    .cards { display: grid; gap: 12px; margin: 0 0 40px; padding: 0; list-style: none; }
+    .card { display: flex; gap: 16px; align-items: flex-start; padding: 18px 20px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; color: inherit; text-decoration: none; box-shadow: var(--shadow); transition: border-color .15s, transform .15s; }
+    .card:hover, .card:focus-visible { border-color: var(--accent); transform: translateY(-1px); outline: none; }
+    .num { flex: none; width: 32px; height: 32px; border-radius: 8px; background: var(--accent-soft); color: var(--accent);
+      display: grid; place-items: center; font-weight: 700; font-size: .95rem; }
+    .card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+    .empty .num { font-size: 1.2rem; }
+    .note { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--border); padding-top: 20px; }
+    .note a { color: var(--accent); }
+    .error { color: #c0392b; }
+    .ready { color: var(--muted); font-size: .85rem; margin: -28px 0 28px; min-height: 1.3em; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ALVIE in your browser</h1>
+    <p class="lead">ALVIE learns models of processors and services and compares them to find timing side channels.
+      Here it runs entirely in your browser: nothing to install, and your files and models stay on your computer.</p>
+
+    <p class="ready" id="ready" aria-live="polite"></p>
+
+    <h2>Tutorials</h2>
+    <ol class="cards" id="tutorials"><li class="note">Loading the tutorials…</li></ol>
+
+    <h2>Free experimentation</h2>
+    <ul class="cards">
+      <li><a class="card empty" href="code.html">
+        <span class="num" aria-hidden="true">+</span>
+        <span><h3>Empty session</h3>
+          <p>VS Code with the specifications and models of the experiments, ALVIE terminals, and a preview of models.
+            Your files are kept between visits.</p></span>
+      </a></li>
+    </ul>
+
+    <p class="note">The first time you open a tutorial, VS Code asks whether you trust the authors of the notebook: the
+      tutorials come with this site, so choose <em>Open Notebook</em> (tick <em>Don't ask me again</em> to not be asked for
+      the others). Their cells run only commands of ALVIE.</p>
+    <p class="note">ALVIE and the simulators of Sancus are WebAssembly; they need a recent browser with WebAssembly GC
+      (Chromium is the fastest). In a session, <em>ALVIE: Reset the Files to Those of a First Visit</em> (in the Command
+      Palette, Ctrl+Shift+P) brings back the original files.</p>
+  </main>
+  <script>
+    const list = document.getElementById('tutorials');
+    fetch('alvie/bundle/tutorials.json').then((r) => r.json()).then((tutorials) => {
+      list.replaceChildren(...tutorials.map((t, i) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.className = 'card';
+        a.href = `code.html?tutorial=${encodeURIComponent(t.id)}`;
+        const num = document.createElement('span'); num.className = 'num'; num.textContent = String(i + 1);
+        const body = document.createElement('span');
+        const h = document.createElement('h3'); h.textContent = t.title;
+        const p = document.createElement('p'); p.textContent = t.summary;
+        body.append(h, p); a.append(num, body); li.append(a);
+        return li;
+      }));
+    }).catch(() => { list.innerHTML = '<li class="note error">The list of tutorials could not be loaded.</li>'; });
+
+    // VS Code on demand: nothing large loads with this page, but once it is shown, the large files of VS Code
+    // (manifest.json) download in the background into the cache of the browser, so that a tutorial opens quickly
+    const ready = document.getElementById('ready');
+    const prefetch = async () => {
+      try {
+        const files = await (await fetch('manifest.json')).json();
+        const total = files.reduce((s, f) => s + f.size, 0);
+        let got = 0;
+        const show = () => { ready.textContent = got >= total ? 'VS Code is ready.' : `Preparing VS Code in the background: ${Math.round((got / total) * 100)}%`; };
+        show();
+        await Promise.all(files.map(async (f) => {
+          const reader = (await fetch(f.path, { priority: 'low' })).body.getReader();
+          for (;;) { const { done, value } = await reader.read(); if (done) break; got += value.length; show(); }
+        }));
+        got = total; show();
+      } catch { ready.textContent = ''; }
+    };
+    if ('requestIdleCallback' in window) requestIdleCallback(prefetch, { timeout: 2000 }); else setTimeout(prefetch, 500);
+  </script>
+</body>
+</html>

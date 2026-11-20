@@ -1,0 +1,9 @@
+html, body { height: 100%; margin: 0; padding: 0; }
+body { background: var(--vscode-editor-background); color: var(--vscode-foreground); font-family: var(--vscode-font-family); }
+#viewer { display: flex; height: 100vh; min-height: 0; }
+.viewer-pane { flex: 1; display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; }
+.viewer-pane.first { border-right: 1px solid var(--vscode-panel-border); }
+.viewer-pane-head { padding: 4px 8px; color: var(--vscode-descriptionForeground); font-size: 12px; border-bottom: 1px solid var(--vscode-panel-border); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.viewer-pane-body { overflow: hidden; cursor: grab; position: relative; background: #fff; }
+.viewer-pane-body svg { position: absolute; left: 0; top: 0; }
+.hint { color: var(--vscode-descriptionForeground); padding: 16px; }

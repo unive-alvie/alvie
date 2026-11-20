@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: >-
+  The Getting Started example: an unbalanced branch (ubr) on the secret, which an attacker that counts cycles sees
+  (the checked-in example finds 1 witness on bf89c0b)
+spec: [../../../../../spec-lib/example/attacker.atdl, ../../../../../spec-lib/example/enclave.etdl]
+secrets: [0, 1]
+config: { commit: bf89c0b }
+expect: leak

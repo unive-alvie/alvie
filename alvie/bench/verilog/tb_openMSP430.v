@@ -614,9 +614,9 @@ initial
 // End of simulation
 //----------------------------------------
 
-initial // Timeout
+initial // Timeout: 500 us (10000 cycles at 20 MHz), as in sancus-core-gap; a test that does not loop never reaches it
   begin
-    #100000
+    #500000
     $display(" ===============================================");
     $display("|               SIMULATION FAILED               |");
     $display("|              (simulation Timeout)             |");

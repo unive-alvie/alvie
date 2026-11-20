@@ -1,0 +1,9 @@
+; The commands of ALVIE/Sancus that the guides use (learn.exe, fa.exe), as functors of the backend, and their
+; diagnostics: the native ALVIE applies them to the simulator (bin/), the browser build to the simulator in
+; WebAssembly (web/). It needs no Unix library.
+(library
+ (name sancus_cmd)
+ (public_name alvie-sancus.cmd)
+ (modules cli_diagnostics learn_cmd fa_cmd exec_cmd)
+ (preprocess (pps ppx_jane))
+ (libraries sancus_core alvie_backend alvie_plugin alvie_cli interop learninglib core logs logs.fmt))

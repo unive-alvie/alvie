@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: Attack A of the catalogue on ef753b6, which has no mitigation of Mind the Gap (3 witnesses in the catalogue)
+spec: [../../../../../spec-lib/fast/a.atdl, ../../../../../spec-lib/fast/enclave-complete.etdl]
+secrets: [0, 1]
+config: { commit: ef753b6 }
+baseline: no-interrupts
+expect: leak

@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=../../../schemas/fixture.schema.json
+format: 1
+doc: An enclave that does not branch on the secret leaks nothing, with or without interrupts
+spec: safe-no-branch.spec
+secrets: [0, 3]
+expect: no-leak

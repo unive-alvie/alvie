@@ -5,15 +5,31 @@ on:
     paths:
       - '.github/workflows/alvie-tests.yml'
       - 'alvie/**'
+      - 'check_all.sh'
       - 'check_one.sh'
+      - 'learn_all.sh'
+      - 'learn_one_nospecial.sh'
+      - 'regression.sh'
       - 'script_helpers.sh'
+      - 'results/**'
+      - 'counterexamples/**'
+      - 'spec-lib/**'
+      - 'sancus-core-gap'
   push:
-    branches: [main]
+    branches: [main, alvie-ng]
     paths:
       - '.github/workflows/alvie-tests.yml'
       - 'alvie/**'
+      - 'check_all.sh'
       - 'check_one.sh'
+      - 'learn_all.sh'
+      - 'learn_one_nospecial.sh'
+      - 'regression.sh'
       - 'script_helpers.sh'
+      - 'results/**'
+      - 'counterexamples/**'
+      - 'spec-lib/**'
+      - 'sancus-core-gap'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +38,8 @@ permissions:
 jobs:
   isolated-tests:
     name: Run isolated ALVIE tests
+    # OCaml 5 here, 4.13.1 in the published Docker image of the simulator jobs: both learn the same models
+    # (Learninglib.Rng; test/rng)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -29,22 +47,269 @@ jobs:
       - name: Set up OCaml
         uses: ocaml/setup-ocaml@v3
         with:
-          ocaml-compiler: "4.13.1"
+          ocaml-compiler: "5.4.1"
           dune-cache: true
       - name: Restore OCaml dependency cache
         uses: actions/cache@v4
         with:
-          path: ~/.opam/4.13.1
-          key: ${{ runner.os }}-ocaml-4.13.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/alvie.opam') }}
+          path: ~/.opam/5.4.1
+          key: ${{ runner.os }}-ocaml-5.4.1-${{ hashFiles('alvie/code/dune-project', 'alvie/code/*.opam') }}
       - name: Install OCaml dependencies
         working-directory: alvie/code
         run: opam install -y . --deps-only --with-test
       - name: Build ALVIE
         working-directory: alvie/code
         run: opam exec -- dune build
+      # dune build -p builds a package with only the libraries of that package and of the installed ones: it fails
+      # (Library "sancus" not found) if alvie-core starts to depend on alvie-sancus or alvie-rtl-util.
+      - name: Check that alvie-core and alvie-rtl-util build on their own
+        working-directory: alvie/code
+        run: |
+          opam exec -- dune build -p alvie-core --build-dir _build-alvie-core @install
+          opam exec -- dune build -p alvie-rtl-util --build-dir _build-alvie-rtl-util @install
       - name: Run isolated feature suite
         working-directory: alvie/code
         run: opam exec -- dune exec tt_features -- test --color=never
       - name: Run CLI diagnostics
         working-directory: alvie/code
         run: opam exec -- bash test/cli_diagnostics.sh
+      - name: Check the input generator against its corpus
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_inputgen_golden -- check
+      - name: Check the assembler against the toolchain's corpus
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_asm_golden -- check
+      - name: Run the plugin files suite
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_plugin -- test --color=never
+      - name: Run the suite of Tiny and of the commands of Core
+        working-directory: alvie/code
+        run: opam exec -- dune exec tt_tiny -- --color=never
+      - name: Run the W-method oracle suite
+        working-directory: alvie/code
+        run: opam exec -- dune test test/wmethod
+      - name: Run the weak trace inclusion suite
+        working-directory: alvie/code
+        run: opam exec -- dune test test/weak_trace
+      - name: Check the random numbers against those of OCaml 4.13
+        working-directory: alvie/code
+        run: opam exec -- dune test test/rng
+      - name: Run the ALVIE/VaultLink suite
+        working-directory: alvie/code
+        run: opam exec -- dune test test/vaultlink
+      - name: Check the portable part of Core (no C code, no programs)
+        working-directory: alvie/code
+        run: opam exec -- dune test test/portable
+      - name: Check the plugin templates
+        working-directory: alvie/code
+        run: opam exec -- bash test/plugin_new.sh
+      - name: Check external plugins (Tiny in Python)
+        working-directory: alvie/code
+        run: opam exec -- bash test/rpc.sh
+
+  # The simulator-backed suites need Verilator, the MSP430 toolchain and mCRL2: they run in the published image,
+  # as its own user (alvie), on a checkout that this user can write.
+  simulator-tests:
+    name: Run simulator-backed regression suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          # The experiments check out older Sancus commits: the submodule needs its whole history
+          fetch-depth: 0
+      - name: Pull the ALVIE image
+        run: docker pull matteobusi/alvie:latest
+      # The published image may predate the dependencies of this checkout: add them (a no-op once it has them)
+      - name: Add the OCaml dependencies of this checkout to the image
+        run: |
+          printf '%s\n' 'FROM matteobusi/alvie:latest' \
+            'RUN eval "$(opam env --switch=4.13.1)" && opam install -y yaml yojson' \
+            | docker build -t alvie-ci -
+      - name: Let the image user write to the checkout
+        run: chmod -R a+rwX "$GITHUB_WORKSPACE"
+      - name: Run the witness and learning regression
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work alvie-ci bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && ./regression.sh all'
+      - name: Run the simulator regression suite
+        if: success() || failure()
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_attack -- test --color=never'
+      - name: Run the properties suite (mCRL2)
+        if: success() || failure()
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune exec tt_properties -- test --color=never && bash test/property_cmd.sh && dune build && _build/default/bin/alvie.exe tiny fixtures --out /tmp/alvie-tiny-fixtures && bash test/plugin_new.sh'
+      - name: Keep the logs of a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-logs
+          path: |
+            logs/regression/
+            alvie/code/_build/_tests/
+          if-no-files-found: ignore
+
+  # The fixtures of plugins/sancus learn twelve models on the simulator, one after the other: in a job of their own,
+  # beside the regression
+  sancus-fixtures:
+    name: Check the fixtures of Sancus
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Pull the ALVIE image
+        run: docker pull matteobusi/alvie:latest
+      - name: Add the OCaml dependencies of this checkout to the image
+        run: |
+          printf '%s\n' 'FROM matteobusi/alvie:latest' \
+            'RUN eval "$(opam env --switch=4.13.1)" && opam install -y yaml yojson' \
+            | docker build -t alvie-ci -
+      - name: Let the image user write to the checkout
+        run: chmod -R a+rwX "$GITHUB_WORKSPACE"
+      - name: Learn and compare the fixtures
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work/alvie/code alvie-ci bash -c \
+            'git config --global --add safe.directory "*" && eval "$(opam env --switch=4.13.1)" && dune build && _build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim --out /tmp/alvie-sancus-fixtures'
+
+  web:
+    name: Build ALVIE for the browser and run its fixtures in Node
+    # alvie-web (alvie/code/web) needs OCaml 5 and wasm_of_ocaml; the simulators in WebAssembly need Verilator and
+    # Emscripten (see web/sim/build-sim.sh)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+      # Verilator 5.002, as the published image of ALVIE: the runtime of Verilator 5.020 (Ubuntu 24.04) does not
+      # compile with the libc++ of Emscripten
+      - name: Restore Verilator 5.002
+        id: verilator-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/verilator-5.002
+          key: ${{ runner.os }}-verilator-5.002
+      - name: Build Verilator 5.002
+        if: steps.verilator-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf flex bison help2man libfl-dev
+          git clone --depth 1 --branch v5.002 https://github.com/verilator/verilator /tmp/verilator
+          cd /tmp/verilator && autoconf && ./configure --prefix="$HOME/verilator-5.002" && make -j "$(nproc)" && make install
+      - name: Install Binaryen
+        run: |
+          echo "$HOME/verilator-5.002/bin" >> "$GITHUB_PATH"
+          curl -sSL https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz | tar xz -C "$HOME"
+          echo "$HOME/binaryen-version_133/bin" >> "$GITHUB_PATH"
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 4.0.20
+      - name: Set up OCaml 5
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.1"
+          dune-cache: true
+      - name: Install OCaml dependencies and wasm_of_ocaml
+        working-directory: alvie/code
+        run: |
+          opam install -y . --deps-only
+          # The versions that alvie-web is checked with (see docs/development/alvie-in-the-browser.md)
+          opam install -y --assume-depexts wasm_of_ocaml-compiler.6.3.2 js_of_ocaml.6.3.2 js_of_ocaml-ppx.6.3.2
+      - name: Build alvie-web
+        working-directory: alvie/code
+        run: opam exec -- bash web/build.sh /tmp/alvie-web
+      - name: Build the simulators of the 8 commits of the experiments
+        working-directory: alvie/code
+        run: for c in ef753b6 e8cf011 3170d5d 6475709 3636536 d54f031 264f135 bf89c0b; do bash web/sim/build-sim.sh ../../sancus-core-gap "$c" /tmp/alvie-web/sim; done
+      - name: Set up Node 22 (WebAssembly GC)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run the fixtures of Tiny and Sancus with alvie-web in Node
+        working-directory: alvie/code
+        run: |
+          node /tmp/alvie-web/alvie-web-node.cjs tiny fixtures --out /tmp/alvie-web-tiny
+          node /tmp/alvie-web/alvie-web-node.cjs sancus fixtures --sancus none --tmpdir /tmp/alvie-web-tmp --out /tmp/alvie-web-sancus
+          # ALVIE/VaultLink on the services in memory: the firmware differs from the reference (compare exits with 1)
+          node /tmp/alvie-web/alvie-web-node.cjs vaultlink learn --spec ../../spec-lib/vaultlink/vault.vtdl --service reference --res /tmp/vl-reference.dot
+          node /tmp/alvie-web/alvie-web-node.cjs vaultlink learn --spec ../../spec-lib/vaultlink/vault.vtdl --service firmware --res /tmp/vl-firmware.dot
+          status=0; node /tmp/alvie-web/alvie-web-node.cjs vaultlink compare /tmp/vl-reference.dot /tmp/vl-firmware.dot || status=$?
+          test "$status" -eq 1
+      - name: Build the extension of VS Code for the Web
+        working-directory: alvie/code/web/vscode
+        run: |
+          bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Run the self-test of the extension in VS Code for the Web
+        working-directory: alvie/code/web/vscode
+        run: |
+          npx playwright install --with-deps chromium
+          bash test.sh
+      - name: Upload the extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: alvie-vscode-extension
+          path: |
+            alvie/code/web/vscode/package.json
+            alvie/code/web/vscode/language-configuration*.json
+            alvie/code/web/vscode/syntaxes
+            alvie/code/web/vscode/out
+            alvie/code/web/vscode/bundle
+            alvie/code/web/vscode/site
+            alvie/code/web/vscode/make-site.sh
+
+  vscode-web:
+    name: Build ALVIE in VS Code for the Web (Code - OSS)
+    needs: web
+    runs-on: ubuntu-24.04
+    env:
+      VSCODE_TAG: 1.146.0
+    steps:
+      - name: Restore VS Code for the Web
+        id: workbench
+        uses: actions/cache@v4
+        with:
+          path: /tmp/vscode-web
+          key: vscode-web-${{ env.VSCODE_TAG }}
+      - name: Checkout
+        if: steps.workbench.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          path: alvie-src
+      - name: Set up Node.js for Code - OSS
+        if: steps.workbench.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+      - name: Build VS Code for the Web from Code - OSS
+        if: steps.workbench.outputs.cache-hit != 'true'
+        env:
+          # @vscode/ripgrep downloads its binary from GitHub: without a token, the runners get 403 (rate limit)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sudo apt-get update && sudo apt-get install -y libkrb5-dev libxkbfile-dev libsecret-1-dev
+          bash alvie-src/alvie/code/web/vscode/build-workbench.sh /tmp/vscode-web /tmp/vscode-src
+      - name: Download the extension
+        uses: actions/download-artifact@v4
+        with:
+          name: alvie-vscode-extension
+          path: /tmp/alvie-vscode
+      - name: Make the site
+        run: bash /tmp/alvie-vscode/make-site.sh /tmp/vscode-web /tmp/alvie-vscode-site
+      - name: Upload the site
+        uses: actions/upload-artifact@v4
+        with:
+          name: alvie-vscode-site
+          path: /tmp/alvie-vscode-site

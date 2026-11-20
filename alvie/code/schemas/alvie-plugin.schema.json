@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/alvie-plugin.schema.json",
+  "title": "ALVIE plugin manifest",
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1,
+      "description": "The version of the format of this file: 1"
+    },
+    "name": { "type": "string", "description": "The name of the plugin" },
+    "version": {
+      "type": "string",
+      "description": "The version of the plugin"
+    },
+    "core": {
+      "type": "string",
+      "description": "The version of the plugin interface of ALVIE/Core: \"1\""
+    },
+    "kind": {
+      "enum": [ "native", "external" ],
+      "description": "native or external"
+    },
+    "command": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "External plugins: the command that starts the backend"
+    },
+    "description": { "type": "string" },
+    "config": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": [ "string", "path", "int", "bool", "enum" ],
+            "description": "string, path, int, bool or enum"
+          },
+          "range": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "For int: [lowest, highest]"
+          },
+          "values": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "For enum: the values"
+          },
+          "required": { "type": "boolean" },
+          "default": {
+            "type": "string",
+            "description": "The default value, as it would be written on the command line"
+          },
+          "doc": { "type": "string" }
+        },
+        "required": [ "type" ],
+        "additionalProperties": false
+      },
+      "description": "The configuration parameters of the backend"
+    },
+    "variants": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": { "doc": { "type": "string" } },
+        "required": [],
+        "additionalProperties": false
+      },
+      "description": "The variants of the system (e.g. a baseline)"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "enum": [ "restore", "clone", "parallel" ] },
+      "description": "restore, clone, parallel"
+    },
+    "files": {
+      "type": "object",
+      "properties": {
+        "sections": { "type": "string" },
+        "atoms": { "type": "string" },
+        "observations": { "type": "string" },
+        "phases": { "type": "string" },
+        "view": { "type": "string" }
+      },
+      "required": [],
+      "additionalProperties": false,
+      "description": "The plugin files, relative to the manifest"
+    },
+    "fixtures": {
+      "type": "string",
+      "description": "The directory of the fixtures"
+    }
+  },
+  "required": [ "format", "name", "version", "core", "kind" ],
+  "additionalProperties": false
+}

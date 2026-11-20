@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=../../schemas/view.schema.json
+# What the attacker of Sancus sees: everything that unprotected mode can observe, but not the cycle count k, and
+# nothing while the processor is in protected mode.
+#
+# The composite observations stand for several events, which the comparison sees one after the other: a jump out
+# is the time of the instruction then the jump out; an interrupt handled is the time of the instruction then the
+# handling, whose input is the interrupt (the attacker chooses when it happens). Each part is then seen by the
+# rules below it (parts are not split again). A part shows a record field of the observation (field: time), the
+# observation's own fields (field: self), or nothing but its kind (no field).
+format: 1
+rules:
+  - match: JmpOut
+    parts: [{ field: self, as: Time }, { as: JmpOut }]
+  - match: Time_Handle
+    parts: [{ field: time, as: Time }, { field: handle, as: Handle, input: interrupt }]
+  - match: JmpOut_Handle
+    parts: [{ field: time, as: Time }, { as: JmpOut }, { field: handle, as: Handle, input: interrupt }]
+  - { match: [Silent, Unsupported], show: hidden }
+  - { match: [JmpIn, Reti, Time, Handle], when: { mode: PM }, show: hidden }
+  - { match: [JmpIn, Reti, Time, Handle], show: { fields: [gie, umem_val, reg_val, timerA_counter, mode] } }
+  - { match: [Reset, Illegal, JmpOut], show: tag }
+  - { match: Diverge, show: distinct }

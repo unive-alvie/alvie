@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=../../schemas/sections.schema.json
+# The sections of a Tiny spec, as for Sancus: a test starts in prepare, calls the enclave, may be interrupted into
+# the isr and resumed (reti), and goes on in cleanup once the enclave has returned (see phases.yaml).
+format: 1
+sections:
+  prepare:
+    role: attacker
+    atoms: attacker
+    initial: true
+    doc: What the attacker does before calling the enclave (e.g. arming the timer)
+  enclave:
+    role: victim
+    atoms: enclave
+    doc: The code of the enclave; ? in it is the secret
+  isr:
+    role: attacker
+    atoms: attacker
+    doc: The interrupt service routine of the attacker, which runs when the timer interrupts the enclave
+  cleanup:
+    role: attacker
+    atoms: attacker
+    doc: What the attacker does after the enclave has returned (e.g. calling it again)
+secret:
+  hole: true

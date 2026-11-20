@@ -1,0 +1,13 @@
+# yaml-language-server: $schema=../../schemas/observations.schema.json
+# What the Tiny backend observes after each input. The attacker sees how long the enclave ran when it returns, and
+# the latency of an interrupt: how many cycles the interrupted instruction still ran after the timer expired.
+format: 1
+kinds:
+  Ok: { doc: An instruction of the attacker ran }
+  Run: { doc: An instruction of the enclave ran (the attacker sees nothing of it) }
+  Enter: { doc: The enclave was called }
+  Exit: { fields: { time: int }, doc: "The enclave returned, after running time cycles since it was called or last resumed" }
+  Irq: { fields: { latency: { int: [0, 1] } }, doc: "An instruction of the enclave ran and the timer interrupted it, latency cycles after it expired" }
+  Resume: { doc: reti resumed the enclave }
+  Done: { doc: The test ended (halt) }
+  Illegal: { doc: "The input cannot run here (an instruction of the enclave outside it, or the reverse)" }

@@ -16,6 +16,7 @@
 .global main
 
 main:
+	; [@inst_boot]
 	; === Setup
 	mov #0x4, &tactl_val
 	disable_wdt

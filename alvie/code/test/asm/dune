@@ -1,0 +1,7 @@
+; The assembler of ALVIE/Sancus (Msp430_asm) against the toolchain (msp430-as and msp430-ld): see asm_golden.ml
+(executable
+  (name asm_golden)
+  (public_name tt_asm_golden)
+  (package alvie-sancus)
+  (libraries sancus core core_unix core_unix.command_unix core_unix.sys_unix core_unix.filename_unix str)
+  (preprocess (pps ppx_jane)))

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unive-alvie.github.io/alvie/schemas/1/protocol.schema.json",
+  "title": "The protocol of ALVIE/Core with external plugins",
+  "description": "Version 1. JSON-RPC 2.0, one message per line, on the plugin's standard input and output. Each member of methods gives the params and the result of a method.",
+  "methods": {
+    "initialize": {
+      "description": "The handshake: makes instance 0 for the configuration and the variant",
+      "params": {
+        "type": "object",
+        "properties": {
+          "protocol": { "type": "integer" },
+          "core": { "type": "string" },
+          "plugin": { "type": "string" },
+          "config": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "variant": { "type": [ "string", "null" ] }
+        },
+        "required": [ "protocol", "core", "plugin", "config", "variant" ]
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "protocol": { "type": "integer" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "capabilities": {
+            "type": "array",
+            "items": { "enum": [ "restore", "clone" ] }
+          }
+        },
+        "required": [ "protocol", "name", "version", "capabilities" ]
+      }
+    },
+    "pre": {
+      "description": "Starts a test",
+      "params": {
+        "type": "object",
+        "properties": { "instance": { "type": "integer" } },
+        "required": [ "instance" ]
+      },
+      "result": { "type": "object", "properties": {}, "required": [] }
+    },
+    "step": {
+      "description": "Runs one input",
+      "params": {
+        "type": "object",
+        "properties": {
+          "instance": { "type": "integer" },
+          "section": { "type": "string" },
+          "position": { "type": "integer" },
+          "atom": {
+            "description": "A value, in the JSON form of the plugin's values (see the values schemas of alvie plugin schemas)"
+          },
+          "programs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "description": "A value, in the JSON form of the plugin's values (see the values schemas of alvie plugin schemas)"
+              }
+            }
+          }
+        },
+        "required": [ "instance", "section", "position", "atom", "programs" ]
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "observations": {
+            "type": "array",
+            "items": {
+              "description": "A value, in the JSON form of the plugin's values (see the values schemas of alvie plugin schemas)"
+            }
+          },
+          "bookkeeping": { "description": "Any JSON value" }
+        },
+        "required": [ "observations" ]
+      }
+    },
+    "restore": {
+      "description": "A dry step: update the state as if the step ran, with these observations",
+      "params": {
+        "type": "object",
+        "properties": {
+          "instance": { "type": "integer" },
+          "section": { "type": "string" },
+          "position": { "type": "integer" },
+          "atom": {
+            "description": "A value, in the JSON form of the plugin's values (see the values schemas of alvie plugin schemas)"
+          },
+          "programs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "description": "A value, in the JSON form of the plugin's values (see the values schemas of alvie plugin schemas)"
+              }
+            }
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "description": "A value, in the JSON form of the plugin's values (see the values schemas of alvie plugin schemas)"
+            }
+          },
+          "bookkeeping": { "description": "Any JSON value" }
+        },
+        "required": [
+          "instance", "section", "position", "atom", "programs",
+          "observations", "bookkeeping"
+        ]
+      },
+      "result": { "type": "object", "properties": {}, "required": [] }
+    },
+    "clone": {
+      "description": "Makes an independent copy of the instance",
+      "params": {
+        "type": "object",
+        "properties": { "instance": { "type": "integer" } },
+        "required": [ "instance" ]
+      },
+      "result": {
+        "type": "object",
+        "properties": { "instance": { "type": "integer" } },
+        "required": [ "instance" ]
+      }
+    },
+    "post": {
+      "description": "Ends a test",
+      "params": {
+        "type": "object",
+        "properties": { "instance": { "type": "integer" } },
+        "required": [ "instance" ]
+      },
+      "result": { "type": "object", "properties": {}, "required": [] }
+    },
+    "shutdown": {
+      "description": "The last request: the plugin answers, then exits",
+      "params": { "type": "object", "properties": {}, "required": [] },
+      "result": { "type": "object", "properties": {}, "required": [] }
+    }
+  }
+}

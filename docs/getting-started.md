@@ -6,13 +6,18 @@ description: A first-session tutorial for building ALVIE/Sancus and learning a S
 This one-hour tutorial is a first guided session with ALVIE/Sancus.
 Together, we build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
 
+:::tip[No installation needed to start]
+[ALVIE in your browser](/alvie/play/) runs the same example with nothing to install: its tutorial *Getting started* learns the two models of step 3 of this page, compares them and draws the witness, in about a minute.
+Come back to this page when you want ALVIE on your computer: for your own Sancus build, the FPGA board, long experiments, or formulas.
+:::
+
 ## A quick introduction to ALVIE
 
 ALVIE is a security-analysis tool that combines **active automata learning** with model checking.
 It is designed to find timing side-channel attacks on processor implementations, which ALVIE treats as **systems under learning** (SULs).
 A typical ALVIE run, called an *experiment* in this tutorial, starts with a threat model and a family of relevant victim programs.
 ALVIE then uses the L# active automata learning algorithm to query the SUL with sequences of attacker and victim actions, records the resulting observations, and constructs finite-state Mealy-machine models.
-Finally, the [mCRL2 model checker](https://www.mcrl2.org/) checks those learned models for security-relevant behavioral differences.
+Finally, ALVIE compares those learned models and finds the security-relevant behavioral differences between them.
 
 ALVIE was initially designed for [Sancus](https://github.com/sancus-tee), a lightweight trusted execution environment for secure IoT devices, and this tutorial focuses on that target.
 As part of the [CCAT project](https://ccat.fi.muni.cz/), ALVIE is being extended to other architectures.
@@ -33,6 +38,19 @@ The important distinction is:
 - a nonzero witness count is evidence of a possible attack under the selected specifications and threat model, not a universal proof about Sancus;
 - a zero witness count means that no distinguishing behavior was found under the selected specifications and threat model.
   When the PAC oracle is used, its confidence is controlled by `--epsilon` and `--delta`, but the result is not a universal proof that Sancus is immune.
+
+## Try it in your browser first
+
+[ALVIE in your browser](/alvie/play/) is ALVIE compiled to WebAssembly, with the simulators of Sancus for the eight commits of the experiments, in VS Code for the Web.
+Nothing is installed, and your files and models stay in your browser.
+Its tutorials are notebooks: text, and cells of commands that you run one by one, whose models are drawn below them:
+
+- *Getting started*: the example of this page, from the specifications to the witness;
+- *Tiny*: a timing leak, a leak that only interrupts reveal, and a mitigation, on a small processor (see the [Tiny tutorial](/alvie/core/tiny-tutorial/));
+- *Reproduce an attack on Sancus*: the twelve models of B6, their witness, and a check that they are the models of the paper (see [Reproducing the Simulation Experiments](/alvie/sancus/walkthrough-repro/)).
+
+The *Empty session* has the specifications and the models of the paper, terminals for the commands of this documentation (`learn.exe`, `fa.exe`, `exec.exe` and the scripts `learn_one.sh`, `check_one.sh`, ... work as written here), and a preview of models.
+[ALVIE in Your Browser](/alvie/core/alvie-ide/) describes it, and what it cannot do.
 
 ## 1. Prepare the environment
 
@@ -71,7 +89,7 @@ Docker remains the recommended option on other operating systems and architectur
 These commands install the toolchains used by the Docker image and clone the two source repositories beside each other.
 They require a fresh Ubuntu 22.04 x86_64 environment with `sudo` access.
 
-Install the system dependencies and mCRL2:
+Install the system dependencies, and mCRL2, which only `alvie property formula` needs:
 
 ```bash
 sudo apt-get update
@@ -105,7 +123,7 @@ opam init --disable-sandboxing -y
 eval "$(opam env)"
 opam switch create 4.13.1 -y
 eval "$(opam env)"
-opam install -y dune core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck
+opam install -y dune core alcotest angstrom core_kernel core_unix logs fmt ocamlgraph shexp ppx_deriving qcheck yaml yojson
 ```
 
 Clone ALVIE/Sancus and the Sancus simulator checkout:
@@ -179,7 +197,7 @@ find results/example counterexamples/example -name '*.dot' -print
 
 The comparison wrapper creates a witness graph when the example has a distinguishing behavior.
 The example wrapper does not print the violation count.
-[`Reading and Checking a Witness`](/alvie/guides/interpreting-results/) shows how to get it.
+[`Reading and Checking a Witness`](/alvie/core/interpreting-results/) shows how to get it.
 A successful command means the workflow completed; it does not mean that no attack exists.
 
 ## 4. Read the result
@@ -204,8 +222,8 @@ In a witness graph, follow the input labels from the initial state.
 An input is an attacker action; the output on the edge is the observation returned by the SUL.
 The graph records a distinguishing trace, so it is usually more useful to read a short path than to inspect every state.
 
-To read the witness step by step and confirm it, follow [`Reading and Checking a Witness`](/alvie/guides/interpreting-results/).
-For the meaning of output tokens and timing payloads, see [`Logs and outputs`](/alvie/reference/log-output-reference/).
+To read the witness step by step and confirm it, follow [`Reading and Checking a Witness`](/alvie/core/interpreting-results/).
+For the meaning of output tokens and timing payloads, see [`Logs and outputs`](/alvie/sancus/log-output-reference/).
 For the four-model comparison and its command-line arguments, see [`Executables reference`](/alvie/reference/executables-reference/).
 
 ## When a run does not finish
@@ -230,8 +248,8 @@ Experiments are driven by two TestDL files:
 - an enclave specification (`.etdl`) describes the victim program and its actions.
 
 The included example specifications are under `spec-lib/example/`.
-Start with the [TestDL Specification Reference](/alvie/reference/testdl-specification-reference/) to understand their syntax.
-Then use the [action reference](/alvie/reference/testdl-action-reference/) when reading an existing specification.
+Start with the [TestDL Specification Reference](/alvie/sancus/testdl-specification-reference/) to understand their syntax.
+Then use the [action reference](/alvie/sancus/testdl-action-reference/) when reading an existing specification.
 
 The attack-focused specifications intentionally restrict the attacker to keep learning tractable.
 They are not a complete model of every possible attacker capability.
@@ -266,23 +284,23 @@ Use a separate namespace for every run and keep the generated logs when diagnosi
 
 Learn the ideas:
 
-- [`How ALVIE Works`](/alvie/guides/concepts/) explains the experiment, the four models, and what a result means.
+- [`How ALVIE Works`](/alvie/core/concepts/) explains the experiment, the four models, and what a result means.
 - [`Glossary`](/alvie/reference/glossary/) defines the terms.
 
 Run and read experiments:
 
-- [`Reading and Checking a Witness`](/alvie/guides/interpreting-results/) shows how to read a witness and replay it.
-- [`Attack Catalogue`](/alvie/reference/attack-catalogue/) lists the known attacks, their commits, and the expected results.
-- [`Reproducing the Simulation Experiments`](/alvie/guides/walkthrough-repro/) has the full simulator experiment commands.
+- [`Reading and Checking a Witness`](/alvie/core/interpreting-results/) shows how to read a witness and replay it.
+- [`Attack Catalogue`](/alvie/sancus/attack-catalogue/) lists the known attacks, their commits, and the expected results.
+- [`Reproducing the Simulation Experiments`](/alvie/sancus/walkthrough-repro/) has the full simulator experiment commands.
 - [`Troubleshooting`](/alvie/reference/troubleshooting/) lists common problems and fixes.
 
 Go further:
 
-- [`Choosing Learner Settings`](/alvie/guides/learning-settings/) explains the oracles and how to balance time and confidence.
-- [`Designing Your Own Specifications`](/alvie/guides/writing-specifications/) shows how to plan and check a new experiment.
+- [`Choosing Learner Settings`](/alvie/core/learning-settings/) explains the oracles and how to balance time and confidence.
+- [`Designing Your Own Specifications`](/alvie/sancus/writing-specifications/) shows how to plan and check a new experiment.
 - [`Executables Reference`](/alvie/reference/executables-reference/) documents the direct `learn.exe`, `fa.exe`, `exec.exe`, and `pbt.exe` interfaces.
-- [`Code Architecture`](/alvie/reference/code-architecture/) explains the parser, input generator, SUL, learner, and comparison pipeline.
-- [`Testing ALVIE`](/alvie/guides/testing-alvie/) explains the test suites.
-- [`Extending TestDL`](/alvie/guides/spec-extending-actions/) is the starting point for adding a specification action.
+- [`Code Architecture`](/alvie/development/code-architecture/) explains the parser, input generator, SUL, learner, and comparison pipeline.
+- [`Testing ALVIE`](/alvie/development/testing-alvie/) explains the test suites.
+- [`Extending TestDL`](/alvie/sancus/spec-extending-actions/) is the starting point for adding a specification action.
 
 The project README contains the repository layout and Graphviz rendering examples.
