@@ -1,0 +1,30 @@
+{
+  "name": "alvie",
+  "scopeName": "source.alvie",
+  "patterns": [
+    {
+      "match": "^\\s*#.*$",
+      "name": "comment.line.number-sign"
+    },
+    {
+      "match": "^\\s*(?:\\./|_build/default/bin/)?[\\w.-]+",
+      "name": "entity.name.function"
+    },
+    {
+      "match": "(?<=\\s)--?[\\w-]+",
+      "name": "variable.parameter"
+    },
+    {
+      "match": "\"(?:[^\"\\\\]|\\\\.)*\"|\\'[^\\']*\\'",
+      "name": "string.quoted"
+    },
+    {
+      "match": "(?<=\\s)[\\w./-]+\\.(?:atdl|etdl|spec|vtdl|dot)\\b",
+      "name": "string.unquoted.path"
+    },
+    {
+      "match": "(?<=\\s)\\d[\\w.]*\\b",
+      "name": "constant.numeric"
+    }
+  ]
+}

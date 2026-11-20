@@ -1,0 +1,57 @@
+# VaultLink: learn a network service
+
+Learn two vault controllers that speak the same protocol, the documented one and a firmware, and find where the firmware does something that the documentation does not allow. It takes a few seconds.
+
+ALVIE/VaultLink learns a service from the outside: it sends the commands of a protocol and reads the answers. Here the services run in your browser; the same commands learn a service over TCP with the ALVIE of your computer.
+
+## 1. The specification
+
+A VTDL specification (`.vtdl`) names the values, the inputs (the commands sent), how answers become outputs, and which sessions to learn.
+
+```alvie
+cat spec-lib/vaultlink/vault.vtdl
+```
+
+The documented session is linear: `HELLO`, `ID`, `PASS`, `AUDIT`, `OPEN`, then `READ` and `CLOSE`. An `ERR` ends the session.
+
+## 2. Learn the two services
+
+```alvie
+vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference.dot
+vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot
+```
+
+The firmware has one state more than the reference. Draw them:
+
+```alvie
+view models/reference.dot models/firmware.dot
+```
+
+## 3. Compare them
+
+`vaultlink compare` prints the shortest sequences of inputs on which the two models answer differently. It ends with the status 1 when it finds one, so the cell stops after it with an error mark: here that means "they differ".
+
+```alvie
+vaultlink compare models/reference.dot models/firmware.dot
+```
+
+The firmware accepts a second `AUDIT`, where the reference refuses it. Follow that sequence on both models: its transitions are blue, and a state where an input has no transition is red.
+
+```alvie
+view models/reference.dot models/firmware.dot --inputs HELLO,ID_ME,PASS_OK,AUDIT,AUDIT
+```
+
+## 4. What does the extra state allow?
+
+After the second `AUDIT`, the firmware is in a state of its own. What does `READ` do there? Follow one more input:
+
+```alvie
+view models/reference.dot models/firmware.dot --inputs HELLO,ID_ME,PASS_OK,AUDIT,AUDIT,READ
+```
+
+The firmware gives the contents of the vault without `OPEN`: an access that the register of the vault does not see.
+
+## Next
+
+- Change the specification: remove `AUDIT` from the session, learn again, and compare. Does the difference go away?
+- The guide *ALVIE/VaultLink Reference* explains VTDL, `replay` (replay a sequence on a service), and learning a service over TCP.

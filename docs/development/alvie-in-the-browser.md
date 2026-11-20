@@ -89,27 +89,49 @@ ALVIE_SMOKE_BROWSER=firefox python3 web/browser/smoke.py /tmp/alvie-web /tmp/alv
 `alvieCollect` (files to read back) and `alvieDone` (called when the command ends); `alvieSancus` is the host of the
 simulators.
 
-### The IDE
+### The site: VS Code for the Web
 
-`web/ide` is the IDE (see [The ALVIE IDE](/alvie/core/alvie-ide/)), a static site built by Vite around `alvie-web`:
-CodeMirror 6 (the editor), xterm.js (the terminal), Graphviz in WebAssembly (`@viz-js/viz`, the viewer).
-The page keeps the files (IndexedDB) and runs each command in a new Web Worker (`public/alvie/runner.js`), which
-gets the files, runs `alvie-web` and gives back the files it changed.
-The live errors of the editor come from `alvie-web check FILE`, which prints the problems of a spec as JSON lines.
+`web/vscode` is ALVIE in the browser (see [ALVIE in Your Browser](/alvie/core/alvie-ide/)): a web extension of VS Code
+around `alvie-web`, and a static site with VS Code for the Web built from Code - OSS.
+
+- `src/core/` holds the parts that do not depend on VS Code: the files (`files.js`, in IndexedDB, with the defaults
+  of `bundle/files/`), the runner of commands (`runner.js`: a new Web Worker for each command, `runtime/runner.js`,
+  which gets the files, runs `alvie-web` and gives back the files the command wrote), the shell (`terminal.js`), the
+  scripts of the guides (`scripts.js`), and the viewer of models (`viewer.js`, Graphviz in WebAssembly).
+- `src/extension.js` puts them in VS Code: the folder `alvie:/` (`files-provider.js`), ALVIE terminals
+  (pseudoterminals), the Problems of the specs (`alvie-web check FILE` prints them as JSON lines), and the preview of
+  models (a webview).
+- `src/notebook.js` makes the tutorials notebooks: a tutorial (`tutorials/*.alvienb`) is Markdown whose `alvie`
+  blocks are cells of commands; `src/renderer.js` draws the models of `view` in a cell.
 
 ```bash
-cd alvie/code/web/ide
-bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim    # alvie-web, the simulators and the files of a first visit, in public/
-npm ci && npm run build                             # the site, in dist/
-python3 test.py dist /tmp/alvie-ide-test            # its self-test in headless Chromium, and screenshots
+cd alvie/code/web/vscode
+bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim    # alvie-web, the simulators, the files and the tutorials, in bundle/
+npm ci && npm run build                             # the extension, in out/
+bash test.sh                                        # its self-test in VS Code for the Web: every tutorial runs
+bash build-workbench.sh /tmp/vscode-web             # VS Code for the Web from Code - OSS (once for each tag)
+bash make-site.sh /tmp/vscode-web /tmp/alvie-site   # the site: index.html (tutorials), code.html (VS Code)
 ```
 
-`index.html?selftest=1` runs the self-test (`src/selftest.js`); `?demo=1` and `?demo=vault` are the pages of the
-screenshots. The site uses relative paths, so it can be served from any directory.
+The site is static: any static host serves it (GitHub Pages, a bucket, `python3 -m http.server`), from any
+directory, with no code on the server and no special headers. It needs HTTPS (or `localhost`): the webviews of VS Code
+(the preview of models) and the files use APIs of the browser that only secure pages have. It is about 240 MB, most of
+it VS Code for the Web; a visit downloads about 30 MB of it.
 
-The `web` job of CI builds `alvie-web` and the simulators of the 8 commits, runs the fixtures of Tiny and of ALVIE/Sancus
-and ALVIE/VaultLink with it in Node, builds the IDE, runs its self-test in Chrome, and uploads the site (`alvie-ide`)
-and the screenshots as artifacts.
+Serve the site with compression: a first visit downloads about 27 MB of VS Code, which gzip makes about 7 MB.
+GitHub Pages and most static hosts compress on their own; `serve.py SITE [PORT]` is a small server that does it, with
+caching headers (VS Code for the Web is kept for a day; the rest is checked at each visit).
+`code.html` downloads the large files of VS Code first (`manifest.json`), with a progress bar, and the first page
+downloads them in the background while it is shown, so that a tutorial opens quickly.
+
+A tutorial is plain Markdown: write it in `tutorials/`, and `prepare.sh` adds it to the first page (its title is its
+first heading, its summary the paragraph after it). A tutorial listed in `tutorials/unpublished.txt` stays out of the site
+(`ALVIE_ALL_TUTORIALS=1 bash prepare.sh ...` keeps it, for a local build). A user who opened the site before gets a new or changed tutorial at
+the next visit, unless they changed their copy.
+
+The `web` job of CI builds `alvie-web` and the simulators of the 8 commits, runs the fixtures of Tiny and of
+ALVIE/Sancus and ALVIE/VaultLink with it in Node, builds the extension and runs its self-test. The `vscode-web` job builds
+VS Code for the Web (cached by tag) and uploads the site (`alvie-vscode-site`).
 
 ## How it compares with the native ALVIE
 

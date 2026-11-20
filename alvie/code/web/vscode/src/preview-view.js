@@ -1,5 +1,5 @@
 // The webview of the preview: the viewer of the IDE on the models that the extension posts
-import { Viewer } from '../../ide/src/viewer.js';
+import { Viewer } from './core/viewer.js';
 
 const vscode = acquireVsCodeApi();
 const models = new Map();

@@ -1,5 +1,0 @@
-node_modules/
-dist/
-public/files/
-public/alvie/*
-!public/alvie/runner.js

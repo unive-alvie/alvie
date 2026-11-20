@@ -246,29 +246,10 @@ jobs:
           node /tmp/alvie-web/alvie-web-node.cjs vaultlink learn --spec ../../spec-lib/vaultlink/vault.vtdl --service firmware --res /tmp/vl-firmware.dot
           status=0; node /tmp/alvie-web/alvie-web-node.cjs vaultlink compare /tmp/vl-reference.dot /tmp/vl-firmware.dot || status=$?
           test "$status" -eq 1
-      - name: Build the IDE
-        working-directory: alvie/code/web/ide
-        run: |
-          bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim
-          npm ci --no-audit --no-fund
-          npm run build
-      - name: Run the self-test of the IDE in Chrome
-        working-directory: alvie/code/web/ide
-        run: ALVIE_SMOKE_BROWSER=google-chrome python3 test.py dist /tmp/alvie-ide-test
-      - name: Upload the IDE (a static site)
-        uses: actions/upload-artifact@v4
-        with:
-          name: alvie-ide
-          path: alvie/code/web/ide/dist
-      - name: Upload the screenshots of the IDE
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: alvie-ide-test
-          path: /tmp/alvie-ide-test
       - name: Build the extension of VS Code for the Web
         working-directory: alvie/code/web/vscode
         run: |
+          bash prepare.sh /tmp/alvie-web /tmp/alvie-web/sim
           npm ci --no-audit --no-fund
           npm run build
       - name: Run the self-test of the extension in VS Code for the Web
@@ -282,10 +263,10 @@ jobs:
           name: alvie-vscode-extension
           path: |
             alvie/code/web/vscode/package.json
-            alvie/code/web/vscode/language-configuration.json
+            alvie/code/web/vscode/language-configuration*.json
             alvie/code/web/vscode/syntaxes
             alvie/code/web/vscode/out
-            alvie/code/web/vscode/ide
+            alvie/code/web/vscode/bundle
             alvie/code/web/vscode/site
             alvie/code/web/vscode/make-site.sh
 
