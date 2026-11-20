@@ -97,18 +97,22 @@ Learning is deterministic for a seed, and `alvie-web` makes the same random choi
 
 | Check | Result |
 | --- | --- |
-| The checked-in models (`results/`), learned by `alvie-web` | VALIDATION_RESULTS |
+| The checked-in models (`results/`), learned by `alvie-web` in Node | all 98 identical |
 | The 320 learnings of the benchmark (8 commits, 10 specs, 2 secrets, with and without interrupts), by `learn.exe` and by `alvie-web` | VALIDATION_BENCH |
 | The fixtures of Tiny and of ALVIE/Sancus | the same verdicts and witness counts |
+| The Getting Started example and full-A on `bf89c0b`, learned in Chromium 157 and Firefox 160 | identical |
 
-Speed, on full-A on `bf89c0b` (605 steps on the simulator), in Node 22:
+Speed, on full-A on `bf89c0b` (605 steps on the simulator, 3561 queries), on the same machine with nothing else running:
 
-| | Native | `alvie-web` |
-| --- | --- | --- |
-| The whole learning | 13.2 s | 13.8 s |
-| Simulation of a step | 12.6 ms (a process each) | 10.3 ms |
-| Reading the VCD trace of a step | 3.6 ms | 7.6 ms |
+| | Time of the learning |
+| --- | --- |
+| Native (the compiled simulator in its cache) | 10.6 s |
+| `alvie-web` in Node 22 | 11.8 s |
+| `alvie-web` in a Web Worker of Chromium 157 | 9.1 s |
+| `alvie-web` in a Web Worker of Firefox 160 | 28.4 s |
 
+The native ALVIE starts a simulator for each step; `alvie-web` calls the module it loaded once, which is why it can
+be faster.
 The simulator alone, in one process, runs a step in 7.8 ms natively and 9.2 ms in WebAssembly (1.19 times as long).
 The WebAssembly module of `alvie-web` is 1.3 MB; a simulator is about 320 KB.
 

@@ -12,6 +12,8 @@ mode=$1 web=$(readlink -f "$2") sim=$(readlink -f "$3") out=$(mkdir -p "$4" && r
 root=$(readlink -f "$(dirname "$(readlink -f "$0")")/../../../..")
 code=$root/alvie/code; lib=$root/spec-lib; sancus=${SANCUS:-$root/sancus-core-gap}
 export web sim out code lib sancus root
+# One cache of compiled simulators for all the native runs (Simulator.with_simulator_cache, which locks it)
+export ALVIE_SIM_CACHE=${ALVIE_SIM_CACHE:-$out/simv-cache}
 
 one() {  # name commit att encl secret variant reference
   local name=$1 commit=$2 att=$3 encl=$4 secret=$5 variant=$6 ref=$7
