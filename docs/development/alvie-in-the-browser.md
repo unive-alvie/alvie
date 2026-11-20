@@ -53,7 +53,8 @@ Everything is in `alvie/code/web`:
 
 The OCaml side needs an OCaml 5 switch with the dependencies of ALVIE, `wasm_of_ocaml-compiler`, `js_of_ocaml` and
 `js_of_ocaml-ppx`, and Binaryen 119 or later (`wasm-opt`) on the `PATH`.
-The simulators need Verilator 5 and Emscripten (`emcc` on the `PATH`); `build-sim.sh` makes the files of the programs
+The simulators need Verilator 5.002 (the version of ALVIE's Docker image; the runtime of 5.020 does not compile with the
+libc++ of Emscripten) and Emscripten (`emcc` on the `PATH`); `build-sim.sh` makes the files of the programs
 of a commit (`pmem.sh`, `pmem.x`, `pmem_defs.asm`) as the setup of `scripts/build_pmem` does, with the C preprocessor of
 the host instead of the MSP430 toolchain.
 

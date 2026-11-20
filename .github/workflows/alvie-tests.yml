@@ -188,10 +188,24 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      - name: Install Verilator and Binaryen
+      # Verilator 5.002, as the published image of ALVIE: the runtime of Verilator 5.020 (Ubuntu 24.04) does not
+      # compile with the libc++ of Emscripten
+      - name: Restore Verilator 5.002
+        id: verilator-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/verilator-5.002
+          key: ${{ runner.os }}-verilator-5.002
+      - name: Build Verilator 5.002
+        if: steps.verilator-cache.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update
-          sudo apt-get install -y verilator
+          sudo apt-get install -y autoconf flex bison help2man libfl-dev
+          git clone --depth 1 --branch v5.002 https://github.com/verilator/verilator /tmp/verilator
+          cd /tmp/verilator && autoconf && ./configure --prefix="$HOME/verilator-5.002" && make -j "$(nproc)" && make install
+      - name: Install Binaryen
+        run: |
+          echo "$HOME/verilator-5.002/bin" >> "$GITHUB_PATH"
           curl -sSL https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz | tar xz -C "$HOME"
           echo "$HOME/binaryen-version_133/bin" >> "$GITHUB_PATH"
       - name: Set up Emscripten
