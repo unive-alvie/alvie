@@ -1,61 +1,76 @@
 ---
-title: The ALVIE IDE
-description: ALVIE in the browser, with nothing to install - files, an editor, a terminal for the commands of ALVIE, and a viewer of models.
+title: ALVIE in Your Browser
+description: ALVIE in a web page, with nothing to install - tutorials to run step by step, and VS Code with the files, terminals and models of ALVIE.
 sidebar:
   order: 0
 isNew: true
 ---
 
-The ALVIE IDE runs ALVIE in your browser: ALVIE/Sancus (on the simulators of the 8 commits of the experiments),
-ALVIE/VaultLink (on its services in memory) and Tiny.
+ALVIE runs in your browser: ALVIE/Sancus (on the simulators of the 8 commits of the experiments), ALVIE/VaultLink (on
+its services in memory) and Tiny.
 Nothing is installed, and your files and models stay in your browser: ALVIE and the simulators are WebAssembly, and
 they run in the page.
-It needs a browser with WebAssembly GC; it is tested in Chromium 157 and Firefox 160. Chromium is the fastest: there,
-ALVIE learns as fast as the native ALVIE; Firefox takes about three times as long.
+It needs a browser with WebAssembly GC; it is tested in Chromium and Firefox. Chromium is the fastest: there, ALVIE
+learns as fast as the native ALVIE; Firefox takes about three times as long.
 
-## The page
+The first page lists the tutorials and an empty session; both open VS Code for the Web.
 
-| Panel | What it does |
+## The tutorials
+
+A tutorial is a notebook: text, and cells of commands of ALVIE. Run a cell with the ▷ on its left (or Ctrl+Enter), or
+all of them with *Run All*; its output shows below it, and `view` draws models in the cell.
+
+| Tutorial | What it shows | Time |
+| --- | --- | --- |
+| Getting started | Learn two models of a Sancus enclave, compare them, read the witness; the scripts of the guides | less than a minute |
+| Tiny | A timing leak, a leak that only interrupts reveal, and a mitigation, on a small processor | seconds |
+| Reproduce an attack on Sancus | The four models of B6 (`learn_one`, `check_one`), and the models of the paper | a few minutes |
+| VaultLink | Learn two network services, compare them, follow the sequence that tells them apart | seconds |
+
+The first time you open a tutorial, VS Code asks whether you trust the authors of the notebook: the tutorials come
+with the site, and their cells run only commands of ALVIE.
+A cell stops at the first command that fails; `alvie tiny compare` and `alvie vaultlink compare` "fail" when they find a
+difference, as the tutorials say.
+A tutorial is a file of the session (`tutorials/`): you can change it, add cells, or write your own (`.alvienb`).
+
+## The empty session
+
+VS Code with the files of ALVIE:
+
+| Part | What it does |
 | --- | --- |
-| Files (left) | The files of the IDE: `spec-lib/` (the specs of the experiments and of VaultLink), `results/example/` and `models/`. Click a file to edit it, double-click a model (`.dot`) to draw it. `+` makes a file, `↑` uploads files from your computer (into `uploads/`), `↓` downloads the selected file. |
-| Editor (centre) | The open file, saved as you type. Specs (`.atdl`, `.etdl`, `.vtdl`) are checked by ALVIE's own parsers as you type: a mistake is underlined, and its message is shown when you point at it. |
-| Terminal (bottom) | The commands of ALVIE, and commands on the files (type `help`). |
-| Viewer (right) | One or two models, drawn. Drag to move, use the wheel to zoom, double-click to fit. |
+| Explorer | The files are the folder `alvie:/`, kept in your browser: `spec-lib/` (the specifications of the experiments and of VaultLink), `results/` (the models of the paper), `tutorials/`, `models/`. New files, folders, renames and uploads (drag them in) are files of ALVIE; a model that a command learns appears at once. To save a file on your computer, right-click it and choose *Download*. |
+| Editor | The languages of the specifications (TestDL for `.atdl`, `.etdl`, `.spec`; VTDL for `.vtdl`) and of models (`.dot`). |
+| Problems | The mistakes that ALVIE's own parsers find in the open specifications, as you type. |
+| Terminal | An ALVIE terminal (`+` in the panel opens another; terminals run their commands in parallel). Type `help`. |
+| Preview | *Preview Model* (on a `.dot`, in the title bar of the editor or in the Explorer) draws a model; *Preview Model Next to Another* draws two. |
 
-The files stay in your browser (in its storage for this site) when you close the page.
-`reset-files` brings back the files of a first visit; `download FILE` saves a file to your computer.
+*ALVIE: Reset the Files to Those of a First Visit* (in the Command Palette, Ctrl+Shift+P) brings back the files of a
+first visit.
+When the site gets new tutorials or new versions of them, a session gets them at the next visit, unless you changed
+your copy.
 
-## Learn and compare
+## The commands
 
 The commands are those of ALVIE, as in the [Executables Reference](/alvie/reference/executables-reference/); `alvie`
 may be left out.
 
 ```text
 alvie sancus learn --spec spec-lib/example/attacker.atdl --spec spec-lib/example/enclave.etdl --secret 0 --commit bf89c0b --res models/ex-0.dot
-alvie sancus learn --spec spec-lib/example/attacker.atdl --spec spec-lib/example/enclave.etdl --secret 1 --commit bf89c0b --res models/ex-1.dot
-alvie sancus compare -help
-alvie sancus fixtures
-```
-
-For ALVIE/Sancus, `--sancus` and `--tmpdir` are not needed: the simulators come with the IDE (the commits `ef753b6`,
-`e8cf011`, `3170d5d`, `6475709`, `3636536`, `d54f031`, `264f135` and `bf89c0b`, built with the key `cafe`).
-Formulas (`alvie property formula`) are not available: they need mCRL2.
-
-```text
-alvie vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference.dot
 alvie vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot
 alvie vaultlink compare models/reference.dot models/firmware.dot
 view models/reference.dot models/firmware.dot --inputs HELLO,ID_ME,PASS_OK,AUDIT,AUDIT
 ```
 
+For ALVIE/Sancus, `--sancus` and `--tmpdir` are not needed: the simulators come with the site (the commits `ef753b6`,
+`e8cf011`, `3170d5d`, `6475709`, `3636536`, `d54f031`, `264f135` and `bf89c0b`, built with the key `cafe`).
+Formulas (`alvie property formula`) are not available: they need mCRL2.
+
 `view A [B] --inputs ...` draws one or two models and follows the inputs on them from their initial states: the
-transitions taken are blue, and a state where an input has no transition is red. It is the way to look at a
-sequence that `compare` printed. The [ALVIE/VaultLink Reference](/alvie/vaultlink/vaultlink-reference/) describes
-the services in memory.
+transitions taken are blue, and a state where an input has no transition is red. It is the way to look at a sequence
+that `compare` printed.
 
-## The guides
-
-The programs and the scripts of the guides work as they are written there, from the root of the files of the IDE:
+The programs and the scripts of the guides work as they are written there, from the root of the files:
 
 ```text
 _build/default/bin/learn.exe --report --att-spec spec-lib/b3.atdl --encl-spec spec-lib/enclave-complete.etdl --res results/b3/m.dot --commit 6475709 --secret 0 --epsilon 0.01 --delta 0.01 --oracle pac
@@ -67,23 +82,8 @@ _build/default/bin/learn.exe --report --att-spec spec-lib/b3.atdl --encl-spec sp
 `--sancus` may be left out. The scripts `learn_example`, `learn_one`, `learn_one_nospecial`, `learn_all`,
 `check_example`, `check_one` and `check_all` give the same commands as the scripts of the repository, with the same
 models (`results/<subdir>/`), counterexamples (`counterexamples/<subdir>/`) and logs (`logs/<subdir>/`). A model that is
-there is not learned again ("Done before"). The IDE runs the commands one after the other: `learn_all` learns 96 models,
-which takes hours.
+there is not learned again ("Done before"). The commands of a script run one after the other: `learn_all` learns 96
+models, which takes hours (minutes with `spec-lib/fast`: `learn_all fast`).
 
-`Ctrl-C` stops a command. Each command runs in its own Web Worker, so the page stays responsive.
-
-## In VS Code for the Web
-
-The same ALVIE runs in VS Code for the Web (Code - OSS), as the extension `web/vscode`:
-
-| Part | What it does |
-| --- | --- |
-| Explorer | The files of the IDE are the folder `alvie:/`, kept in your browser. New files, folders, renames and uploads (drag them in) are files of ALVIE; a model that a command learns appears at once. |
-| Editor | The editor of VS Code, with the languages of the specs (TestDL for `.atdl`, `.etdl`, `.spec`; VTDL for `.vtdl`) and of models (`.dot`). |
-| Problems | The mistakes that ALVIE's own parsers find in the open specs, as you type. |
-| Terminal | An ALVIE terminal: the commands, programs and scripts of this page (`+` in the panel opens another; terminals run their commands in parallel). |
-| Preview | `Preview Model` (on a `.dot`, in the title bar of the editor or in the Explorer) draws a model; `Preview Model Next to Another` draws two. `view A [B] --inputs ...` in a terminal follows inputs on them. |
-
-`ALVIE: Reset the Files to Those of a First Visit` (in the Command Palette) brings back the files of a first visit.
-The site is static: `web/vscode/build-workbench.sh` builds VS Code for the Web from the sources of Code - OSS, and
-`web/vscode/make-site.sh` puts it together with the extension. CI makes the site (the artifact `alvie-vscode-site`).
+`Ctrl-C` (in a terminal) or ■ (in a cell) stops a command. Each command runs in its own Web Worker, so the page stays
+responsive.

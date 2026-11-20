@@ -54,6 +54,29 @@ export async function run() {
   terminal.sendText('ls spec-lib');
   check('an ALVIE terminal opens', vscode.window.terminals.includes(terminal));
 
+  // The tutorials: each opens as a notebook, and every cell of commands runs to its end. alvie tiny compare ends with the
+  // status 4 when it finds a leak, and vaultlink compare 1 when the models differ, as the tutorials say: those cells
+  // must fail.
+  const leak = (text) => (/tiny compare/.test(text) && !/ct-0\.dot/.test(text)) || /vaultlink compare/.test(text);
+  const only = (globalThis.process?.env?.ALVIE_TUTORIALS || '').split(',').filter(Boolean);
+  for (const [name, type] of await vscode.workspace.fs.readDirectory(uri('/tutorials'))) {
+    if (type !== vscode.FileType.File || !name.endsWith('.alvienb') || (only.length && !only.some((o) => name.startsWith(o)))) continue;
+    const t1 = Date.now();
+    const nb = await vscode.workspace.openNotebookDocument(uri(`/tutorials/${name}`));
+    const editor = await vscode.window.showNotebookDocument(nb);
+    await vscode.commands.executeCommand('notebook.selectKernel', { notebookEditor: editor, id: api.tutorials.id, extension: 'unive-alvie.alvie' });
+    const cells = nb.getCells().filter((c) => c.kind === vscode.NotebookCellKind.Code);
+    await api.tutorials.executeHandler(cells, nb, api.tutorials);
+    await new Promise((r) => setTimeout(r, 1000)); // the result of the last cell reaches the document
+    const bad = cells.filter((c) => c.executionSummary?.success !== !leak(c.document.getText()));
+    const text = (c) => c.outputs.flatMap((o) => o.items).map((i) => new TextDecoder().decode(i.data)).join('').slice(-600);
+    check(`the tutorial ${name} runs (${cells.length} cells, ${Math.round((Date.now() - t1) / 1000)} s)`, bad.length === 0 && cells.length > 0,
+      bad.map((c) => `cell ${c.index}: ${c.document.getText().split('\n')[0]}\n${text(c)}`).join('\n---\n'));
+    const models = cells.flatMap((c) => c.outputs.flatMap((o) => o.items)).filter((i) => i.mime === 'application/vnd.alvie.models+json');
+    check(`the tutorial ${name} draws models`, models.length > 0 && models.every((i) => JSON.parse(new TextDecoder().decode(i.data)).models.every((m) => m.text)));
+    await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+  }
+
   console.log(`${results.filter((r) => r.ok).length}/${results.length} checks passed in ${Date.now() - t0} ms`);
   if (results.some((r) => !r.ok)) throw new Error('the self-test failed');
 }

@@ -1,0 +1,63 @@
+# Reproduce an attack on Sancus
+
+Reproduce B6, one of the attacks of the *Mind the Gap* paper on Sancus: learn the four models of the attack on the commit that fixes it, compare them, and read the witness. It takes a few minutes.
+
+A standard experiment learns four models with the same attacker and enclave: secret 0 and secret 1, each with interrupts enabled (`int`) and ignored (`nint`). The comparison looks for runs that the attacker tells apart with interrupts, and drops those that it also tells apart without them: those are leaks of the enclave itself, not of the interrupts.
+
+## 1. The attack
+
+```alvie
+cat spec-lib/b6.atdl
+cat spec-lib/enclave-complete.etdl
+```
+
+The specifications of `spec-lib/` are those of the paper. `spec-lib/fast/` has smaller ones, for the same attacks: a model takes seconds instead of minutes. This tutorial uses them.
+
+```alvie
+cat spec-lib/fast/b6.atdl
+```
+
+## 2. Learn the four models
+
+`learn_one COMMIT ATTACK SUBDIR` is the script of the guides: it learns the four models of `ATTACK` on the first commit of the experiments (`ef753b6`), on `COMMIT` (here `d54f031`, the commit that fixes B6) and on the last one (`bf89c0b`). That is twelve models, about two minutes. With `fast` as the subdirectory, it reads the specifications of `spec-lib/fast/`. You can stop it with the ■ of the cell; the models already learned stay.
+
+```alvie
+learn_one d54f031 b6 fast
+```
+
+The models are in `results/fast/`, the output of each learning in `logs/fast/`.
+
+## 3. Compare
+
+`check_one ATTACK SUBDIR` compares the models of each commit, and writes the witnesses in `counterexamples/SUBDIR/ATTACK/`. Its log has the number of witnesses:
+
+```alvie
+check_one b6 fast
+cat logs/fast/compare-ef753b6-b6.log
+```
+
+```alvie
+ls counterexamples/fast/b6
+view counterexamples/fast/b6/ef753b6-b6_int.dot
+```
+
+## 4. The models of the paper
+
+`results/` has the models learned with the full specifications, for every attack and commit. `fa.exe` compares them as `check_one` does:
+
+```alvie
+fa.exe --m1-int results/d54f031-b6-enclave-complete-0-0.01-0.01-int.dot --m2-int results/d54f031-b6-enclave-complete-1-0.01-0.01-int.dot --m1-nint results/d54f031-b6-enclave-complete-0-0.01-0.01-nint.dot --m2-nint results/d54f031-b6-enclave-complete-1-0.01-0.01-nint.dot --witness-file-basename models/d54f031-b6 --debug
+```
+
+The last line has the number of witnesses ("FA violations"). Draw the witness graph:
+
+```alvie
+view models/d54f031-b6_int.dot
+```
+
+A witness is two runs, one for each secret, with the same inputs of the attacker, up to the first output that differs. Follow the inputs from the initial state, and look at the outputs of the last transition: there, the attacker sees a time or an interrupt that depends on the secret.
+
+## Next
+
+- The other attacks: `learn_one 6475709 b3 fast`, `learn_one_nospecial b8 fast`, ... (the commit that fixes each attack is in the guide *Reproducing the Experiments*). `learn_all fast` learns them all, which takes about an hour here.
+- `exec.exe` replays a run on the simulator, step by step: `exec.exe -help`.

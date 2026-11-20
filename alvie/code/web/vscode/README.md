@@ -1,11 +1,12 @@
-# ALVIE in VS Code for the Web
+# ALVIE in the browser
 
-A web extension of VS Code that runs ALVIE in the browser, on the modules of the IDE (`../ide/src`): the folder
-`alvie:/` (the files of the IDE, in IndexedDB), ALVIE terminals, the languages of the specs, their problems, and the
-preview of models. See `docs/core/alvie-ide.md`.
+A web extension of VS Code that runs ALVIE in the browser, and the static site around it: a first page with the
+tutorials (notebooks of commands of ALVIE, `tutorials/*.alvienb`) and an empty session (VS Code with the folder
+`alvie:/`, ALVIE terminals, the languages of the specs, their problems, and a preview of models). See
+`docs/core/alvie-ide.md` (users) and `docs/development/alvie-in-the-browser.md` (developers).
 
-    (cd ../ide && bash prepare.sh WEB_DIR SIM_DIR && npm ci)   # alvie-web and the simulators, as for the IDE
-    npm ci && npm run build                                     # out/ and ide/
+    bash prepare.sh WEB_DIR SIM_DIR                             # alvie-web, the simulators, the files: bundle/
+    npm ci && npm run build                                     # out/
     bash test.sh                                                # the self-test, in VS Code for the Web
     bash build-workbench.sh /tmp/vscode-web                     # VS Code for the Web from Code - OSS (once)
-    bash make-site.sh /tmp/vscode-web /tmp/alvie-vscode-site    # the static site
+    bash make-site.sh /tmp/vscode-web /tmp/alvie-site           # the static site

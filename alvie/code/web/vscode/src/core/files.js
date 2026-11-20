@@ -1,7 +1,11 @@
-// The files of the IDE: a map from absolute path to text, kept in IndexedDB so that they survive a reload. On the
-// first visit (or after reset), they are the defaults that the build put in public/files (index.json lists them).
+// The files of ALVIE in the browser: a map from absolute path to text, kept in IndexedDB so that they survive a reload.
+// The defaults are what the build put in files/ (prepare.sh): files/index.json maps each path to the SHA-256 of its
+// text. A first visit (or a reset) gets all of them. A later visit gets the defaults that are new since the last one,
+// and the new version of a default that the user did not change (e.g. a tutorial); a default that the user changed or
+// removed stays as the user left it.
 
 const DB = 'alvie-ide', STORE = 'files';
+const GIVEN = '\u0000defaults'; // the key of { path: SHA-256 } of the defaults given so far (paths start with /)
 
 function openDb() {
   return new Promise((resolve, reject) => {
@@ -12,9 +16,14 @@ function openDb() {
   });
 }
 
+export async function sha256(text) {
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export class Files {
   // base: the URL of the directory that has files/ (the defaults)
-  constructor({ base = '' } = {}) { this.base = base; this.files = new Map(); this.listeners = []; this.db = null; }
+  constructor({ base = '' } = {}) { this.base = base; this.files = new Map(); this.listeners = []; this.db = null; this.given = {}; }
 
   async load() {
     try {
@@ -25,19 +34,43 @@ export class Files {
         req.onsuccess = () => { const c = req.result; if (c) { out.push([c.key, c.value]); c.continue(); } else resolve(out); };
         req.onerror = () => reject(req.error);
       });
-      for (const [k, v] of entries) this.files.set(k, v);
+      for (const [k, v] of entries) { if (k === GIVEN) this.given = JSON.parse(v); else this.files.set(k, v); }
     } catch (e) {
       console.warn('IndexedDB is not available: the files will not survive a reload', e);
     }
     if (this.files.size === 0) await this.reset();
+    else await this.update();
   }
+
+  async defaults() { return (await fetch(`${this.base}files/index.json`)).json(); }
+  async fetchDefault(p) { return (await fetch(`${this.base}files${p}`)).text(); }
 
   async reset() {
     this.files.clear();
-    const index = await (await fetch(`${this.base}files/index.json`)).json();
-    await Promise.all(index.map(async (p) => this.files.set(p, await (await fetch(`${this.base}files${p}`)).text())));
+    const index = await this.defaults();
+    await Promise.all(Object.keys(index).map(async (p) => this.files.set(p, await this.fetchDefault(p))));
+    this.given = index;
     await this.persistAll();
     this.changed();
+  }
+
+  // The new defaults, and the new versions of the defaults that the user did not change
+  async update() {
+    const index = await this.defaults(), changed = [];
+    for (const [p, hash] of Object.entries(index)) {
+      const before = this.given[p];
+      if (before === hash) continue;
+      if (before === undefined ? !this.files.has(p) : this.files.has(p) && (await sha256(this.files.get(p))) === before) changed.push(p);
+    }
+    await Promise.all(changed.map(async (p) => { this.files.set(p, await this.fetchDefault(p)); this.persist(p); }));
+    this.given = index;
+    this.persistGiven();
+    if (changed.length) this.changed();
+  }
+
+  persistGiven() {
+    if (!this.db) return;
+    this.db.transaction(STORE, 'readwrite').objectStore(STORE).put(JSON.stringify(this.given), GIVEN);
   }
 
   async persistAll() {
@@ -45,6 +78,7 @@ export class Files {
     const tx = this.db.transaction(STORE, 'readwrite'), store = tx.objectStore(STORE);
     store.clear();
     for (const [k, v] of this.files) store.put(v, k);
+    store.put(JSON.stringify(this.given), GIVEN);
   }
 
   persist(path) {

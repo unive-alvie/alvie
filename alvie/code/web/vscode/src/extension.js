@@ -1,29 +1,30 @@
-// ALVIE in VS Code for the Web. Everything runs in the browser, as in the IDE (web/ide), whose modules this extension
-// uses:
-//   - the files of the IDE (spec-lib/, results/, models/, ...) are the folder alvie:/, kept in IndexedDB;
-//   - an ALVIE terminal runs the shell of the IDE: the commands of ALVIE (in a Web Worker each), the programs and the
-//     scripts of the guides, and commands on the files;
+// ALVIE in VS Code for the Web. Everything runs in the browser:
+//   - the files (spec-lib/, results/, models/, tutorials/, ...) are the folder alvie:/, kept in IndexedDB;
+//   - an ALVIE terminal runs a shell (core/terminal.js): the commands of ALVIE (in a Web Worker each), the programs and
+//     the scripts of the guides, and commands on the files;
+//   - the tutorials (.alvienb) are notebooks whose cells run commands of ALVIE (notebook.js);
 //   - the specs (.atdl, .etdl, .spec, .vtdl) are checked by alvie-web check as they change: their mistakes are in the
 //     Problems panel;
 //   - a model (.dot) is drawn in a preview, alone or next to another, and `view A [B] --inputs ...` follows inputs on it.
-// alvie-web, the simulators and the files of a first visit are in ide/ of this extension (see build.mjs).
+// alvie-web, the simulators and the files of a first visit are in bundle/ of this extension (see prepare.sh).
 import * as vscode from 'vscode';
-import { Files } from '../../ide/src/files.js';
-import { Runner } from '../../ide/src/runner.js';
-import { Shell } from '../../ide/src/terminal.js';
+import { Files } from './core/files.js';
+import { Runner } from './core/runner.js';
+import { Shell } from './core/terminal.js';
+import { NOTEBOOK, Serializer, controller } from './notebook.js';
 import { FilesProvider, SCHEME } from './files-provider.js';
 import { Preview } from './preview.js';
 
 const CHECKED = new Set(['testdl', 'vtdl']);
 
 export async function activate(context) {
-  const base = `${vscode.Uri.joinPath(context.extensionUri, 'ide').toString(true)}/`;
+  const base = `${vscode.Uri.joinPath(context.extensionUri, 'bundle').toString(true)}/`;
   const files = new Files({ base });
   await files.load();
   const provider = new FilesProvider(files);
   context.subscriptions.push(vscode.workspace.registerFileSystemProvider(SCHEME, provider, { isCaseSensitive: true }));
 
-  // The extension host has another origin than ide/: its workers are made from a blob of runner.js
+  // The extension host has another origin than bundle/: its workers are made from a blob of runner.js
   let runnerUrl = null;
   const newWorker = async () => {
     runnerUrl ??= URL.createObjectURL(new Blob([await (await fetch(`${base}alvie/runner.js`)).text()], { type: 'text/javascript' }));
@@ -31,10 +32,17 @@ export async function activate(context) {
   };
 
   const preview = new Preview(context, files);
+  // The tutorials: notebooks of commands of ALVIE
+  const tutorials = controller({ files, base, newWorker, openEditor: (p) => vscode.window.showTextDocument(vscode.Uri.from({ scheme: SCHEME, path: p }), { viewColumn: vscode.ViewColumn.Beside }) });
+  context.subscriptions.push(
+    // Outputs are not part of a tutorial: running its cells does not change it
+    vscode.workspace.registerNotebookSerializer(NOTEBOOK, new Serializer(), { transientOutputs: true }),
+    tutorials,
+  );
   const uriOf = (path) => vscode.Uri.from({ scheme: SCHEME, path });
   const pathOf = (uri) => (uri.scheme === SCHEME ? uri.path : null);
 
-  // An ALVIE terminal: the shell of the IDE on a pseudoterminal, with its own runner (terminals run in parallel)
+  // An ALVIE terminal: the shell on a pseudoterminal, with its own runner (terminals run in parallel)
   const storage = { getItem: (k) => context.globalState.get(k) ?? null, setItem: (k, v) => context.globalState.update(k, v) };
   const pty = () => {
     const write = new vscode.EventEmitter();
@@ -110,11 +118,16 @@ export async function activate(context) {
   );
   vscode.workspace.textDocuments.forEach(check);
 
-  // The first view of the folder alvie:/: an example spec and an ALVIE terminal
+  // The first view of the folder alvie:/ in an empty session: an example spec and an ALVIE terminal. A tutorial (the page
+  // opens it, see site/main.js) is the view of its own session.
   if (vscode.workspace.workspaceFolders?.some((f) => f.uri.scheme === SCHEME)) {
-    const first = '/spec-lib/example/attacker.atdl';
-    if (vscode.window.visibleTextEditors.length === 0 && files.has(first)) await vscode.window.showTextDocument(uriOf(first), { preview: false, preserveFocus: true });
-    newTerminal();
+    setTimeout(async () => {
+      const tabs = vscode.window.tabGroups.all.flatMap((g) => g.tabs);
+      if (tabs.some((t) => t.input instanceof vscode.TabInputNotebook)) return;
+      const first = '/spec-lib/example/attacker.atdl';
+      if (tabs.length === 0 && files.has(first)) await vscode.window.showTextDocument(uriOf(first), { preview: false, preserveFocus: true });
+      if (vscode.window.terminals.length === 0) newTerminal();
+    }, 1000);
   }
   // For tests: the API of the extension. run(line) runs a command line in a shell of its own and gives its output
   const run = async (line) => {
@@ -125,7 +138,7 @@ export async function activate(context) {
     await shell.run(line);
     return out.join('').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
   };
-  return { files, preview, newTerminal, run, diagnostics };
+  return { files, preview, newTerminal, run, diagnostics, tutorials };
 }
 
 // alvie-web check PATH on a spec: its problems ({ line, col, severity, message }, one JSON per line)

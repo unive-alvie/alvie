@@ -1,0 +1,63 @@
+# Getting started: learn and compare two models
+
+Learn two models of a Sancus enclave, one for each value of its secret, and compare them to find what an attacker can tell apart. It takes less than a minute.
+
+ALVIE finds timing side channels in processors. It *learns* a model (a Mealy machine) of the processor running an attacker and an enclave, by running the inputs that the attacker and the enclave specifications allow on a simulator of the processor. It learns one model for each value of the secret of the enclave, and then *compares* the models: a sequence of attacker inputs with different outputs for the two secrets is a leak.
+
+Everything runs in your browser: ALVIE and the simulator of Sancus are WebAssembly. Run a cell with the ▷ on its left (or Ctrl+Enter); its output shows below it.
+
+## 1. The specifications
+
+The attacker specification (TestDL, `.atdl`) says what the attacker does before, during and after the enclave runs. The enclave specification (`.etdl`) is the code of the enclave, where `?` is the secret. Open them: `edit` opens a file next to the tutorial.
+
+```alvie
+cat spec-lib/example/attacker.atdl
+cat spec-lib/example/enclave.etdl
+```
+
+The attacker starts the timer (`start_counting 256`), creates the enclave and jumps into it (`jin enc_s`). Its interrupt service routine (`isr`) does nothing (`eps`). The enclave compares the secret with the register `r4` (`cmp ?, r4`) and then branches on the result (`ubr`), so what it runs depends on the secret.
+
+## 2. Learn a model for each secret
+
+`learn.exe` is the learner of ALVIE/Sancus, as in the guides. `--commit` chooses the version of Sancus (here the last commit of the experiments, `bf89c0b`), `--secret` the value of `?`, and `--res` the file of the model.
+
+```alvie
+learn.exe --att-spec spec-lib/example/attacker.atdl --encl-spec spec-lib/example/enclave.etdl --commit bf89c0b --secret 0 --res models/example-0.dot
+learn.exe --att-spec spec-lib/example/attacker.atdl --encl-spec spec-lib/example/enclave.etdl --commit bf89c0b --secret 1 --res models/example-1.dot
+```
+
+The models are in `models/` (in the Explorer on the left). Draw them side by side:
+
+```alvie
+view models/example-0.dot models/example-1.dot
+```
+
+Each transition is an input of the attacker or of the enclave, with what the attacker observes: `Time k=...` is the number of cycles. Drag to move a drawing, use the wheel to zoom, double-click to fit.
+
+## 3. Compare them
+
+`fa.exe` compares the two models and writes the *witnesses*: the runs that the attacker tells apart. `--secrets` gives the value of the secret of each model (the scripts of the guides put it in the names of the models instead), and `--debug` prints how many witnesses it found.
+
+```alvie
+fa.exe --m1-int models/example-0.dot --m2-int models/example-1.dot --secrets 0,1 --witness-file-basename models/example-witness --debug
+```
+
+```alvie
+view models/example-witness_int.dot
+```
+
+The witness graph has the run of each secret, side by side, up to the input where their outputs differ: there the attacker learns the secret.
+
+## 4. The same with the scripts of the guides
+
+The guides use scripts that learn and compare in one go. They work here too, and write the models in `results/example/`, the logs in `logs/example/` and the witnesses in `counterexamples/example/`. A model that is already there is not learned again.
+
+```alvie
+learn_example
+check_example
+```
+
+## Next
+
+- *Reproduce an attack*: learn the four models of a known attack on Sancus and read its witness.
+- Change the enclave (`spec-lib/example/enclave.etdl`), for example remove the branch on the secret, learn again and compare: does the leak go away? A mistake in a specification is underlined as you type, and listed in the Problems panel.

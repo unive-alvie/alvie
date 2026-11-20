@@ -433,13 +433,15 @@ the documentation lists what users must do.
   `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
   executables, their options and their outputs do not change, and
   `regression.sh all` finds the same models, witness graphs and counts.
-- The ALVIE IDE (`alvie/code/web/ide`, see "The ALVIE IDE" in the
-  documentation): ALVIE in a web page, with nothing to install. Files
-  (kept in the browser), an editor with the highlighting and the live
-  errors of the specs (`alvie-web check`), a terminal for the commands of
-  ALVIE (each in a Web Worker) and for files, and a viewer of models that
-  draws one or two and follows a sequence of inputs on them. CI builds it,
-  runs its self-test in Chrome and uploads it as an artifact.
+- ALVIE in the browser (`alvie/code/web/vscode`, see "ALVIE in Your Browser"
+  in the documentation), with nothing to install: a first page with
+  tutorials (notebooks whose cells run commands of ALVIE and draw models)
+  and an empty session, both in VS Code for the Web built from Code - OSS.
+  The extension gives the files of ALVIE (kept in the browser), ALVIE
+  terminals (each command in a Web Worker; the programs and scripts of the
+  guides too), the languages of the specs with their problems
+  (`alvie-web check`), and a preview of models that follows a sequence of
+  inputs. CI runs every tutorial in VS Code for the Web and uploads the site.
 - ALVIE/VaultLink is part of ALVIE (formerly the branch `variant/vaultlink`):
   `alvie vaultlink learn|compare|replay` (formerly `vl_learn`, `vl_compare`,
   `vl_replay`) and `serve`. The system under learning reaches a service

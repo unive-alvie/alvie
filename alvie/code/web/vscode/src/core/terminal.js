@@ -1,5 +1,5 @@
-// The shell of the IDE: a line editor on a terminal (xterm.js in the IDE, a Pseudoterminal in VS Code), with built-in
-// commands on the files of the IDE, the scripts of the guides, and the commands of alvie-web (alvie ..., or
+// The shell of ALVIE in the browser: a line editor on a terminal (a Pseudoterminal of VS Code, or the cells of a
+// tutorial), with built-in commands on the files, the scripts of the guides, and the commands of alvie-web (alvie ..., or
 // sancus/tiny/vaultlink ...), which run in a Web Worker. Ctrl-C stops a running command.
 import { resolvePath } from './files.js';
 import { programOf } from './runner.js';
@@ -99,18 +99,22 @@ export class Shell {
       try { this.storage?.setItem('alvie-ide-history', JSON.stringify(this.history)); } catch {}
     }
     const args = splitArgs(trimmed);
+    // The exit status of the command: 0, or a failure (130 when it was stopped)
+    let status = 0;
     try {
       if (args.length === 0) {}
-      else if (scriptOf(args)) await this.script(scriptOf(args));
-      else if (ALVIE.has(args[0]) || programOf(args[0])) await this.alvie(args);
+      else if (scriptOf(args)) status = await this.script(scriptOf(args));
+      else if (ALVIE.has(args[0]) || programOf(args[0])) status = await this.alvie(args);
       else this.builtin(args);
-    } catch (e) { this.print(String(e.message || e), 'stderr'); }
+    } catch (e) { this.print(String(e.message || e), 'stderr'); status = 1; }
     this.prompt();
+    return status;
   }
 
   async alvie(args) {
     const { exit, ms, cancelled } = await this.runner.run(args, { cwd: this.cwd, onOutput: (stream, l) => this.print(l, stream) });
     if (!cancelled) this.print(`\x1b[2m(${(ms / 1000).toFixed(1)} s${exit !== null && exit !== 0 ? `, exit ${exit}` : ''})\x1b[0m`);
+    return cancelled ? 130 : exit ?? 0;
   }
 
   // A script of the guides: its jobs, one after the other, each with its output in its log, and the messages of the

@@ -1,7 +1,7 @@
 {
   "name": "alvie",
   "displayName": "ALVIE",
-  "description": "ALVIE in the browser: the files of the experiments, a terminal for the commands of ALVIE, the languages of the specs and a preview of models",
+  "description": "ALVIE in the browser: the files of the experiments, terminals and tutorials for the commands of ALVIE, the languages of the specs and a preview of models",
   "publisher": "unive-alvie",
   "version": "0.1.0",
   "private": true,
@@ -58,6 +58,13 @@
           ".dot",
           ".gv"
         ]
+      },
+      {
+        "id": "alvie",
+        "aliases": [
+          "ALVIE commands"
+        ],
+        "configuration": "./language-configuration-alvie.json"
       }
     ],
     "grammars": [
@@ -75,6 +82,11 @@
         "language": "dot",
         "scopeName": "source.dot",
         "path": "./syntaxes/dot.tmLanguage.json"
+      },
+      {
+        "language": "alvie",
+        "scopeName": "source.alvie",
+        "path": "./syntaxes/alvie.tmLanguage.json"
       }
     ],
     "commands": [
@@ -137,6 +149,30 @@
         "*.etdl": "testdl"
       },
       "workbench.colorTheme": "Default Dark Modern"
-    }
+    },
+    "notebooks": [
+      {
+        "type": "alvie-tutorial",
+        "displayName": "ALVIE Tutorial",
+        "selector": [
+          {
+            "filenamePattern": "*.alvienb"
+          }
+        ]
+      }
+    ],
+    "notebookRenderer": [
+      {
+        "id": "alvie-models",
+        "displayName": "ALVIE models",
+        "entrypoint": "./out/renderer.js",
+        "mimeTypes": [
+          "application/vnd.alvie.models+json"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "@viz-js/viz": "3.31.0"
   }
 }
