@@ -16,7 +16,7 @@ const runner = new Runner(files);
 
 const editor = new Editor($('editor'), {
   files,
-  linterFor: (path) => linterFor(path, files),
+  linterFor,
   onStatus: (path, status) => { $('editor-file').textContent = path; $('editor-status').textContent = status; },
 });
 const viewer = new Viewer($('viewer'), {
@@ -36,7 +36,7 @@ function download(path) {
 const shell = new Shell($('terminal'), {
   files, runner,
   openEditor: (p) => { editor.open(p); tree.select(p); },
-  openViewer: (ps) => viewer.show(ps),
+  openViewer: (ps, inputs) => viewer.show(ps, inputs),
   download,
 });
 
@@ -69,7 +69,15 @@ window.alvieIde = { files, run: (line) => shell.run(line), editor, viewer, shell
 const query = new URLSearchParams(location.search);
 if (query.has('selftest')) import('./selftest.js').then((m) => m.selftest(window.alvieIde));
 // index.html?demo=1: an example model in the viewer and the help in the terminal (for screenshots)
-if (query.has('demo')) {
+// index.html?demo=vault: the two services of VaultLink learned, compared, and drawn with their distinguishing sequence
+if (query.get('demo') === 'vault') {
+  await shell.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service reference --res models/reference.dot');
+  await shell.run('vaultlink learn --spec spec-lib/vaultlink/vault.vtdl --service firmware --res models/firmware.dot');
+  await shell.run('vaultlink compare models/reference.dot models/firmware.dot');
+  await shell.run('view models/reference.dot models/firmware.dot --inputs HELLO,ID_ME,PASS_OK,AUDIT,AUDIT');
+  editor.open('/spec-lib/vaultlink/vault.vtdl');
+  setTimeout(() => fetch('ready', { method: 'POST' }), 1000);
+} else if (query.has('demo')) {
   await viewer.show(['/results/example/bf89c0b-attacker-enclave-0-0.01-0.01.dot']);
   await shell.run('help');
   setTimeout(() => fetch('ready', { method: 'POST' }), 500);

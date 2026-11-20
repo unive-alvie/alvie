@@ -56,7 +56,9 @@ print(f"{result['ms']} ms")
 if not firefox:
         # The IDE with an example model (index.html?demo=1). Chromium of snap cannot write in /tmp: the home directory
     shot = os.path.join(os.path.expanduser("~"), "alvie-ide-shot.png")
-    run(base + "?demo=1", [f"--screenshot={shot}", "--virtual-time-budget=20000"])
-    if os.path.exists(shot): shutil.move(shot, os.path.join(out, "ide.png"))
+    for demo, name in (("1", "ide.png"), ("vault", "ide-vaultlink.png")):
+        ready.clear()
+        run(base + f"?demo={demo}", [f"--screenshot={shot}", "--virtual-time-budget=20000"])
+        if os.path.exists(shot): shutil.move(shot, os.path.join(out, name))
 server.shutdown()
 sys.exit(0 if all(c["ok"] for c in result["checks"]) else 1)

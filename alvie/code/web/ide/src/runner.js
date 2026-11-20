@@ -40,8 +40,11 @@ export class Runner {
         this.worker = null; this.finish = null;
         resolve({ ...result, ms: performance.now() - t0 });
       };
+      let ended = false;
       worker.onmessage = (event) => {
         const m = event.data;
+        if (ended) return;
+        if (m.type === 'done') ended = true;
         if (m.type === 'output') onOutput(m.stream, m.line);
         else if (m.type === 'done') { this.files.merge(m.files); this.finish({ exit: m.exit }); }
       };

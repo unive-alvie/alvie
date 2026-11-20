@@ -27,7 +27,8 @@ self.onmessage = async (event) => {
       simFiles[commit] = await Promise.all(SIM_FILES.map(async (n) => [n, await (await fetch(`sim/${commit}/files/${n}`)).text()]));
     }
     importScripts('node-shim.js');
-    vfs = AlvieNodeShim.install({ argv, env, base: './', stdout: output('stdout'), stderr: output('stderr') });
+    vfs = AlvieNodeShim.install({ argv, env, base: './', stdout: (l) => { if (!finished) output('stdout')(l); },
+      stderr: (l) => { if (!finished) output('stderr')(l); }, onExit: () => finish() });
     for (const [path, text] of Object.entries(files || {})) vfs.writeFile(path, text);
     if (cwd) { vfs.fs.mkdirSync(cwd, { recursive: true }); process.chdir(cwd); }
     self.alvieSancus = {

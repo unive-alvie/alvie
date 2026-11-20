@@ -16,9 +16,16 @@ export async function selftest(ide) {
   check('vaultlink learn writes both models', ide.files.has('/models/reference.dot') && ide.files.has('/models/firmware.dot'));
   await ide.run('vaultlink compare models/reference.dot models/firmware.dot');
   check('vaultlink compare finds the difference', lines.some((l) => l.includes('1 distinguishing sequence')));
-  await ide.run('view models/reference.dot models/firmware.dot');
+  // Live errors: a mistake in a spec opened in the editor is underlined
+  ide.files.write('/models/bad.atdl', 'isr {\n  timer_enable 1;\n  retx\n};\n');
+  ide.editor.open('/models/bad.atdl');
+  await new Promise((r) => setTimeout(r, 3000));
+  check('the editor underlines a mistake', document.querySelectorAll('.cm-lintRange-error').length > 0);
+  await ide.run('view models/reference.dot models/firmware.dot --inputs HELLO,ID_ME,PASS_OK,AUDIT,AUDIT');
   await new Promise((r) => setTimeout(r, 1500));
   check('the viewer draws two models', document.querySelectorAll('#viewer svg').length === 2);
+  const heads = [...document.querySelectorAll('.viewer-pane-head')].map((h) => h.textContent);
+  check('the inputs are followed on both models', heads.length === 2 && heads.every((h) => h.includes('followed 5 inputs')));
   const result = { checks, lines, ms: Math.round(performance.now() - t0), userAgent: navigator.userAgent,
     model: ide.files.read('/models/example-0.dot') };
   await fetch('/result', { method: 'POST', body: JSON.stringify(result) });

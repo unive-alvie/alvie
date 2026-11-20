@@ -27,7 +27,8 @@ const HELP = `The commands of ALVIE run here, in your browser:
   alvie vaultlink compare models/reference.dot models/firmware.dot
 ("alvie" may be left out; sancus gets --sancus none --tmpdir /tmp/alvie when they are missing.)
 
-Files:  ls [dir]   cd [dir]   pwd   cat FILE   edit FILE   view FILE [FILE2]   cp A B   mv A B   rm PATH
+Files:  ls [dir]   cd [dir]   pwd   cat FILE   edit FILE   cp A B   mv A B   rm PATH
+        view MODEL [MODEL2] [--inputs I1,I2,...]  (draw one or two models; follow the inputs on them)
         download FILE   reset-files (back to the files of a first visit)   clear   history   help
 Keys:   Ctrl-C stops a command, Tab completes a path, Up/Down walk the history.`;
 
@@ -131,7 +132,15 @@ export class Shell {
       case 'cd': { const d = p(rest[0] || '/'); if (d !== '/' && !this.files.isDir(d)) throw new Error(`cd: no such directory: ${rest[0]}`); this.cwd = d; break; }
       case 'cat': need(1); for (const f of rest) { if (!this.files.has(p(f))) throw new Error(`cat: no such file: ${f}`); this.print(this.files.read(p(f))); } break;
       case 'edit': need(1); this.openEditor(p(rest[0])); break;
-      case 'view': need(1); for (const f of rest) if (!this.files.has(p(f))) throw new Error(`view: no such file: ${f}`); this.openViewer(rest.map(p)); break;
+      case 'view': {
+        need(1);
+        const i = rest.indexOf('--inputs');
+        const inputs = i >= 0 ? (rest[i + 1] || '').split(/[,\s]+/).filter(Boolean) : [];
+        const models = i >= 0 ? rest.filter((_, k) => k !== i && k !== i + 1) : rest;
+        for (const f of models) if (!this.files.has(p(f))) throw new Error(`view: no such file: ${f}`);
+        this.openViewer(models.map(p), inputs);
+        break;
+      }
       case 'cp': need(2); if (!this.files.has(p(rest[0]))) throw new Error(`cp: no such file: ${rest[0]}`); this.files.write(p(rest[1]), this.files.read(p(rest[0]))); break;
       case 'mv': need(2); this.files.rename(p(rest[0]), p(rest[1])); break;
       case 'rm': need(1); for (const f of rest) this.files.remove(p(f)); break;
