@@ -13,7 +13,7 @@ ALVIE can run without installing anything: its OCaml code compiles to WebAssembl
 testbench of ALVIE/Sancus compiles to WebAssembly with Verilator and Emscripten.
 The result, `alvie-web`, runs the commands of ALVIE/Core for Tiny and for ALVIE/Sancus, and learns the same models as
 the native ALVIE.
-It runs in Node today; the web page that runs it in a browser is the next step.
+It runs in Node and in a Web Worker of a browser (Chromium and Firefox); the IDE that will run it in a page is the next step.
 
 ## What runs where
 
@@ -45,6 +45,9 @@ Everything is in `alvie/code/web`:
 | `sim/build-sim.sh` | The simulator of a commit of `sancus-core-gap` in WebAssembly, and the files of its programs |
 | `sim/harness.cpp`, `sim/pre.js`, `sim/post.js` | The harness of the simulator: `run(mem)` gives the status of `scripts/simulate` and the VCD trace |
 | `validate/validate.sh` | Learns models with `alvie-web` and compares them with the native ones |
+| `browser/node-shim.js` | The Node that the runtime of `wasm_of_ocaml` needs in a browser: an in-memory file system, `process` and the modules it asks for |
+| `browser/worker.js` | `alvie-web` in a Web Worker, with the simulator of a commit and the files the page gives |
+| `browser/smoke.html`, `browser/smoke.py` | Learn a model in headless Chromium or Firefox and check it |
 
 ## Build and run
 
@@ -64,6 +67,25 @@ node /tmp/alvie-web/alvie-web-node.cjs sancus learn --spec ../../spec-lib/a.atdl
 
 `--sancus` is required by the manifest of ALVIE/Sancus but not used: the simulators are in `ALVIE_WEB_SIM` (by default
 `sim/` next to the runner). The simulators are built with the key `cafe`, as ALVIE's experiments.
+
+### In a browser
+
+A page runs `alvie-web` in a Web Worker (`browser/worker.js`): it posts the argv, the files to write and the files to read
+back, and gets the output and those files.
+The runtime of `wasm_of_ocaml` reaches files through Node only; `browser/node-shim.js` gives it an in-memory file system
+with the calls of `node:fs` it uses, which the page reads and writes too.
+The worker makes the simulator before it installs the shim, since Emscripten chooses its environment when it makes the
+module.
+
+```bash
+python3 web/browser/smoke.py /tmp/alvie-web /tmp/alvie-web/sim ../../spec-lib/example
+ALVIE_SMOKE_BROWSER=firefox python3 web/browser/smoke.py /tmp/alvie-web /tmp/alvie-web/sim ../../spec-lib out.json \
+  'att=a.atdl&encl=enclave-complete.etdl&commit=bf89c0b'
+```
+
+`alvie-web` takes from the page, as JavaScript globals: `alvieArgv` (the command), `alvieFiles` (files to write),
+`alvieCollect` (files to read back) and `alvieDone` (called when the command ends); `alvieSancus` is the host of the
+simulators.
 
 The `web` job of CI builds `alvie-web` and the simulators of `bf89c0b` and `ef753b6`, and runs the fixtures of Tiny and
 of ALVIE/Sancus with it.

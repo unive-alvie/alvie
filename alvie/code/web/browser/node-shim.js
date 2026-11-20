@@ -3,7 +3,7 @@
 // it a small Node: an in-memory file system with the synchronous calls of node:fs that the runtime uses, process,
 // path, os, tty, and a child_process that runs nothing. The page reads and writes the same files (vfs).
 //
-//   const vfs = AlvieNodeShim.install({ argv, base, stdout, stderr });
+//   const vfs = AlvieNodeShim.install({ argv, env, base, stdout, stderr });
 //   vfs.writeFile('/w/a.atdl', text); ... importScripts('alvie-web.js') ... vfs.readFile('/w/model.dot')
 //
 // base is the URL of the directory of alvie-web.js: the runtime loads alvie-web.assets/*.wasm from there.
@@ -33,7 +33,7 @@
   const dirname = (p) => { const i = p.replace(/\/+$/, '').lastIndexOf('/'); return i <= 0 ? (p.startsWith('/') ? '/' : '.') : p.slice(0, i); };
   const basename = (p) => p.replace(/\/+$/, '').split('/').pop();
 
-  function install({ argv = [], base = '.', stdout = (s) => console.log(s), stderr = (s) => console.error(s) } = {}) {
+  function install({ argv = [], env = {}, base = '.', stdout = (s) => console.log(s), stderr = (s) => console.error(s) } = {}) {
     // A node is { dir: Map(name -> node) } or { data: Uint8Array }; inode numbers for stat
     const root = { dir: new Map(), ino: 1, mtime: Date.now() };
     let ino = 2;
@@ -189,7 +189,7 @@
     require.main = { filename: '/alvie-web.js' };
     globalThis.require = require;
     globalThis.process = {
-      versions: { node: 'alvie-web-shim' }, platform: 'linux', env: {}, argv: ['node', '/alvie-web.js', ...argv],
+      versions: { node: 'alvie-web-shim' }, platform: 'linux', env: { ...env }, argv: ['node', '/alvie-web.js', ...argv],
       cwd: () => state.cwd, chdir: (p) => { const d = resolve(p); lookup(d, 'chdir'); state.cwd = d; },
       exit: (code) => { flushStd(); state.exitCode = code; throw Object.assign(new Error(`exit ${code}`), { alvieExit: code }); },
       on: (event, f) => { if (event === 'uncaughtException') self.addEventListener('error', (e) => { if (e.error && e.error.alvieExit === undefined) f(e.error); }); },
@@ -202,6 +202,8 @@
       fs,
       writeFile(p, text) { const path = resolve(p); fs.mkdirSync(dirname(path), { recursive: true }); const fd = fs.openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC); fs.writeSync(fd, enc.encode(text)); fs.closeSync(fd); },
       readFile(p) { const n = lookup(resolve(p), 'open'); return dec.decode(n.data); },
+      readBytes(p) { return lookup(resolve(p), 'open').data; },
+      writeBytes(p, bytes) { const path = resolve(p); fs.mkdirSync(dirname(path), { recursive: true }); const fd = fs.openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC); fs.writeSync(fd, bytes); fs.closeSync(fd); },
       exists: (p) => fs.existsSync(p),
       list(p = '/') { return fs.readdirSync(p); },
       flush: flushStd,

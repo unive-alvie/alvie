@@ -1,9 +1,9 @@
-// alvie-web in a Web Worker. The page posts { argv, files, collect, commit }; the worker gives alvie-web a small Node
+// alvie-web in a Web Worker. The page posts { argv, env, files, collect, commit }; the worker gives alvie-web a small Node
 // (node-shim.js: an in-memory file system), writes the files there, loads the simulator of the commit
 // (sim/COMMIT/sim.js and its files), runs the command, and posts { done: true, lines, files, exit }: what alvie-web
 // printed, the files of collect, and its exit code (null if it did not call exit).
 self.onmessage = async (event) => {
-  const { argv, files, collect, commit } = event.data;
+  const { argv, env, files, collect, commit } = event.data;
   const lines = [];
   const log = (...args) => lines.push(args.join(' '));
   console.log = log; console.error = log; console.warn = log; console.info = log;
@@ -22,9 +22,12 @@ self.onmessage = async (event) => {
     const names = ['generic_template.s43', 'pmem_defs.asm', 'pmem.sh', 'pmem.x', 'sancus_macros.asm'];
     const simFiles = await Promise.all(names.map(async (n) => [n, await (await fetch(`sim/${commit}/files/${n}`)).text()]));
     importScripts('node-shim.js');
-    vfs = AlvieNodeShim.install({ argv, base: './', stdout: log, stderr: log });
+    vfs = AlvieNodeShim.install({ argv, env, base: './', stdout: log, stderr: log });
     for (const [path, text] of Object.entries(files || {})) vfs.writeFile(path, text);
-    self.alvieSancus = { files: () => simFiles, run: (_commit, mem) => sim.run(mem) };
+    self.alvieSancus = {
+      files: () => simFiles,
+      run: (_commit, mem, vcd) => { const r = sim.run(vfs.readBytes(mem)); vfs.writeBytes(vcd, r.vcd); return r.status; },
+    };
     self.alvieDone = () => setTimeout(finish, 0);
     self.addEventListener('error', (e) => { if (e.error?.alvieExit !== undefined) { e.preventDefault(); finish(); } });
     self.addEventListener('unhandledrejection', (e) => {

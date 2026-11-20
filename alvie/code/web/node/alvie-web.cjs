@@ -18,10 +18,12 @@ globalThis.alvieSancus = {
     if (!fs.existsSync(dir)) throw new Error(`no simulator in WebAssembly for the commit ${commit} in ${simDir}`);
     return fs.readdirSync(dir).sort().map((name) => [name, fs.readFileSync(path.join(dir, name), 'utf8')]);
   },
-  run(commit, mem) {
+  run(commit, mem, vcd) {
     const sim = sims[commit];
     if (!sim) throw new Error(`the simulator of the commit ${commit} is not loaded`);
-    return sim.run(mem);
+    const r = sim.run(fs.readFileSync(mem));
+    fs.writeFileSync(vcd, r.vcd);
+    return r.status;
   },
 };
 

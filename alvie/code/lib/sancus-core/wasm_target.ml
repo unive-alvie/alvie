@@ -14,9 +14,11 @@ open Core
 type host = {
   (* The files of the programs of the commit, as (name, text) *)
   files : commit:string -> (string * string) list;
-  (* Runs a program (its memory file, Msp430_asm.mem_file) on the simulator of the commit: the status of
-     scripts/simulate (0 success, 1 the stimulus did not complete, 2 timeout, 3 another failure) and the VCD trace *)
-  run : commit:string -> string -> int * string;
+  (* Runs the program in the file mem (a memory file, Msp430_asm.mem_file) on the simulator of the commit and writes
+     its VCD trace in the file vcd: the status of scripts/simulate (0 success, 1 the stimulus did not complete,
+     2 timeout, 3 another failure). The files are in the file system of the program (Node's, or the page's), so that
+     the program and the trace do not go through strings. *)
+  run : commit:string -> mem:string -> vcd:string -> int;
 }
 
 (* The host of this program: set it before making a backend *)
@@ -32,11 +34,11 @@ let run_step ~commit (cfg : Step.cfg_t) =
   match Step.assemble_native cfg with
   | None -> failwith "Sancus: the assembler of ALVIE does not accept the program of the step, and this build has no toolchain"
   | Some img ->
-    let mem = Prof.time "sul.ihex2mem" (fun () -> Msp430_asm.mem_file ~mem_size:(Step.pmem_size cfg) img) in
-    let status, vcd = Prof.time "sul.simulate" (fun () -> (the_host ()).run ~commit mem) in
+    let mem = cfg.tmpdir ^ "/pmem.mem" in
+    Prof.time "sul.ihex2mem" (fun () -> Out_channel.write_all mem ~data:(Msp430_asm.mem_file ~mem_size:(Step.pmem_size cfg) img));
+    let status = Prof.time "sul.simulate" (fun () -> (the_host ()).run ~commit ~mem ~vcd:cfg.dumpfile) in
     if status = 1 then failwith "Simulator: Stimulus did not complete!";
     if status = 3 then failwith "Simulator: Unexpected error :(";
-    Out_channel.write_all cfg.dumpfile ~data:vcd;
     let dump = Prof.time "sul.vcd_parse" (fun () -> Vcd.vcd ~signals:Step.analysed_signals cfg.dumpfile) in
     (* As on the simulator: status 2 is a timeout, i.e., the step may diverge *)
     fun labels -> Step.analyse_dump (status = 2) cfg labels dump

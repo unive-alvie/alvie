@@ -7,7 +7,8 @@
 // shows the output and
 // the model, and posts them to /result (see smoke.py)
 (async () => {
-  // ?att=FILE&encl=FILE&commit=C&secret=S (files in spec/); the Getting Started example on bf89c0b by default
+  // ?att=FILE&encl=FILE&commit=C&secret=S&profile=1 (files in spec/; profile: ALVIE_PROFILE=1); the Getting Started
+  // example on bf89c0b by default
   const q = new URLSearchParams(location.search);
   const att = q.get('att') || 'attacker.atdl', encl = q.get('encl') || 'enclave.etdl', commit = q.get('commit') || 'bf89c0b';
   const text = async (p) => (await fetch(p)).text();
@@ -21,6 +22,7 @@
     document.getElementById('out').textContent = result.lines.join('\n') + '\n\n' + (result.files['/w/model.dot'] || '(no model)');
     await fetch('/result', { method: 'POST', body: JSON.stringify(result) });
   };
-  worker.postMessage({ argv, files, collect: ['/w/model.dot'], commit });
+  const env = q.get('profile') ? { ALVIE_PROFILE: '1' } : {};
+  worker.postMessage({ argv, env, files, collect: ['/w/model.dot'], commit });
 })();
 </script>
