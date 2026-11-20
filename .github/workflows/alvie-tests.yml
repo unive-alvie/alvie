@@ -224,7 +224,8 @@ jobs:
         working-directory: alvie/code
         run: |
           opam install -y . --deps-only
-          opam install -y --assume-depexts wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx
+          # The versions that alvie-web is checked with (see docs/development/alvie-in-the-browser.md)
+          opam install -y --assume-depexts wasm_of_ocaml-compiler.6.3.2 js_of_ocaml.6.3.2 js_of_ocaml-ppx.6.3.2
       - name: Build alvie-web
         working-directory: alvie/code
         run: opam exec -- bash web/build.sh /tmp/alvie-web

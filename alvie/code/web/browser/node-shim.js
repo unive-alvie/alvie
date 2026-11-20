@@ -186,8 +186,12 @@
       'node:child_process': { spawnSync: () => ({ error: new Error('alvie-web runs no program in a browser') }) },
     };
     const require = (m) => { if (!(m in modules)) throw new Error(`alvie-web: no module ${m} in the browser`); return modules[m]; };
-    require.main = { filename: '/alvie-web.js' };
+    // CommonJS, as the code of wasm_of_ocaml may expect it in Node: require, module (require.main), exports
+    const module = { filename: '/alvie-web.js', exports: {} };
+    require.main = module;
     globalThis.require = require;
+    globalThis.module = module;
+    globalThis.exports = module.exports;
     globalThis.process = {
       versions: { node: 'alvie-web-shim' }, platform: 'linux', env: { ...env }, argv: ['node', '/alvie-web.js', ...argv],
       cwd: () => state.cwd, chdir: (p) => { const d = resolve(p); lookup(d, 'chdir'); state.cwd = d; },
