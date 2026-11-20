@@ -179,8 +179,8 @@ jobs:
 
   web:
     name: Build ALVIE for the browser and run its fixtures in Node
-    # alvie-web (alvie/code/web) needs OCaml 5 and wasm_of_ocaml; the simulators in WebAssembly need Verilator,
-    # Emscripten and the MSP430 toolchain (for the files of the programs of a commit, see web/sim/build-sim.sh)
+    # alvie-web (alvie/code/web) needs OCaml 5 and wasm_of_ocaml; the simulators in WebAssembly need Verilator and
+    # Emscripten (see web/sim/build-sim.sh)
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
@@ -188,10 +188,10 @@ jobs:
         with:
           submodules: true
           fetch-depth: 0
-      - name: Install Verilator, the MSP430 toolchain and Binaryen
+      - name: Install Verilator and Binaryen
         run: |
           sudo apt-get update
-          sudo apt-get install -y verilator gcc-msp430 binutils-msp430 msp430-libc msp430mcu
+          sudo apt-get install -y verilator
           curl -sSL https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz | tar xz -C "$HOME"
           echo "$HOME/binaryen-version_133/bin" >> "$GITHUB_PATH"
       - name: Set up Emscripten

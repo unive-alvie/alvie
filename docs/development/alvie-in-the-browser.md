@@ -22,7 +22,7 @@ It runs in Node and in a Web Worker of a browser (Chromium and Firefox); the IDE
 | L#, the oracles, the plugin files, the input generator, the comparison, the commands of Core | `alvie-core` | the same libraries, compiled by `wasm_of_ocaml` |
 | The step of ALVIE/Sancus (programs, assembler, analysis of the trace) | `sancus_core` | the same library |
 | The simulator | `simv`, compiled by Verilator, started for each step | the testbench compiled by Verilator and Emscripten, loaded once and called for each step |
-| Programs of a step | `Msp430_asm` (the toolchain prepares the first build) | `Msp430_asm`; the files of the first build come with the simulator |
+| Programs of a step | `Msp430_asm` (the toolchain prepares the first build) | `Msp430_asm`; the files of the first build come with the simulator, made without the toolchain |
 | Plugin files (YAML) | libyaml | `alvie-core.yaml-table`: the YAML files of `plugins/`, read when ALVIE is built |
 | Witnesses | `Ltscompare.Weak_trace` | the same |
 | Formulas (`alvie property formula`) | mCRL2 | not available |
@@ -53,8 +53,9 @@ Everything is in `alvie/code/web`:
 
 The OCaml side needs an OCaml 5 switch with the dependencies of ALVIE, `wasm_of_ocaml-compiler`, `js_of_ocaml` and
 `js_of_ocaml-ppx`, and Binaryen 119 or later (`wasm-opt`) on the `PATH`.
-The simulators need Verilator 5, Emscripten (`emcc` on the `PATH`) and the MSP430 toolchain, which prepares the files
-of the programs of a commit once.
+The simulators need Verilator 5 and Emscripten (`emcc` on the `PATH`); `build-sim.sh` makes the files of the programs
+of a commit (`pmem.sh`, `pmem.x`, `pmem_defs.asm`) as the setup of `scripts/build_pmem` does, with the C preprocessor of
+the host instead of the MSP430 toolchain.
 
 ```bash
 cd alvie/code
