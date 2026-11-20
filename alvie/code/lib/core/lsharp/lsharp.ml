@@ -452,7 +452,7 @@ struct
             (Sexp.to_string (O.sexp_of_t (snd (List.last_exn iol))))
           )); *)
           ot'), basis) *)
-        let (s, i) = List.random_element_exn undef_list in
+        let (s, i) = Rng.random_element_exn undef_list in
         let ot', _ = IOSOracle.output_query oracle ot sul ((IIOObservationTree.access ot s) @ [i]) in
           `RestartApplied (ot', basis)
         )

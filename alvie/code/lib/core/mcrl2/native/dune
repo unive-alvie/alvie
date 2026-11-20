@@ -1,0 +1,5 @@
+(library
+ (name alvie_mcrl2_native)
+ (public_name alvie-core.mcrl2-native)
+ (implements alvie_mcrl2)
+ (libraries core core_unix core_unix.sys_unix shexp.process logs))

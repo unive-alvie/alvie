@@ -1,0 +1,4 @@
+(library
+ (name alvie_mcrl2_none)
+ (public_name alvie-core.mcrl2-none)
+ (implements alvie_mcrl2))

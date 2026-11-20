@@ -88,6 +88,12 @@ jobs:
       - name: Run the W-method oracle suite
         working-directory: alvie/code
         run: opam exec -- dune test test/wmethod
+      - name: Run the weak trace inclusion suite
+        working-directory: alvie/code
+        run: opam exec -- dune test test/weak_trace
+      - name: Check the portable part of Core (no C code, no programs)
+        working-directory: alvie/code
+        run: opam exec -- dune test test/portable
       - name: Check the plugin templates
         working-directory: alvie/code
         run: opam exec -- bash test/plugin_new.sh

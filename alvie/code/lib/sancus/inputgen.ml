@@ -231,7 +231,7 @@ let get_options
     | `Cleanup -> curr_spec_dfa, cleanup_next cleanup
 
 let generate_next
-  ?(choose=(fun _ _ options -> if List.length options = 0 then `Stop else List.random_element_exn options))
+  ?(choose=(fun _ _ options -> if List.length options = 0 then `Stop else Learninglib.Rng.random_element_exn options))
   ?(force_encl : [ `Next of t | `Stop ] option)
   (spec : spec_dfa)
   (il : Input.t list)

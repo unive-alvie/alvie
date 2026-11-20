@@ -287,7 +287,7 @@ Its input is the input of the step, or, with `input: interrupt`, the built-in in
 
 Core compares models only through these files, with nothing written for a platform:
 
-- what the attacker sees, and which outputs are silent, from `view.yaml` (mCRL2 compares only what the attacker sees: on Sancus, not the cycle count `k`);
+- what the attacker sees, and which outputs are silent, from `view.yaml` (the comparison sees only what the attacker sees: on Sancus, not the cycle count `k`);
 - where a run ends: the outputs whose phase rule stops (`stop: finished`) or restarts the test;
 - which inputs the attacker chooses (the low inputs): the atoms of attacker sections, and interrupts;
 - the victim's code of a run: the atoms of victim sections until it is interrupted or the test goes to another section; two runs of a witness must run the same victim code, up to the secret (its values in the atoms are ignored).

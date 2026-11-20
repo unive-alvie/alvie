@@ -25,7 +25,7 @@
 (package
  (name alvie-core)
  (synopsis "ALVIE/Core: learn models of a system with L# and compare them to find information leaks, for any platform with a plugin")
- (description "The L# learner and its equivalence oracles, the input generator of specs, the comparison engine that finds witnesses with mCRL2, the plugin files, the commands of Core for any plugin, the protocol of external plugins, and Tiny, the reference platform. A plugin (such as alvie-sancus) connects it to a platform.")
+ (description "The L# learner and its equivalence oracles, the input generator of specs, the comparison engine that finds witnesses, the plugin files, the commands of Core for any plugin, the protocol of external plugins, and Tiny, the reference platform. A plugin (such as alvie-sancus) connects it to a platform.")
  (depends
   (ocaml (>= "4.13"))
   core

@@ -22,30 +22,22 @@ let does_not_hold = 4
 let fail format = Printf.ksprintf (fun message -> raise (User_error message)) format
 
 let require_file ~option path =
-  match Sys_unix.file_exists path with
-  | `Yes ->
-    if Sys_unix.is_file_exn path then path
-    else fail "%s must name a file, but %S is not a file." option path
-  | `No -> fail "%s names a file that does not exist: %S." option path
-  | `Unknown -> fail "Cannot inspect %s at %S." option path
+  if not (Fs.exists path) then fail "%s names a file that does not exist: %S." option path
+  else if Fs.is_file path then path
+  else fail "%s must name a file, but %S is not a file." option path
 
 let require_directory ~option path =
-  match Sys_unix.file_exists path with
-  | `Yes ->
-    if Sys_unix.is_directory_exn path then path
-    else fail "%s must name a directory, but %S is not a directory." option path
-  | `No -> fail "%s names a directory that does not exist: %S." option path
-  | `Unknown -> fail "Cannot inspect %s at %S." option path
+  if not (Fs.exists path) then fail "%s names a directory that does not exist: %S." option path
+  else if Fs.is_directory path then path
+  else fail "%s must name a directory, but %S is not a directory." option path
 
 let prepare_directory ~option path =
   if String.is_empty path then fail "%s cannot be empty." option;
   let path = String.rstrip path ~drop:(Char.equal '/') in
   let path = if String.is_empty path then "/" else path in
-  match Sys_unix.file_exists path with
-  | `No -> Core_unix.mkdir_p path; path
-  | `Yes when Sys_unix.is_directory_exn path -> path
-  | `Yes -> fail "%s must name a directory, but %S is not a directory." option path
-  | `Unknown -> fail "Cannot inspect %s at %S." option path
+  if not (Fs.exists path) then (Fs.mkdir_p path; path)
+  else if Fs.is_directory path then path
+  else fail "%s must name a directory, but %S is not a directory." option path
 
 let read_file ~option path =
   let path = require_file ~option path in

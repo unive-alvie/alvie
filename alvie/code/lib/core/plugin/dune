@@ -4,4 +4,4 @@
  (name alvie_plugin)
  (public_name alvie-core.plugin)
  (preprocess (pps ppx_jane))
- (libraries core yaml yojson))
+ (libraries core alvie_yaml yojson))

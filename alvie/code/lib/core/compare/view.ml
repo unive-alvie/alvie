@@ -15,13 +15,13 @@ type seen = Hidden | Visible of string | Distinct of string [@@deriving sexp, eq
 type compiled = {
   kinds : String.Set.t option;
   when_ : (string list * Value.t) list;
-  effect : Rules_file.effect;
+  effect_ : Rules_file.view_effect;
 }
 
 type t = { plugin : Plugin.t; rules : compiled list }
 
 let make (p : Plugin.t) : t =
-  let rules = List.map p.view ~f:(fun (r : Rules_file.effect Rules_file.rule) ->
+  let rules = List.map p.view ~f:(fun (r : Rules_file.view_effect Rules_file.rule) ->
       let kinds = match r.kinds with
         | Some ks -> List.filter_map ks ~f:(Observations_file.find_kind p.observations)
         | None -> p.observations.kinds in
@@ -30,7 +30,7 @@ let make (p : Plugin.t) : t =
               Option.bind (Observations_file.path_type p.observations k.fields c.path) ~f:(fun ty ->
                   Result.ok (Observations_file.scalar_value p.observations ty c.value))) in
           (c.path, Option.value v ~default:(Value.Sym c.value))) in
-      { kinds = Option.map r.kinds ~f:String.Set.of_list; when_; effect = r.effect }) in
+      { kinds = Option.map r.kinds ~f:String.Set.of_list; when_; effect_ = r.effect_ }) in
   { plugin = p; rules }
 
 let matches (r : compiled) (obs : Value.t) =
@@ -39,8 +39,8 @@ let matches (r : compiled) (obs : Value.t) =
 
 (* The parts of an observation: (part, whether its input is the interrupt), or the observation itself *)
 let parts t (obs : Value.t) : (Value.t * bool) list =
-  match List.find t.rules ~f:(fun r -> match r.effect with Parts _ -> matches r obs | Show _ -> false) with
-  | Some { effect = Parts ps; _ } ->
+  match List.find t.rules ~f:(fun r -> match r.effect_ with Parts _ -> matches r obs | Show _ -> false) with
+  | Some { effect_ = Parts ps; _ } ->
     List.map ps ~f:(fun (p : Rules_file.part) ->
         let fields = match p.field, obs with
           | None, _ -> []
@@ -51,16 +51,16 @@ let parts t (obs : Value.t) : (Value.t * bool) list =
 
 (* What the attacker sees of a part *)
 let see t (part : Value.t) : seen =
-  match List.find t.rules ~f:(fun r -> match r.effect with Show _ -> matches r part | Parts _ -> false) with
-  | None | Some { effect = Show All; _ } -> Visible (Value.to_string part)
-  | Some { effect = Show Hidden; _ } -> Hidden
-  | Some { effect = Show Tag; _ } -> Visible (Option.value (Value.tag part) ~default:(Value.to_string part))
-  | Some { effect = Show (Fields paths); _ } ->
+  match List.find t.rules ~f:(fun r -> match r.effect_ with Show _ -> matches r part | Parts _ -> false) with
+  | None | Some { effect_ = Show All; _ } -> Visible (Value.to_string part)
+  | Some { effect_ = Show Hidden; _ } -> Hidden
+  | Some { effect_ = Show Tag; _ } -> Visible (Option.value (Value.tag part) ~default:(Value.to_string part))
+  | Some { effect_ = Show (Fields paths); _ } ->
     let tag = Option.value (Value.tag part) ~default:"" in
     Visible (tag ^ "(" ^ String.concat ~sep:", " (List.map paths ~f:(fun p ->
         String.concat ~sep:"." p ^ " = " ^ Option.value_map (Value.path part p) ~default:"?" ~f:Value.to_string)) ^ ")")
-  | Some { effect = Show Distinct; _ } -> Distinct (Value.to_string part)
-  | Some { effect = Parts _; _ } -> Visible (Value.to_string part)
+  | Some { effect_ = Show Distinct; _ } -> Distinct (Value.to_string part)
+  | Some { effect_ = Parts _; _ } -> Visible (Value.to_string part)
 
 let is_hidden t part = match see t part with Hidden -> true | Visible _ | Distinct _ -> false
 

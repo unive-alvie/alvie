@@ -60,7 +60,7 @@ let command =
       in
      fun () ->
        Cli_diagnostics.protect ~debug:dbg (fun () ->
-        Random.init 0;
+        Learninglib.Rng.init 0;
         Logs.set_reporter (Logs_fmt.reporter ());
         (if dbg then Logs.set_level (Some Logs.Debug)
         else Logs.set_level (Some Logs.App));

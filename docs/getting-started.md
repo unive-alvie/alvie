@@ -12,7 +12,7 @@ ALVIE is a security-analysis tool that combines **active automata learning** wit
 It is designed to find timing side-channel attacks on processor implementations, which ALVIE treats as **systems under learning** (SULs).
 A typical ALVIE run, called an *experiment* in this tutorial, starts with a threat model and a family of relevant victim programs.
 ALVIE then uses the L# active automata learning algorithm to query the SUL with sequences of attacker and victim actions, records the resulting observations, and constructs finite-state Mealy-machine models.
-Finally, the [mCRL2 model checker](https://www.mcrl2.org/) checks those learned models for security-relevant behavioral differences.
+Finally, ALVIE compares those learned models and finds the security-relevant behavioral differences between them.
 
 ALVIE was initially designed for [Sancus](https://github.com/sancus-tee), a lightweight trusted execution environment for secure IoT devices, and this tutorial focuses on that target.
 As part of the [CCAT project](https://ccat.fi.muni.cz/), ALVIE is being extended to other architectures.
@@ -71,7 +71,7 @@ Docker remains the recommended option on other operating systems and architectur
 These commands install the toolchains used by the Docker image and clone the two source repositories beside each other.
 They require a fresh Ubuntu 22.04 x86_64 environment with `sudo` access.
 
-Install the system dependencies and mCRL2:
+Install the system dependencies, and mCRL2, which only `alvie property formula` needs:
 
 ```bash
 sudo apt-get update

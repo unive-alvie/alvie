@@ -21,11 +21,24 @@ The code in `alvie/code` is split into three opam packages, defined in `dune-pro
 | `alvie-sancus` | `lib/sancus/`, `plugins/sancus/`, `bin/`, `test/` | `sancus` | The Sancus backend, its plugin files, the executables and the test suites. |
 
 `alvie-core` does not depend on the other two packages: CI builds it on its own with `dune build -p alvie-core`, which fails if a library of `alvie-core` uses one of `alvie-sancus` or `alvie-rtl-util`.
+
+### The portable part of ALVIE/Core
+
+A browser build of ALVIE needs Core without C code and without running programs. Two virtual libraries of dune hold what Core needs of them, each with a default implementation that the native executables link without asking:
+
+| Virtual library | What it does | Native (default) | Without C code |
+| --- | --- | --- | --- |
+| `alvie_yaml` (`lib/core/yaml`) | The events of a YAML text, for the plugin files (`Yaml_tree`) | `alvie-core.yaml-libyaml`: libyaml | `alvie-core.yaml-table`: the events of the YAML files of `plugins/`, read with libyaml when ALVIE is built; it reads no other file |
+| `alvie_mcrl2` (`lib/core/mcrl2`) | The tools of mCRL2: formulas, and `ALVIE_MCRL2` | `alvie-core.mcrl2-native`: runs them | `alvie-core.mcrl2-none`: says that mCRL2 is not available |
+
+The commands of Core (`alvie_cli`) use files and directories through `Alvie_cli.Fs`, which uses the standard library only.
+`test/portable` builds the learner, the plugin files, the input generator, the backend contract, the comparison, the commands of Core and Tiny with the implementations without C code, and runs the fixtures of Tiny with them.
+Its `forbidden_libraries` make the build fail if one of these libraries starts to depend on `core_unix`, `shexp.process`, `yaml` or `ctypes`.
 `dune build` builds all three, and the executables keep their paths (`_build/default/bin/learn.exe` and so on).
 
 The comparison engine (`Ltscompare.Cexfinder.Make`) does not know what the inputs and outputs of a model mean.
 A backend tells it through the `Ltscompare.Hooks.S` signature: which inputs the attacker chooses, which outputs the attacker cannot see, which outputs end a run, when two outputs look the same to the attacker, which outputs come from the victim, and which victim code a run executes.
-`Ltscompare.Plugin_hooks` derives all of them from the files of a plugin: hidden outputs and public equality from the attacker view (`view.yaml`, applied before mCRL2, so the comparison sees only what the attacker sees), the end of a run from the phase rules that stop or restart the test, the low inputs and the victim code from the roles of the sections, and the victim code up to the secret from the expansions of the secret's values.
+`Ltscompare.Plugin_hooks` derives all of them from the files of a plugin: hidden outputs and public equality from the attacker view (`view.yaml`, applied before the comparison, so it sees only what the attacker sees), the end of a run from the phase rules that stop or restart the test, the low inputs and the victim code from the roles of the sections, and the victim code up to the secret from the expansions of the secret's values.
 The view also splits observations that stand for several events into parts (`parts:` rules), each one a transition of the compared model, with the interrupt as the input of the parts that are one.
 `fa.exe` uses this engine with the Sancus plugin; nothing in the comparison is written for Sancus.
 
@@ -66,7 +79,7 @@ On the atoms of `spec-lib/`, interned values sort, hash and compare faster than 
    Compiled simulators are cached across runs, and only the top level of the testbench is traced.
 5. `Lsharp.LSharp` learns a Mealy machine using output queries and an equivalence oracle.
 6. `Interop` serializes the learned machine as a Graphviz `.dot` file.
-7. `fa.exe` converts learned machines to LTSs and uses mCRL2 to enumerate distinguishing traces.
+7. `fa.exe` converts learned machines to LTSs and enumerates distinguishing traces (`Ltscompare.Weak_trace`).
 
 The learner is parameterized by the SUL and oracle interfaces.
 It keeps caches of apartness, frontier and frontier-to-basis candidates across the run, updated incrementally as the observation tree grows; they rely on the oracles numbering new tree nodes increasingly.
@@ -97,7 +110,8 @@ The production configuration in `learn.exe` uses `Sancus.Verilog` with one of th
 | `lib/core/lsharp/observationtree.ml` | Observation tree and basis/frontier operations |
 | `lib/core/lsharp/oracles/` | PAC, random-walk, exhaustive, and incremental oracles |
 | `lib/core/interop/interop.ml` | Reading and writing learned machines as `.dot` files |
-| `lib/core/compare/cexfinder.ml` | Model conversion, mCRL2 comparison and witness extraction, generic in the hooks |
+| `lib/core/compare/cexfinder.ml` | Model conversion, comparison and witness extraction, generic in the hooks |
+| `lib/core/compare/weak_trace.ml` | Weak trace inclusion with a shortest counterexample, as `ltscompare --preorder=weak-trace-ac --strategy=b` gave it |
 | `lib/core/compare/hooks.ml` | What the comparison engine needs to know about a backend's inputs and outputs |
 | `lib/rtl-util/vcd/vcd.ml` | VCD parser |
 | `lib/core/prof/prof.ml` | Optional profiler (`ALVIE_PROFILE=1`) |
@@ -174,7 +188,7 @@ Run it separately for secret 0 and secret 1, with and without interrupt actions,
 The comparison tool receives the two interrupt-enabled models and the two no-interrupt models.
 It removes witnesses already present without interrupts, then reports the remaining flow-analysis violations in `<basename>_int.dot`.
 Each witness pairs two runs, one for each secret, with the same attacker inputs.
-mCRL2 checks trace inclusion, which is not symmetric, so `find_all_cex_sym` searches both directions (the secret 0 model against the secret 1 model, and the other way round), for the models with and without interrupts, and keeps each distinct witness once.
+The comparison checks trace inclusion, which is not symmetric, so `find_all_cex_sym` searches both directions (the secret 0 model against the secret 1 model, and the other way round), for the models with and without interrupts, and keeps each distinct witness once.
 The runs are taken from the models as complete paths: a run ends at a reset, a divergence, a state without successors, or a state the same run has already visited, never because another run reached that state first.
 
 This is why a single successful learning run is not a complete attack result: the four-model matrix and the comparison phase are both required.

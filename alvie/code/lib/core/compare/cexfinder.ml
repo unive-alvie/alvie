@@ -1,5 +1,5 @@
 (*
-  The comparison engine: learned models as LTSs, trace inclusion checked with mCRL2 (ltscompare), witnesses (pairs
+  The comparison engine: learned models as LTSs, trace inclusion (Weak_trace), witnesses (pairs
   of runs that the attacker tells apart) and witness graphs. It is generic in the inputs and outputs of the models:
   the backend gives its view of them through Hooks.S (see hooks.ml), and fa.exe of ALVIE/Sancus instantiates it in
   lib/sancus-compare.
@@ -8,7 +8,6 @@
 open Learninglib
 open Lts
 
-open Shexp_process
 open Core
 
 module Make (H : Hooks.S) = struct
@@ -84,37 +83,39 @@ let i_lts_to_checkable_aldebaran ({ initial; states; transition } : i_lts_t) : s
     aut_header ^ aut_edges
 
 
-(* A trace that m1 has and m2 does not, as labels *)
-let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : string list option =
-  (* Generate file names for: m, m', the counterexample and their containing tmp folder *)
-  let r_tmpdir = Core_unix.mkdtemp (tmpdir ^ "/") in
-  Logs.debug (fun m -> m "[find_cex] Created temporary directory: %s" r_tmpdir);
-  (* Write m and m' to file *)
-  let m1_ald, m2_ald = i_lts_to_checkable_aldebaran m1, i_lts_to_checkable_aldebaran m2 in
-    Out_channel.write_all (sprintf "%s/m1.aut" r_tmpdir) ~data:m1_ald;
-    Out_channel.write_all (sprintf "%s/m2.aut" r_tmpdir) ~data:m2_ald;
-  Logs.debug (fun m -> m "[find_cex] Written LTSs to disk");
+(* The transitions of m as (state, label, state), in the order of the aldebaran file given to mCRL2 *)
+let labelled_edges ({ transition; _ } : i_lts_t) : Weak_trace.edge list =
+  Map.fold_right transition ~init:[] ~f:(fun ~key:(s, o) ~data:targets acc ->
+      Set.fold_right targets ~init:acc ~f:(fun t acc -> (s, label o, t) :: acc))
+
+(* A trace that m1 has and m2 does not, as labels, silent labels included: see Weak_trace *)
+let find_cex_ocaml (m1 : i_lts_t) (m2 : i_lts_t) : string list option =
+  let silent = String.Set.of_list (List.map (ILTS.get_silent_obs m1 @ ILTS.get_silent_obs m2) ~f:label) in
+  Weak_trace.counterexample ~silent:(Set.mem silent) ~initial1:m1.initial ~edges1:(labelled_edges m1)
+    ~initial2:m2.initial ~edges2:(labelled_edges m2)
+
+(* The same, with mCRL2 (ltscompare and tracepp), which ALVIE used before Weak_trace *)
+let find_cex_mcrl2 ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : string list option =
+  if not Alvie_mcrl2.Mcrl2_engine.available then failwith "ALVIE_MCRL2: mCRL2 is not available in this build of ALVIE";
   let silent = List.dedup_and_sort (List.map (ILTS.get_silent_obs m1 @ ILTS.get_silent_obs m2) ~f:label) ~compare:String.compare in
-  let silent_str = String.concat ~sep:"," silent in
-  (* And prepare the cmd lines *)
-  let cmd_ltscompare = sprintf "ltscompare %s/m1.aut %s/m2.aut --strategy=b --counter-example --counter-example-file=%s/cex.trc --preorder=weak-trace-ac --tau=\"%s\" -q >/dev/null" r_tmpdir r_tmpdir r_tmpdir silent_str in
-  (* Logs.debug (fun p -> p "Compare: %s" cmd_ltscompare); *)
-  let cmd_tracepp_args = [sprintf "%s/cex.trc" r_tmpdir; "-fplain"] in
-  let cex_found () = match Sys_unix.file_exists (sprintf "%s/cex.trc" r_tmpdir) with | `Yes -> true | _ -> false in
-    ignore (Sys_unix.command (sprintf "rm -f %s/*.trc" r_tmpdir));
-    Logs.debug (fun m -> m "[find_cex] Running the comparison");
-    ignore (Sys_unix.command cmd_ltscompare);
-    if cex_found () then
-      (
-        let aut_cex = (eval (pipe (run "tracepp" cmd_tracepp_args) (fold_lines ~init:[] ~f:(fun acc curr -> return (acc @ [String.strip curr]))))) in
-          (match Logs.level () with | Some Debug -> () | _ -> ignore (Sys_unix.command (sprintf "rm -rf %s" r_tmpdir)));
-          Some aut_cex
-      )
-    else
-      (
-        (match Logs.level () with | Some Debug -> () | _ -> ignore (Sys_unix.command (sprintf "rm -rf %s" r_tmpdir)));
-        None
-      )
+  Alvie_mcrl2.Mcrl2_engine.weak_trace_counterexample ~tmpdir ~silent
+    ~m1:(i_lts_to_checkable_aldebaran m1) ~m2:(i_lts_to_checkable_aldebaran m2)
+
+(*
+  A trace that m1 has and m2 does not. ALVIE_MCRL2=1 asks mCRL2 for it, as ALVIE did before; ALVIE_MCRL2=check asks
+  both and warns when the traces differ (the trace of Weak_trace is used).
+*)
+let find_cex_aut ~tmpdir (m1 : i_lts_t) (m2 : i_lts_t) : string list option =
+  match Sys.getenv "ALVIE_MCRL2" with
+  | Some "1" -> find_cex_mcrl2 ~tmpdir m1 m2
+  | Some "check" ->
+    let ours = find_cex_ocaml m1 m2 and theirs = find_cex_mcrl2 ~tmpdir m1 m2 in
+    if not ([%equal: string list option] ours theirs) then
+      Logs.warn (fun m -> m "[find_cex] Weak_trace and mCRL2 differ:\n  Weak_trace: %s\n  mCRL2:      %s"
+                    (Option.value_map ours ~default:"none" ~f:(String.concat ~sep:" | "))
+                    (Option.value_map theirs ~default:"none" ~f:(String.concat ~sep:" | ")));
+    ours
+  | _ -> find_cex_ocaml m1 m2
 
 (* Removes cex and all its suffixes from m, but *not* the prefix *)
 let remove_cex_heur (m : i_lts_t) (cex : string list) : i_lts_t =

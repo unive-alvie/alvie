@@ -49,7 +49,7 @@ An ALVIE experiment has five parts.
    See [Choosing Learner Settings](/alvie/core/learning-settings/).
 5. **Comparison.**
    The comparison step checks two learned models for a difference.
-   It uses the [mCRL2](https://www.mcrl2.org/) model checker.
+   It checks the inclusion of the traces that the attacker sees, and gives the shortest trace that one model has and the other does not.
    The tool is `fa.exe`, described in the [Executables Reference](/alvie/reference/executables-reference/).
 
 The data moves through the parts in this order:
@@ -185,7 +185,7 @@ The [Reading and Checking a Witness](/alvie/core/interpreting-results/) guide sh
 
 ALVIE has two parts.
 
-- **ALVIE/Core** does what every experiment needs: it reads specs, generates the tests they allow, learns models with L# and its oracles, and compares the models with mCRL2. It knows nothing of a particular processor.
+- **ALVIE/Core** does what every experiment needs: it reads specs, generates the tests they allow, learns models with L# and its oracles, and compares the models. It knows nothing of a particular processor.
 - **A plugin** connects Core to one platform. Its files say what a spec is made of (the sections of a test, the atoms of each, and the secret), what the platform observes, how observations move a test between sections, and what the attacker sees. Its backend runs the tests on the platform.
 
 **ALVIE/Sancus** is the plugin for Sancus on the openMSP430: its backend is the simulator, and its spec language is TestDL.

@@ -1,0 +1,4 @@
+(test
+ (name rng_tests)
+ (package alvie-core)
+ (libraries learninglib))

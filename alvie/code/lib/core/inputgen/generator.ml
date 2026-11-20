@@ -64,7 +64,7 @@ type state = {
 }
 
 (* A compiled rule: kinds (none for all), sections (none for all), and the field values it requires *)
-type 'a rule = { kinds : String.Set.t option; in_ : String.Set.t option; when_ : (string list * Value.t) list; effect : 'a }
+type 'a rule = { kinds : String.Set.t option; in_ : String.Set.t option; when_ : (string list * Value.t) list; effect_ : 'a }
 
 type t = {
   plugin : Plugin.t;
@@ -93,7 +93,7 @@ let compile_rules (p : Plugin.t) (rules : 'a Rules_file.rule list) : 'a rule lis
               Option.bind (Observations_file.path_type p.observations k.fields c.path) ~f:(fun ty ->
                   Result.ok (Observations_file.scalar_value p.observations ty c.value))) in
           (c.path, Option.value v ~default:(Value.Sym c.value))) in
-      { kinds = Option.map r.kinds ~f:String.Set.of_list; in_ = Option.map r.sections ~f:String.Set.of_list; when_; effect = r.effect })
+      { kinds = Option.map r.kinds ~f:String.Set.of_list; in_ = Option.map r.sections ~f:String.Set.of_list; when_; effect_ = r.effect_ })
 
 let fresh_section body = { deriv = body; run = []; run_length = 0; program = []; program_length = 0 }
 
@@ -163,7 +163,7 @@ let observe t st (observations : Value.t list) : state =
       | Running ->
         (match List.find t.phases ~f:(fun r -> matches r ~current:(current st) obs) with
          | None -> st
-         | Some r -> List.fold r.effect ~init:st ~f:(apply t)))
+         | Some r -> List.fold r.effect_ ~init:st ~f:(apply t)))
 
 (* The constraints *)
 

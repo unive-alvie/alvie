@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # alvie plugin new: the templates (native, and --external in Python) make plugins that build, whose files check,
-# and that pass conformance (and, where mCRL2 is installed, their fixtures). The plugin is made in the tree under a name of its own, and removed.
+# and that pass conformance and their fixtures. The plugin is made in the tree under a name of its own, and removed.
 
 set -euo pipefail
 
@@ -18,12 +18,8 @@ dune build "lib/plugins/$NAME/main.exe"
 _build/default/bin/alvie.exe plugin check "plugins/$NAME" > /dev/null
 ALVIE_NEW="_build/default/lib/plugins/$NAME/main.exe"
 "$ALVIE_NEW" conformance --spec "plugins/$NAME/fixtures/leak.spec" --secret 0 > "$OUT/conformance.log" || { cat "$OUT/conformance.log" >&2; exit 1; }
-if command -v lts2pbes > /dev/null; then
-  "$ALVIE_NEW" fixtures --out "$OUT/fixtures" > "$OUT/fixtures.log" || { cat "$OUT/fixtures.log" >&2; exit 1; }
-  grep -q "2 fixtures, 0 failed" "$OUT/fixtures.log"
-else
-  echo "(mCRL2 is not installed: the fixtures of the template are not run)"
-fi
+"$ALVIE_NEW" fixtures --out "$OUT/fixtures" > "$OUT/fixtures.log" || { cat "$OUT/fixtures.log" >&2; exit 1; }
+grep -q "2 fixtures, 0 failed" "$OUT/fixtures.log"
 # The name is checked, and an existing plugin is not overwritten
 if _build/default/bin/alvie.exe plugin new "$NAME" > "$OUT/again.log" 2>&1; then echo "plugin new overwrote a plugin" >&2; exit 1; fi
 grep -q "exists already" "$OUT/again.log"

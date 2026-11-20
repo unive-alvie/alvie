@@ -26,15 +26,16 @@ Run `dune build` first.
 | Assembler corpus | `dune exec tt_asm_golden -- check` | Nothing outside OCaml. | Under 1 second. |
 | Plugin files | `dune exec tt_plugin -- test --color=never` | Nothing outside OCaml. | Under 1 second. |
 | Tiny and the commands of Core | `dune exec tt_tiny -- --color=never` | Nothing outside OCaml. | Under 1 second. |
-| The plugin templates | `bash test/plugin_new.sh` | Python 3 for the external template (mCRL2 for the templates' fixtures). | Under a minute. |
+| The portable part of Core | `dune test test/portable` | Nothing outside OCaml. | A few seconds. |
+| The plugin templates | `bash test/plugin_new.sh` | Python 3 for the external template. | Under a minute. |
 | External plugins | `bash test/rpc.sh` | Python 3. | About 30 seconds. |
-| Fixtures of Tiny | `_build/default/bin/alvie.exe tiny fixtures` | mCRL2. | A few seconds. |
-| Fixtures of Sancus | `_build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim` | The Sancus checkout, Verilator, the MSP430 toolchain, mCRL2. | About 10 minutes. |
-| Properties | `dune exec tt_properties -- test --color=never` | mCRL2. | About 1 second. |
-| Property commands | `bash test/property_cmd.sh` | mCRL2. | About 10 seconds. |
+| Fixtures of Tiny | `_build/default/bin/alvie.exe tiny fixtures` | Nothing more. | A few seconds. |
+| Fixtures of Sancus | `_build/default/bin/alvie.exe sancus fixtures --sancus ../../sancus-core-gap --tmpdir /tmp/alvie-sim` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 10 minutes. |
+| Properties | `dune exec tt_properties -- test --color=never` | mCRL2 (for the formulas). | About 1 second. |
+| Property commands | `bash test/property_cmd.sh` | mCRL2 (for the formulas). | About 10 seconds. |
 | Simulator regression | `dune exec test/attack.exe -- test --color=never` | The Sancus checkout, Verilator, the MSP430 toolchain. | About 2 minutes. |
-| Witness regression | `./regression.sh witnesses` (from the repository root) | mCRL2. | A few minutes. |
-| Learning regression | `./regression.sh learning` (from the repository root) | The Sancus checkout, Verilator, the MSP430 toolchain, mCRL2. | About 5 minutes on 16 cores. |
+| Witness regression | `./regression.sh witnesses` (from the repository root) | Nothing more. | A few seconds. |
+| Learning regression | `./regression.sh learning` (from the repository root) | The Sancus checkout, Verilator, the MSP430 toolchain. | About 5 minutes on 16 cores. |
 
 The first five suites are the fast checks.
 They do not need the simulator, mCRL2, or a `sancus-core-gap` checkout.
@@ -70,7 +71,7 @@ This suite checks the generic commands of ALVIE/Core (`Alvie_cli.Runner`) on Tin
 - learning is deterministic and leaves out the transitions that the spec does not allow, and model files name their plugin;
 - L# learns back the model that a backend replaying a learned model gives (`Runner.Make(N).Model_native`), a check of the learner and its oracle.
 
-`test/plugin_new.sh` makes a plugin with `alvie plugin new` in the tree, builds it, checks its files and runs its conformance (and its fixtures where mCRL2 is installed), then removes it; it does the same with an external plugin (`--external`).
+`test/plugin_new.sh` makes a plugin with `alvie plugin new` in the tree, builds it, checks its files and runs its conformance and its fixtures, then removes it; it does the same with an external plugin (`--external`).
 
 ### External plugins (`rpc.sh`)
 
@@ -212,8 +213,9 @@ It runs these steps:
 6. `dune exec tt_asm_golden -- check`
 7. `dune exec tt_plugin -- test --color=never`
 8. `dune exec tt_tiny -- --color=never`
-9. `bash test/plugin_new.sh`
-10. `bash test/rpc.sh`
+9. `dune test test/wmethod`, `dune test test/weak_trace` and `dune test test/portable`
+10. `bash test/plugin_new.sh`
+11. `bash test/rpc.sh`
 
 A second job runs the suites that need the simulator toolchain or mCRL2 in the published Docker image:
 `./regression.sh all`, `tt_attack`, `tt_properties`, `property_cmd.sh`, the fixtures of Tiny, and `plugin_new.sh` with the template's fixtures.

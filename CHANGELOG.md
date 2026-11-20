@@ -227,6 +227,17 @@ the documentation lists what users must do.
   noninterference with an optional baseline, inclusion and equivalence of
   models with a distinguishing trace, and mCRL2 modal mu-calculus formulas
   on one model. New suite `tt_properties` (needs mCRL2; run in CI).
+- Comparisons no longer need mCRL2: ALVIE checks the inclusion of weak
+  traces itself (`Ltscompare.Weak_trace`) and finds the counterexample that
+  `ltscompare --preorder=weak-trace-ac --strategy=b` found. `fa.exe`,
+  `alvie compare`, `alvie property inclusion|equivalence` and the fixtures
+  give the same results (witness regression: no differences; the 577
+  counterexamples of the regression and 960 inclusions between the
+  checked-in models are the same as mCRL2's), and the witness regression
+  takes 3.7 s instead of 5.7 s. Only `alvie property formula` needs mCRL2.
+  `ALVIE_MCRL2=1` compares with mCRL2 as before, and `ALVIE_MCRL2=check`
+  uses both and warns when their counterexamples differ. New suite
+  `test/weak_trace` (in CI).
 
 ### Backends
 
@@ -422,6 +433,15 @@ the documentation lists what users must do.
   `lib/sancus-compare/`; `Interop` moves from `bin/` to a library. The
   executables, their options and their outputs do not change, and
   `regression.sh all` finds the same models, witness graphs and counts.
+- The part of Core that a browser build needs runs without C code and
+  without running programs. The plugin files are read through the virtual
+  library `alvie_yaml` (default: libyaml; `alvie-core.yaml-table` knows the
+  YAML files of `plugins/` without C code), and mCRL2 runs through the
+  virtual library `alvie_mcrl2` (default: the tools; `alvie-core.mcrl2-none`
+  has none). `ltscompare` drops `core_unix` and `shexp.process`, and
+  `alvie_cli` drops `core_unix` (files through `Alvie_cli.Fs`). The native
+  executables do not change. New test `test/portable` (in CI): Core and Tiny
+  without C code, with `forbidden_libraries`, run the fixtures of Tiny.
 - The comparison engine of `fa.exe` is generic: what it needs to know about
   the Sancus inputs and outputs (attacker inputs, public equality, hidden
   outputs, victim code) comes from a hooks module
