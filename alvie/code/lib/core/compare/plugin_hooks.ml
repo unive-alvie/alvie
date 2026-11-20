@@ -69,7 +69,7 @@ module Make (P : PARAMS) = struct
             | Some (Value.Int i) -> String.equal (Int.to_string i) c.value
             | Some (Value.Bool b) -> String.equal (Bool.to_string b) c.value
             | _ -> false) in
-        if kind_ok && when_ok then Some r.effect else None)
+        if kind_ok && when_ok then Some r.effect_ else None)
 
   (* A run ends where the test finishes or restarts (not where it becomes invalid: such outputs stay in the run) *)
   let is_final o =

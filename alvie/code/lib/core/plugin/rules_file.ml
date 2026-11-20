@@ -59,9 +59,9 @@ type show = Hidden | Tag | Fields of string list list | Distinct | All [@@derivi
 *)
 type part = { field : string option; as_kind : string; interrupt : bool } [@@deriving sexp, equal]
 
-type effect = Show of show | Parts of part list [@@deriving sexp, equal]
+type view_effect = Show of show | Parts of part list [@@deriving sexp, equal]
 
-type 'a rule = { kinds : string list option; sections : string list option; when_ : cond list; effect : 'a; pos : Diag.pos }
+type 'a rule = { kinds : string list option; sections : string list option; when_ : cond list; effect_ : 'a; pos : Diag.pos }
 
 let when_shape =
   Shape.map_value (Shape.map (Shape.with_pos (Shape.string ())))
@@ -103,16 +103,16 @@ let part_shape : part Shape.t =
      and+ interrupt = dflt "input" false (Shape.enum [ ("step", false); ("interrupt", true) ]) ~doc:"step (the input of the step, the default) or interrupt" in
      { field; as_kind; interrupt })
 
-let rule_shape ~with_sections ~effect_name ~effect_doc (effect : 'a Shape.t) : 'a rule Shape.t =
+let rule_shape ~with_sections ~effect_name ~effect_doc (effect_ : 'a Shape.t) : 'a rule Shape.t =
   let open Obj in
   Shape.with_pos
     (obj ~what:"a rule"
        (let+ kinds = opt "match" (one_or_list (Shape.string ())) ~doc:"The kinds of observations the rule applies to (all if absent)"
         and+ sections = (if with_sections then opt "in" (one_or_list (Shape.string ())) ~doc:"The current sections the rule applies in (all if absent)" else pure None)
         and+ when_ = dflt "when" [] when_shape ~doc:"The values of fields the rule requires"
-        and+ effect = req effect_name effect ~doc:effect_doc in
-        (kinds, sections, when_, effect)))
-  |> Shape.map_value ~f:(fun ((kinds, sections, when_, effect), pos) -> { kinds; sections; when_; effect; pos })
+        and+ effect_ = req effect_name effect_ ~doc:effect_doc in
+        (kinds, sections, when_, effect_)))
+  |> Shape.map_value ~f:(fun ((kinds, sections, when_, effect_), pos) -> { kinds; sections; when_; effect_; pos })
 
 let file_shape ~what rule =
   let open Obj in
@@ -137,12 +137,12 @@ let view_rule_shape =
            | kinds, when_, Some s, None -> Ok (kinds, when_, Show s)
            | kinds, when_, None, Some ps -> Ok (kinds, when_, Parts ps)
            | _ -> fail n "a view rule has either show: or parts:"))
-  |> Shape.map_value ~f:(fun ((kinds, when_, effect), pos) -> { kinds; sections = None; when_; effect; pos })
+  |> Shape.map_value ~f:(fun ((kinds, when_, effect_), pos) -> { kinds; sections = None; when_; effect_; pos })
 
 let view_shape = file_shape ~what:"a view file" view_rule_shape
 
 type phases = action list rule list
-type view = effect rule list
+type view = view_effect rule list
 
 let load_phases ~file : (phases, Diag.t list) Result.t = Shape.parse_file phases_shape file
 let load_view ~file : (view, Diag.t list) Result.t = Shape.parse_file view_shape file

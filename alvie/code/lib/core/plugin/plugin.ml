@@ -75,12 +75,12 @@ let check_cross ~(manifest : Manifest_file.t) ~(sections : Sections_file.t) ~(gr
             | Error e -> err c.cpos "%s is not a value of the field %s of %s: %s" c.value shown k.name e)) in
   List.iter phases ~f:(fun (r : Rules_file.action list Rules_file.rule) ->
       check_rule r;
-      List.iter r.effect ~f:(function
+      List.iter r.effect_ ~f:(function
           | Rules_file.Enter s | Switch s | Interrupt s -> check_section r.pos s
           | Restart | Reset | Resume | Stop _ -> ()));
-  List.iter view ~f:(fun (r : Rules_file.effect Rules_file.rule) ->
+  List.iter view ~f:(fun (r : Rules_file.view_effect Rules_file.rule) ->
       check_rule r;
-      match r.effect with
+      match r.effect_ with
       | Rules_file.Parts ps ->
         let kinds = match r.kinds with None -> observations.kinds | Some ks -> List.filter_map ks ~f:(Observations_file.find_kind observations) in
         List.iter ps ~f:(fun (p : Rules_file.part) ->
