@@ -5,7 +5,7 @@
 (test
  (name portable_check)
  (package alvie-core)
- (libraries sancus_core alvie_tiny alvie_cli ltscompare interop learninglib alvie_plugin alvie_inputgen alvie_backend
+ (libraries sancus_core vaultlink alvie_tiny alvie_cli ltscompare interop learninglib alvie_plugin alvie_inputgen alvie_backend
   alvie_yaml_table alvie_mcrl2_none core)
  (forbidden_libraries core_unix shexp.process yaml ctypes alvie_yaml_libyaml alvie_mcrl2_native)
  (deps (source_tree %{project_root}/plugins/tiny))

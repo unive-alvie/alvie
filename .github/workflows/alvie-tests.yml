@@ -94,6 +94,9 @@ jobs:
       - name: Check the random numbers against those of OCaml 4.13
         working-directory: alvie/code
         run: opam exec -- dune test test/rng
+      - name: Run the ALVIE/VaultLink suite
+        working-directory: alvie/code
+        run: opam exec -- dune test test/vaultlink
       - name: Check the portable part of Core (no C code, no programs)
         working-directory: alvie/code
         run: opam exec -- dune test test/portable
@@ -233,3 +236,8 @@ jobs:
         run: |
           node /tmp/alvie-web/alvie-web-node.cjs tiny fixtures --out /tmp/alvie-web-tiny
           node /tmp/alvie-web/alvie-web-node.cjs sancus fixtures --sancus none --tmpdir /tmp/alvie-web-tmp --out /tmp/alvie-web-sancus
+          # ALVIE/VaultLink on the services in memory: the firmware differs from the reference (compare exits with 1)
+          node /tmp/alvie-web/alvie-web-node.cjs vaultlink learn --spec ../../spec-lib/vaultlink/vault.vtdl --service reference --res /tmp/vl-reference.dot
+          node /tmp/alvie-web/alvie-web-node.cjs vaultlink learn --spec ../../spec-lib/vaultlink/vault.vtdl --service firmware --res /tmp/vl-firmware.dot
+          status=0; node /tmp/alvie-web/alvie-web-node.cjs vaultlink compare /tmp/vl-reference.dot /tmp/vl-firmware.dot || status=$?
+          test "$status" -eq 1

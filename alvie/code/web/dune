@@ -7,7 +7,7 @@
  (modes byte)
  (enabled_if (>= %{ocaml_version} 5.1))
  (modules alvie_web command_web host)
- (libraries sancus_core alvie_tiny alvie_cli alvie_yaml_table alvie_mcrl2_none core
+ (libraries sancus_core alvie_tiny alvie_cli alvie_yaml_table alvie_mcrl2_none vaultlink core
   (select host.ml from
    (js_of_ocaml -> host.jsoo.ml)
    (-> host.none.ml)))

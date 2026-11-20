@@ -25,6 +25,7 @@ All executables are built with `dune build` from inside `alvie/code/` and run fr
 | `alvie plugin new NAME [--external]` | | Makes a plugin from the template: native, or external in Python (see the [Plugin Author Guide](/alvie/plugin-authors/plugin-author-guide/)) |
 | `alvie plugin types DIR OUT.py` | | Writes the Python constructors of the observations of the plugin in `DIR` |
 | `alvie external DIR ...` | | The commands of ALVIE/Core on the external plugin in `DIR` (see the [protocol](/alvie/plugin-authors/protocol/)) |
+| `alvie vaultlink learn\|compare\|replay\|serve` | | ALVIE/VaultLink: models of services that speak a line-based text protocol, over TCP or in memory (see the [ALVIE/VaultLink Reference](/alvie/vaultlink/vaultlink-reference/)) |
 | `alvie tiny ...` | | The commands of ALVIE/Core on Tiny, the reference platform (see [below](#the-commands-of-a-plugin)) |
 | `alvie sancus conformance`, `fixtures`, `exec` | | The same commands on Sancus: the conformance of the simulator, and the fixtures of `plugins/sancus` |
 | `alvie sancus-fpga ...` | | The commands of ALVIE/Core on Sancus-FPGA: Sancus on an openMSP430/Sancus board (see [Running on an FPGA](/alvie/sancus/fpga/)) |

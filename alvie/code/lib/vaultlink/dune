@@ -1,0 +1,9 @@
+; ALVIE/VaultLink: learning and comparing models of services that speak a line-based text protocol (the language
+; VTDL, the system under learning, the models, the services in memory and the commands). It needs no Unix library;
+; vaultlink-unix adds the transport over TCP.
+(library
+ (name vaultlink)
+ (public_name alvie-core.vaultlink)
+ (modules symbol session vtdl observe service model memory_service commands)
+ (preprocess (pps ppx_jane))
+ (libraries core learninglib logs logs.fmt time_now))

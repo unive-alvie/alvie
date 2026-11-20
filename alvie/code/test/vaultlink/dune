@@ -1,0 +1,6 @@
+(test
+  (name vaultlink_tests)
+  (libraries alcotest vaultlink learninglib core core_unix.command_unix core_unix.filename_unix)
+  (package alvie-core)
+  (preprocess (pps ppx_jane))
+)

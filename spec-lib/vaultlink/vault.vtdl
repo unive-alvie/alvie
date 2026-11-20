@@ -1,0 +1,29 @@
+(* ALVIE/VaultLink on the vault controllers in memory (alvie vaultlink ... --service reference|firmware):
+   alice logs in and reads her vault; bob's vault is the one she should never read. *)
+values {
+  me    = "alice";
+  pw    = "correct-horse";
+  other = "bob";
+};
+
+inputs {
+  HELLO    = "HELLO";
+  ID_ME    = "ID {me}";
+  ID_OTHER = "ID {other}";
+  PASS_OK  = "PASS {pw}";
+  AUDIT    = "AUDIT";
+  OPEN     = "OPEN";
+  READ     = "READ";
+  CLOSE    = "CLOSE";
+};
+
+observe {
+  "OK *"                      -> OK;
+  "ERR {r}"                   -> ERR(r);
+  "DATA vault={v} contents=*" -> DATA(v);
+  _                           -> OTHER;
+};
+
+session {
+  (HELLO | ID_ME | ID_OTHER | PASS_OK | AUDIT | OPEN | READ | CLOSE)*
+};

@@ -36,6 +36,7 @@ const sidebar = existsSync('./src/content/docs/core')
       { label: 'Getting Started', slug: 'getting-started' },
       { label: 'ALVIE/Core', items: [{ autogenerate: { directory: 'core' } }] },
       { label: 'ALVIE/Sancus', items: [{ autogenerate: { directory: 'sancus' } }] },
+      { label: 'ALVIE/VaultLink', items: [{ autogenerate: { directory: 'vaultlink' } }] },
       { label: 'Writing Plugins', items: [{ autogenerate: { directory: 'plugin-authors' } }] },
       { label: 'Reference', items: [{ autogenerate: { directory: 'reference' } }] },
       { label: 'Developing ALVIE', collapsed: true, items: [{ autogenerate: { directory: 'development' } }] },
