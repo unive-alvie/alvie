@@ -8,6 +8,11 @@ sidebar:
 In this guide, we build ALVIE/Sancus, run its checked-in example, and then reproduce an attack experiment.
 We assume that the repository root is the current directory and that `sancus-core-gap` is checked out there.
 
+:::tip[In your browser]
+The tutorial *Reproduce an attack on Sancus* of [ALVIE in your browser](/alvie/play/) runs `learn_one.sh d54f031 b6 ...` and `check_one.sh` of this guide in your browser, in a few minutes, and checks that the models are those of `results/`.
+The scripts of this page work there as written, for every attack.
+:::
+
 ## Set Up the Environment
 
 The Dockerfile is the reference environment, so it is the shortest path to a reproducible setup.
@@ -20,7 +25,7 @@ docker run --rm -it alvie
 
 The Dockerfile installs mCRL2 from its Ubuntu PPA on `amd64` and builds it from source on `arm64`, so the default build works natively on both architectures.
 We specify `--platform` only when intentionally cross-building for another architecture.
-For a native setup, we need OCaml 4.13.1, Dune, the MSP430 toolchain, Verilator, and the Sancus simulator checkout; mCRL2 only for `alvie property formula`.
+For a native setup, we need OCaml 4.13 or later (the Docker image has 4.13.1, CI uses 5.4.1), Dune, the MSP430 toolchain, Verilator, and the Sancus simulator checkout; mCRL2 only for `alvie property formula`.
 
 For either setup, we verify the OCaml build before running an experiment:
 

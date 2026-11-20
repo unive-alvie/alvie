@@ -12,6 +12,12 @@ It uses the Getting Started example, so run that example first.
 The [How ALVIE Works](/alvie/core/concepts/) page explains the terms.
 
 The commands run from the repository root, unless a step says otherwise.
+
+:::tip[In your browser]
+In [ALVIE in your browser](/alvie/play/), `view FILE` draws a witness graph or a model, and `view A B --inputs I1,I2,...` follows a sequence of inputs on two models: the transitions taken are blue, and a state where an input has no transition is red.
+`fa.exe` and `exec.exe` work as in this guide.
+:::
+
 In the Docker image, the repository root is the start directory.
 
 ## 1. Find the violation count

@@ -46,10 +46,11 @@ build() {
   else
     git -C "$REPO_DIR" archive "$source" docs | tar -x --strip-components=1 -C src/content/docs
   fi
-  # Pages may link each other with absolute paths (/alvie/...): keep such links within this version
+  # Pages may link each other with absolute paths (/alvie/...): keep such links within this version, except those to
+  # ALVIE in the browser (/alvie/play/), which has one copy, at the root
   if [ "$base" != "$ROOT" ]; then
     find src/content/docs -type f \( -name '*.md' -o -name '*.mdx' \) -print0 \
-      | xargs -0 perl -pi -e "s#\\]\\(\\Q$ROOT\\E/#]($base/#g"
+      | xargs -0 perl -pi -e "s#\\]\\(\\Q$ROOT\\E/(?!play/)#]($base/#g"
   fi
   ALVIE_DOCS_VERSION=$version ALVIE_DOCS_BASE=$base ALVIE_DOCS_OUTDIR=$out npm run build
 }

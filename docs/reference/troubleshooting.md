@@ -91,3 +91,16 @@ The tool prepares the simulator, which takes about 20 seconds the first time (ab
 | --- | --- | --- |
 | Files disappear after the container stops. | The `--rm` option removes the container. | Mount a host directory, and copy the results to it. See [Getting Started](/alvie/getting-started/). |
 | The ALVIE installation disappears when you mount a directory. | The mount hides `/home/alvie`. | Mount a different path, for example `/output`. |
+
+## In the browser
+
+These entries are about [ALVIE in your browser](/alvie/play/).
+
+| Symptom | Likely cause | Action |
+| --- | --- | --- |
+| VS Code does not start, or a command prints an error about WebAssembly. | The browser has no WebAssembly GC. | Use a recent Chromium, Chrome, Edge or Firefox. Chromium is the fastest. |
+| A tutorial shows *The notebook was not opened because its authors are not trusted.* | The question of VS Code about the authors of the notebook was answered *Cancel*, or closed. | Open the tutorial again from the first page and choose *Open Notebook*. The tutorials come with the site; their cells run only commands of ALVIE. |
+| A cell of a tutorial ends with a red mark after `alvie tiny compare` or `alvie vaultlink compare`. | These commands end with a nonzero status when they find a difference. | Read the output: a difference is the expected result there, as the tutorial says. |
+| A file or a model is missing, or a tutorial is not the latest one. | The files are kept in your browser between visits; a file that you changed or removed stays as you left it. | Run *ALVIE: Reset the Files to Those of a First Visit* from the Command Palette (Ctrl+Shift+P). It removes your files. |
+| The files are gone after a visit. | The browser deleted the storage of the site (private window, or cleared site data). | Download the files that you want to keep: right-click them in the Explorer and choose *Download*. |
+| A long learning is slow. | Firefox runs WebAssembly about three times slower than Chromium; a script runs at most four commands at once. | Use Chromium, or the native ALVIE for long experiments. |

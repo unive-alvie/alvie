@@ -6,6 +6,11 @@ description: A first-session tutorial for building ALVIE/Sancus and learning a S
 This one-hour tutorial is a first guided session with ALVIE/Sancus.
 Together, we build the project, run the included Sancus example, inspect the learned models, and produce a counterexample graph.
 
+:::tip[No installation needed to start]
+[ALVIE in your browser](/alvie/play/) runs the same example with nothing to install: its tutorial *Getting started* learns the two models of step 3 of this page, compares them and draws the witness, in about a minute.
+Come back to this page when you want ALVIE on your computer: for your own Sancus build, the FPGA board, long experiments, or formulas.
+:::
+
 ## A quick introduction to ALVIE
 
 ALVIE is a security-analysis tool that combines **active automata learning** with model checking.
@@ -33,6 +38,19 @@ The important distinction is:
 - a nonzero witness count is evidence of a possible attack under the selected specifications and threat model, not a universal proof about Sancus;
 - a zero witness count means that no distinguishing behavior was found under the selected specifications and threat model.
   When the PAC oracle is used, its confidence is controlled by `--epsilon` and `--delta`, but the result is not a universal proof that Sancus is immune.
+
+## Try it in your browser first
+
+[ALVIE in your browser](/alvie/play/) is ALVIE compiled to WebAssembly, with the simulators of Sancus for the eight commits of the experiments, in VS Code for the Web.
+Nothing is installed, and your files and models stay in your browser.
+Its tutorials are notebooks: text, and cells of commands that you run one by one, whose models are drawn below them:
+
+- *Getting started*: the example of this page, from the specifications to the witness;
+- *Tiny*: a timing leak, a leak that only interrupts reveal, and a mitigation, on a small processor (see the [Tiny tutorial](/alvie/core/tiny-tutorial/));
+- *Reproduce an attack on Sancus*: the twelve models of B6, their witness, and a check that they are the models of the paper (see [Reproducing the Simulation Experiments](/alvie/sancus/walkthrough-repro/)).
+
+The *Empty session* has the specifications and the models of the paper, terminals for the commands of this documentation (`learn.exe`, `fa.exe`, `exec.exe` and the scripts `learn_one.sh`, `check_one.sh`, ... work as written here), and a preview of models.
+[ALVIE in Your Browser](/alvie/core/alvie-ide/) describes it, and what it cannot do.
 
 ## 1. Prepare the environment
 
