@@ -30,6 +30,8 @@ rm -f "$f/tutorials/unpublished.txt"
 # The tutorials of tutorials/unpublished.txt are not published yet (ALVIE_ALL_TUTORIALS=1 keeps them)
 if [ "${ALVIE_ALL_TUTORIALS:-0}" != 1 ]; then
   grep -v '^#' "$here/tutorials/unpublished.txt" | while read -r t; do [ -n "$t" ] && rm -f "$f/tutorials/$t"; done
+  # The mark of a bundle that can be published: the website (.github/workflows/pages.yml) publishes no other
+  (cd "$f/tutorials" && ls *.alvienb) > "$out/publishable"
 fi
 : > "$f/models/.keep"
 # The fixtures of the plugins, where alvie <plugin> fixtures looks for them (plugins/<name>/fixtures, from /)
